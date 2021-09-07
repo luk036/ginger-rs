@@ -129,9 +129,9 @@ pub fn aberth(pa: &Vec<f64>, zs: &mut Vec<Complex<f64>>, options: &Options) -> (
  * @param[in] options maximum iterations and tolorance
  * @return (usize, bool)
  */
-pub fn aberth_th(pa: Vec<f64>, mut zs: Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
+pub fn aberth_th(pa: &Vec<f64>, zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
     use std::sync::mpsc::channel;
-    use std::sync::Arc;
+    use std::sync::{Mutex, Arc};
     use threadpool::ThreadPool;
 
     let n_workers = 4; // assume 4 cores
@@ -144,9 +144,11 @@ pub fn aberth_th(pa: Vec<f64>, mut zs: Vec<Complex<f64>>, options: &Options) -> 
         pb[k] = pa[k] * (n - k) as f64;
     }
     let pb = pb; // make imutatable
-    let pa_share = Arc::new(pa);
+    let pac = pa.clone();
+    let mut zsc = zs.clone();
+    let pa_share = Arc::new(pac);
     let pb_share = Arc::new(pb);
-    let zs_share = Arc::new(zs);
+    let zs_share = Arc::new(Mutex::new(zsc));
 
     let mut found = false;
     let mut converged = vec![false; m];
@@ -181,27 +183,30 @@ pub fn aberth_th(pa: Vec<f64>, mut zs: Vec<Complex<f64>>, options: &Options) -> 
                 if tol_i < 1e-15 {
                     tx.send((None, i))
                         .expect("channel will be there waiting for a pool");
-                }
-                let mut pp1 = horner_eval_c(&pb_clone, &zi);
-                for (j, zj) in zs_clone.iter().enumerate() {
-                    // exclude i
-                    if j == i {
-                        continue;
+                } else {
+                    let mut pp1 = horner_eval_c(&pb_clone, &zi);
+                    for (j, zj) in zs_clone.iter().enumerate() {
+                        // exclude i
+                        if j == i {
+                            continue;
+                        }
+                        pp1 -= pp / (zi - zj);
                     }
-                    pp1 -= pp / (zi - zj);
+                    let dt = pp / pp1; // Gauss-Seidel fashion
+
+                    tx.send((Some((tol_i, dt)), i))
+                        .expect("channel will be there waiting for a pool");
                 }
-                // zs[i] -= pp / pp1; // Gauss-Seidel fashion
-                tx.send((Some(tol_i), i))
-                    .expect("channel will be there waiting for a pool");
             });
         }
+        let mut zsw = zs_share.lock().unwrap();
         for (res, i) in rx.iter().take(n_jobs) {
             if let Some(result) = res {
-                let toli = result;
+                let (toli, dt) = result;
                 if tol < toli {
                     tol = toli;
                 }
-                // vrs[i] -= dt;
+                zsw[i] -= dt;
             } else {
                 converged[i] = true;
             }
