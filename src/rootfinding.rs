@@ -1,20 +1,66 @@
-#include <bairstow/ThreadPool.h>  // for ThreadPool
-#include <stddef.h>               // for usize
-
-// #include <__bit_reference>           // for __bit_reference
-#include <bairstow/rootfinding.hpp>  // for Vec2, delta, Options, horner_eval
-#include <cmath>                     // for abs, acos, cos, pow
-#include <functional>                // for __base
-#include <future>                    // for future
-#include <thread>                    // for thread
-#include <tuple>                     // for tuple
-#include <type_traits>               // for move
-#include <vector>                    // for vector, vector<>::reference, __v...
-
-#include "bairstow/vector2.hpp"  // for operator-, vector2
-
 // using Vec2 = numeric::vector2<f64>;
-// using mat2 = numeric::matrix2<Vec2>;
+// using Mat2 = numeric::matrix2<Vec2>;
+
+// use threadpool::ThreadPool;
+// use std::sync::mpsc::channel;
+// use rusty_pool::{ThreadPool, JoinHandle};
+// use std::thread;
+// use std::time::Duration;
+
+use super::{Matrix2, Vector2};
+type Vec2 = Vector2<f64>;
+type Mat2 = Matrix2<f64>;
+
+const PI: f64 = std::f64::consts::PI;
+
+pub struct Options {
+    pub max_iter: usize,
+    pub tol: f64,
+}
+
+/**
+ * @brief
+ *
+ * @param[in] vr
+ * @param[in] vp
+ * @return Mat2
+ */
+#[inline]
+pub fn makeadjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
+    let Vec2 { x_: r, y_: t } = *vr;
+    let Vec2 { x_: p, y_: m } = *vp;
+    Mat2::new(Vec2::new(-m, p), Vec2::new(-p * t, p * r - m))
+}
+
+/**
+ * @brief
+ *
+ * @param[in] vaa
+ * @param[in] vr
+ * @param[in] vp
+ * @return Mat2
+ */
+#[inline]
+pub fn delta(vaa: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
+    let mp = makeadjoint(vr, vp); // 2 mul's
+    mp.mdot(vaa) / mp.det() // 6 mul's + 2 div's
+}
+
+/**
+ * @brief
+ *
+ * @param[in,out] pb
+ * @param[in] n
+ * @param[in] r
+ * @return f64
+ */
+#[inline]
+pub fn horner_eval(pb: &mut Vec<f64>, n: usize, z: f64) -> f64 {
+    for i in 0..n {
+        pb[i + 1] += pb[i] * z;
+    }
+    pb[n]
+}
 
 /**
  * @brief
@@ -24,15 +70,14 @@
  * @param[in] vr
  * @return Vec2
  */
-pub fn horner(mut pb: Vec<f64>,  n: usize,  vr: &Vec2) -> Vec2 {
-    let r = vr.x();
-    let t = vr.y();
+pub fn horner(pb: &mut Vec<f64>, n: usize, vr: &Vec2) -> Vec2 {
+    let Vec2 { x_: r, y_: t } = vr;
     pb[1] -= pb[0] * r;
-    for (let i = 2U; i != n; ++i) {
+    for i in 2..n {
         pb[i] -= pb[i - 1] * r + pb[i - 2] * t;
     }
     pb[n] -= pb[n - 2] * t;
-    return Vec2::new(pb[n - 1], pb[n]);
+    Vec2::new(pb[n - 1], pb[n])
 }
 
 /**
@@ -41,26 +86,24 @@ pub fn horner(mut pb: Vec<f64>,  n: usize,  vr: &Vec2) -> Vec2 {
  * @param[in] pa
  * @return Vec<Vec2>
  */
-pub fn initial_guess(pa: &Vec<f64>) -> Vec<Vec2> {
-    static let PI = std::acos(-1.0);
-
-    let nn = pa.len() - 1;
-    let c = -pa[1] / (nn * pa[0]);
-    let pb = pa;
-    let Pc = horner_eval(pb, nn, c);  // ???
-    let re = std::pow(Pc.abs(), 1.0 / nn);
-    nn /= 2;
-    nn *= 2;  // make even
-    let k = PI / nn;
+pub fn initial_guess(pa: &[f64]) -> Vec<Vec2> {
+    let mut n = pa.len() - 1;
+    let c = -pa[1] / (pa[0] * n as f64);
+    let mut pb = pa.to_owned();
+    let centroid = horner_eval(&mut pb, n, c); // ???
+    let re = centroid.abs().powf(1.0 / (n as f64));
+    n /= 2;
+    n *= 2; // make even
+    let k = PI / (n as f64);
     let m = c * c + re * re;
-    let vr0s = Vec<Vec2>::new();
-    for (let i = 1; i < nn; i += 2) {
-        let temp = re * (k * i).cos();
-        let r0 = -2 * (c + temp);
-        let t0 = m + 2 * c * temp;
-        vr0s.emplace_back(Vec2{std::move(r0), std::move(t0)});
+    let mut vr0s = Vec::<Vec2>::new();
+    for i in (1..n).step_by(2) {
+        let temp = re * (k * i as f64).cos();
+        let r0 = -2.0 * (c + temp);
+        let t0 = m + 2.0 * c * temp;
+        vr0s.push(Vec2::new(r0, t0));
     }
-    return vr0s;
+    vr0s
 }
 
 /**
@@ -69,54 +112,76 @@ pub fn initial_guess(pa: &Vec<f64>) -> Vec<Vec2> {
  * @param[in] pa polynomial
  * @param[in,out] vrs vector of iterates
  * @param[in] options maximum iterations and tolorance
- * @return (unsigned int, bool)
+ * @return (usize, bool)
  */
-pub fn pbairstow_even(pa: &Vec<f64>, mut vrs: &Vec<Vec2>, 
-                    options: &Options) -> (unsigned int, bool) {
-    let nn = pa.len() - 1;  // degree, assume even
-    let mm = vrs.len();
-    let found = false;
-    let converged = vec![false; mm];
-    // let niter = 1U;
-    // ThreadPool pool(std::thread::hardware_concurrency());
+pub fn pbairstow_even(pa: &Vec<f64>, vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
+    let n = pa.len() - 1; // degree, assume even
+    let m = vrs.len();
+    let mut found = false;
+    let mut converged = vec![false; m];
 
-    for niter in 1..options.max_iter {
-        let tol = 0.0;
+    // ThreadPool pool(std::thread::hardware_concurrency_);
+    // let n_workers = 4; // assume 4 cores
+
+    let mut niter: usize = 0;
+    while niter != options.max_iter {
+        niter += 1;
+
+        let mut tol = 0.0;
         // std::vector<std::future<f64>> results;
+        // let pool = ThreadPool::new(n_workers);
+        // let (tx, rx) = channel();
+        // let pool = ThreadPool::default();
+        // let mut results = Vec::<JoinHandle<f64>>::new();
+        let mut rx = Vec::<f64>::new();
 
-        for i in 0..mm {
-            if converged[i]  {
+        for i in 0..m {
+            if converged[i] {
                 continue;
             }
             // results.emplace_back(pool.enqueue([&, i]() {
-                let pb = pa;
+            // let tx = tx.clone();
+            // pool.execute(move || {
+            // results.push(pool.evaluate(move || {
+            rx.clear();
+            let mut nono = |i| {
+                let mut pb = pa.clone();
                 // let n = pa.len() - 1;
                 let vri = vrs[i];
-                let vA = horner(pb, nn, vri);
-                let tol_i = vA.norm_inf();
-                if tol_i < 1e-15  {
+                let vaa = horner(&mut pb, n, &vri);
+                let tol_i = vaa.norm_inf();
+                if tol_i < 1e-15 {
                     converged[i] = true;
-                    return tol_i;
-                }
-                let vA1 = horner(pb, nn - 2, vri);
-                for j in 0..mm {  // exclude i
-                    if j == i  {
-                        continue;
+                    // tx.send(tol_i).expect("channel will be there waiting for a pool");
+                    // return;
+                    // return tol_i;
+                    rx.push(tol_i);
+                } else {
+                    let mut vaa1 = horner(&mut pb, n - 2, &vri);
+                    for j in 0..m {
+                        // exclude i
+                        if j == i {
+                            continue;
+                        }
+                        let vrj = vrs[j]; // make a copy, don't reference!
+                        vaa1 -= delta(&vaa, &vrj, &(vri - vrj));
                     }
-                    let vrj = vrs[j];  // make a copy, don't reference!
-                    vA1 -= delta(vA, vrj, vri - vrj);
+                    vrs[i] -= delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
+                                                        // tx.send(tol_i).expect("channel will be there waiting for a pool");
+                    rx.push(tol_i);
+                    // return tol_i;
                 }
-                vrs[i] -= delta(vA, vri, std::move(vA1));  // Gauss-Seidel fashion
-                return tol_i;
-            }));
+            };
+
+            nono(i);
+            // }));
         }
-        for result : results  {
-            let& res = result.get();
-            if tol < res  {
-                tol = res;
+        for result in rx.iter() {
+            if tol < *result {
+                tol = *result;
             }
         }
-        if tol < options.tol  {
+        if tol < options.tol {
             found = true;
             break;
         }

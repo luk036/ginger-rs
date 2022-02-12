@@ -66,7 +66,7 @@ pub fn pbairstow_autocorr(pa: &Vec<f64>, mut vrs: &Vec<Vec2>,
                 let vrin = numeric::vector2<f64>(vri.x(), 1.0) / vri.y();
                 vA1 -= delta(vA, vrin, vri - vrin);
 
-                vrs[i] -= delta(vA, vri, std::move(vA1));  // Gauss-Seidel fashion
+                vrs[i] -= delta(vA, vri, vA1);  // Gauss-Seidel fashion
                 return tol_i;
             }));
         }

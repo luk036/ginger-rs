@@ -43,7 +43,7 @@ inline let makeadjoint(vr: &Vec2, Vec2&& vp) -> mat2 {
  * @return mat2
  */
 inline let delta(vA: &Vec2, vr: &Vec2, Vec2&& vp) -> Vec2 {
-    let mp = makeadjoint(vr, std::move(vp));  // 2 mul's
+    let mp = makeadjoint(vr, vp);  // 2 mul's
     return mp.mdot(vA) / mp.det();                   // 6 mul's + 2 div's
 }
 
