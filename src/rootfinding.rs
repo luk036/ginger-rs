@@ -1,9 +1,9 @@
 // using Vec2 = numeric::vector2<f64>;
 // using Mat2 = numeric::matrix2<Vec2>;
 
-// use threadpool::ThreadPool;
-// use std::sync::mpsc::channel;
-// use rusty_pool::{ThreadPool, JoinHandle};
+use std::sync::mpsc::channel;
+use threadpool::ThreadPool;
+// use rusty_pool::ThreadPool;
 // use std::thread;
 // use std::time::Duration;
 
@@ -55,7 +55,7 @@ pub fn delta(vaa: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
  * @return f64
  */
 #[inline]
-pub fn horner_eval(pb: &mut Vec<f64>, n: usize, z: f64) -> f64 {
+pub fn horner_eval(pb: &mut [f64], n: usize, z: f64) -> f64 {
     for i in 0..n {
         pb[i + 1] += pb[i] * z;
     }
@@ -70,7 +70,7 @@ pub fn horner_eval(pb: &mut Vec<f64>, n: usize, z: f64) -> f64 {
  * @param[in] vr
  * @return Vec2
  */
-pub fn horner(pb: &mut Vec<f64>, n: usize, vr: &Vec2) -> Vec2 {
+pub fn horner(pb: &mut [f64], n: usize, vr: &Vec2) -> Vec2 {
     let Vec2 { x_: r, y_: t } = vr;
     pb[1] -= pb[0] * r;
     for i in 2..n {
@@ -114,47 +114,32 @@ pub fn initial_guess(pa: &[f64]) -> Vec<Vec2> {
  * @param[in] options maximum iterations and tolorance
  * @return (usize, bool)
  */
-pub fn pbairstow_even(pa: &Vec<f64>, vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
-    let n = pa.len() - 1; // degree, assume even
+pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
+    // let n = pa.len() - 1; // degree, assume even
     let m = vrs.len();
     let mut found = false;
     let mut converged = vec![false; m];
-
-    // ThreadPool pool(std::thread::hardware_concurrency_);
-    // let n_workers = 4; // assume 4 cores
 
     let mut niter: usize = 0;
     while niter != options.max_iter {
         niter += 1;
 
         let mut tol = 0.0;
-        // std::vector<std::future<f64>> results;
-        // let pool = ThreadPool::new(n_workers);
-        // let (tx, rx) = channel();
-        // let pool = ThreadPool::default();
-        // let mut results = Vec::<JoinHandle<f64>>::new();
-        let mut rx = Vec::<f64>::new();
+        let mut rx = vec![];
 
         for i in 0..m {
             if converged[i] {
                 continue;
             }
-            // results.emplace_back(pool.enqueue([&, i]() {
-            // let tx = tx.clone();
-            // pool.execute(move || {
-            // results.push(pool.evaluate(move || {
-            rx.clear();
-            let mut nono = |i| {
-                let mut pb = pa.clone();
-                // let n = pa.len() - 1;
+            let mut job = || {
+                let mut pb = pa.to_owned();
+                let n = pa.len() - 1; // degree, assume even
+                let m = vrs.len();
                 let vri = vrs[i];
                 let vaa = horner(&mut pb, n, &vri);
                 let tol_i = vaa.norm_inf();
                 if tol_i < 1e-15 {
                     converged[i] = true;
-                    // tx.send(tol_i).expect("channel will be there waiting for a pool");
-                    // return;
-                    // return tol_i;
                     rx.push(tol_i);
                 } else {
                     let mut vaa1 = horner(&mut pb, n - 2, &vri);
@@ -163,7 +148,7 @@ pub fn pbairstow_even(pa: &Vec<f64>, vrs: &mut Vec<Vec2>, options: &Options) -> 
                         if j == i {
                             continue;
                         }
-                        let vrj = vrs[j]; // make a copy, don't reference!
+                        let vrj = vrs[j].to_owned(); // make a copy, don't reference!
                         vaa1 -= delta(&vaa, &vrj, &(vri - vrj));
                     }
                     vrs[i] -= delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
@@ -173,13 +158,87 @@ pub fn pbairstow_even(pa: &Vec<f64>, vrs: &mut Vec<Vec2>, options: &Options) -> 
                 }
             };
 
-            nono(i);
+            job();
             // }));
         }
         for result in rx.iter() {
             if tol < *result {
                 tol = *result;
             }
+        }
+        if tol < options.tol {
+            found = true;
+            break;
+        }
+    }
+    (niter, found)
+}
+
+/**
+ * @brief Multi-threading Bairstow's method (even degree only)
+ *
+ * @param[in] pa polynomial
+ * @param[in,out] vrs vector of iterates
+ * @param[in] options maximum iterations and tolorance
+ * @return (usize, bool)
+ */
+pub fn pbairstow_even_th(pa: Vec<f64>, vrs: Vec<Vec2>, options: &Options) -> (usize, bool) {
+    let m = vrs.len();
+    let mut found = false;
+    let n_workers = 4; // assume 4 cores
+    // let mut converged = vec![0_u32; m];
+
+    let mut niter: usize = 0;
+    while niter != options.max_iter {
+        niter += 1;
+
+        let mut tol = 0.0;
+        let (tx, rx) = channel();
+        let pool = ThreadPool::new(n_workers);
+
+        for i in 0..m {
+            // if converged[i] {
+            //     continue;
+            // }
+            let tx = tx.clone();
+            let mut vrsc = vrs.clone();
+            let mut pb = pa.clone();
+            pool.execute(move || {
+                // let mut pb = pa.to_owned();
+                let n = pb.len() - 1; // degree, assume even
+                let m = vrsc.len();
+                let vri = vrsc[i];
+                let vaa = horner(&mut pb, n, &vri);
+                let tol_i = vaa.norm_inf();
+                if tol_i < 1e-15 {
+                    // *&mut converged[i] += 1;
+                    tx.send(None)
+                        .expect("channel will be there waiting for a pool");
+                } else {
+                    let mut vaa1 = horner(&mut pb, n - 2, &vri);
+                    for j in 0..m {
+                        // exclude i
+                        if j == i {
+                            continue;
+                        }
+                        let vrj = vrsc[j]; // make a copy, don't reference!
+                        vaa1 -= delta(&vaa, &vrj, &(vri - vrj));
+                    }
+                    vrsc[i] -= delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
+                    tx.send(Some(tol_i))
+                        .expect("channel will be there waiting for a pool");
+                }
+            });
+        }
+        for res in rx.iter() {
+            // let result = (*job).await_complete();
+            if let Some(result) = res {
+                if tol < result {
+                    tol = result;
+                }
+            } else {
+                // don't care
+            } 
         }
         if tol < options.tol {
             found = true;
