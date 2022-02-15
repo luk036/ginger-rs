@@ -1,12 +1,3 @@
-// using Vec2 = numeric::vector2<f64>;
-// using Mat2 = numeric::matrix2<Vec2>;
-
-use std::sync::mpsc::channel;
-use threadpool::ThreadPool;
-// use rusty_pool::ThreadPool;
-// use std::thread;
-// use std::time::Duration;
-
 use super::{Matrix2, Vector2};
 type Vec2 = Vector2<f64>;
 type Mat2 = Matrix2<f64>;
@@ -29,7 +20,10 @@ pub struct Options {
 pub fn makeadjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
     let Vec2 { x_: r, y_: t } = *vr;
     let Vec2 { x_: p, y_: m } = *vp;
-    Mat2::new(Vec2::new(-m, p), Vec2::new(-p * t, p * r - m))
+    Mat2::new(
+        Vector2::<f64>::new(-m, p),
+        Vector2::<f64>::new(-p * t, p * r - m),
+    )
 }
 
 /**
@@ -77,7 +71,7 @@ pub fn horner(pb: &mut [f64], n: usize, vr: &Vec2) -> Vec2 {
         pb[i] -= pb[i - 1] * r + pb[i - 2] * t;
     }
     pb[n] -= pb[n - 2] * t;
-    Vec2::new(pb[n - 1], pb[n])
+    Vector2::<f64>::new(pb[n - 1], pb[n])
 }
 
 /**
@@ -101,7 +95,7 @@ pub fn initial_guess(pa: &[f64]) -> Vec<Vec2> {
         let temp = re * (k * i as f64).cos();
         let r0 = -2.0 * (c + temp);
         let t0 = m + 2.0 * c * temp;
-        vr0s.push(Vec2::new(r0, t0));
+        vr0s.push(Vector2::<f64>::new(r0, t0));
     }
     vr0s
 }
@@ -134,7 +128,6 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
             let mut job = || {
                 let mut pb = pa.to_owned();
                 let n = pa.len() - 1; // degree, assume even
-                let m = vrs.len();
                 let vri = vrs[i];
                 let vaa = horner(&mut pb, n, &vri);
                 let tol_i = vaa.norm_inf();
@@ -143,18 +136,15 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
                     rx.push(tol_i);
                 } else {
                     let mut vaa1 = horner(&mut pb, n - 2, &vri);
-                    for j in 0..m {
+                    for (j, vrj) in vrs.iter().enumerate() {
                         // exclude i
                         if j == i {
                             continue;
                         }
-                        let vrj = vrs[j].to_owned(); // make a copy, don't reference!
                         vaa1 -= delta(&vaa, &vrj, &(vri - vrj));
                     }
                     vrs[i] -= delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
-                                                        // tx.send(tol_i).expect("channel will be there waiting for a pool");
                     rx.push(tol_i);
-                    // return tol_i;
                 }
             };
 
@@ -182,63 +172,64 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
  * @param[in] options maximum iterations and tolorance
  * @return (usize, bool)
  */
-pub fn pbairstow_even_th(pa: Vec<f64>, vrs: Vec<Vec2>, options: &Options) -> (usize, bool) {
+pub fn pbairstow_even_th(pa: &Vec<f64>, vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
+    use std::sync::mpsc::channel;
+    use threadpool::ThreadPool;
+
     let m = vrs.len();
     let mut found = false;
     let n_workers = 4; // assume 4 cores
-    // let mut converged = vec![0_u32; m];
+    let (tx, rx) = channel();
+    let pool = ThreadPool::new(n_workers);
+    let mut converged = vec![false; m];
 
     let mut niter: usize = 0;
     while niter != options.max_iter {
         niter += 1;
 
         let mut tol = 0.0;
-        let (tx, rx) = channel();
-        let pool = ThreadPool::new(n_workers);
 
         for i in 0..m {
-            // if converged[i] {
-            //     continue;
-            // }
+            if converged[i] {
+                continue;
+            }
             let tx = tx.clone();
-            let mut vrsc = vrs.clone();
+            let vrsc = vrs.clone();
             let mut pb = pa.clone();
             pool.execute(move || {
                 // let mut pb = pa.to_owned();
                 let n = pb.len() - 1; // degree, assume even
-                let m = vrsc.len();
                 let vri = vrsc[i];
                 let vaa = horner(&mut pb, n, &vri);
                 let tol_i = vaa.norm_inf();
                 if tol_i < 1e-15 {
-                    // *&mut converged[i] += 1;
-                    tx.send(None)
+                    tx.send((None, i))
                         .expect("channel will be there waiting for a pool");
                 } else {
                     let mut vaa1 = horner(&mut pb, n - 2, &vri);
-                    for j in 0..m {
+                    for (j, vrj) in vrsc.iter().enumerate() {
                         // exclude i
                         if j == i {
                             continue;
                         }
-                        let vrj = vrsc[j]; // make a copy, don't reference!
                         vaa1 -= delta(&vaa, &vrj, &(vri - vrj));
                     }
-                    vrsc[i] -= delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
-                    tx.send(Some(tol_i))
+                    let dt = delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
+                    tx.send((Some((tol_i, dt)), i))
                         .expect("channel will be there waiting for a pool");
                 }
             });
         }
-        for res in rx.iter() {
-            // let result = (*job).await_complete();
+        for (res, i) in rx.iter() {
             if let Some(result) = res {
-                if tol < result {
-                    tol = result;
+                let (toli, dt) = result;
+                if tol < toli {
+                    tol = toli;
                 }
+                vrs[i] -= dt;
             } else {
-                // don't care
-            } 
+                converged[i] = true;
+            }
         }
         if tol < options.tol {
             found = true;
@@ -248,15 +239,202 @@ pub fn pbairstow_even_th(pa: Vec<f64>, vrs: Vec<Vec2>, options: &Options) -> (us
     (niter, found)
 }
 
-// let find_rootq(r: &Vec2) {
-//     let hb = b / 2.;
-//     let d = hb * hb - c;
-//     if d < 0.  {
-//         let x1 = -hb + (sqrt(-d) if hb < 0. else -sqrt(-d )*1j;
-//     }
-//     else {
-//         let x1 = -hb + (d.sqrt() if hb < 0. else -sqrt(d );
-//     }
-//     let x2 = c / x1;
-//     return x1, x2;
-// }
+/**
+ * @brief initial guess (specific for let-correlation function)
+ *
+ * @param[in] pa
+ * @return Vec<Vec2>
+ */
+pub fn initial_autocorr(pa: &[f64]) -> Vec<Vec2> {
+    let mut n = pa.len() - 1;
+    let re = (pa[n].abs() as f64).powf(1.0 / (n as f64));
+    n /= 2;
+    let k = PI / (n as f64);
+    let m = re * re;
+    let mut vr0s = Vec::<Vec2>::new();
+    for i in (1..n).step_by(2) {
+        vr0s.push(Vector2::<f64>::new(-2.0 * re * (k * i as f64).cos(), m));
+    }
+    vr0s
+}
+
+/**
+ * @brief Multi-threading Bairstow's method (specific for let-correlation function)
+ *
+ * @param[in] pa polynomial
+ * @param[in,out] vrs vector of iterates
+ * @param[in] options maximum iterations and tolorance
+ * @return (usize, bool)
+ */
+pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
+    let m = vrs.len();
+    let mut found = false;
+    let mut converged = vec![false; m];
+
+    let mut niter: usize = 0;
+    while niter != options.max_iter {
+        niter += 1;
+
+        let mut tol = 0.0;
+
+        for i in 0..m {
+            if converged[i] {
+                continue;
+            }
+            let mut job = || {
+                let mut pb = pa.to_owned();
+                let n = pa.len() - 1; // assumed divided by 4
+                let vri = vrs[i];
+                let vaa = horner(&mut pb, n, &vri);
+                let tol_i = vaa.norm_inf();
+                if tol_i < 1e-15 {
+                    converged[i] = true;
+                    return tol_i;
+                }
+                let mut vaa1 = horner(&mut pb, n - 2, &vri);
+                for (j, vrj) in vrs.iter().enumerate() {
+                    if j == i {
+                        continue;
+                    }
+                    vaa1 -= delta(&vaa, &vrj, &(vri - vrj));
+                    let vrjn = Vector2::<f64>::new(vrj.x_, 1.0) / vrj.y_;
+                    vaa1 -= delta(&vaa, &vrjn, &(vri - vrjn));
+                }
+                let vrin = Vector2::<f64>::new(vri.x_, 1.0) / vri.y_;
+                vaa1 -= delta(&vaa, &vrin, &(vri - vrin));
+                vrs[i] -= delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
+                return tol_i;
+            };
+            let tol_i = job();
+            if tol < tol_i {
+                tol = tol_i;
+            }
+        }
+        if tol < options.tol {
+            found = true;
+            break;
+        }
+    }
+    (niter, found)
+}
+
+/**
+ * @brief Multi-threading Bairstow's method (specific for let-correlation function)
+ *
+ * @param[in] pa polynomial
+ * @param[in,out] vrs vector of iterates
+ * @param[in] options maximum iterations and tolorance
+ * @return (usize, bool)
+ */
+pub fn pbairstow_autocorr_th(
+    pa: &Vec<f64>,
+    vrs: &mut Vec<Vec2>,
+    options: &Options,
+) -> (usize, bool) {
+    use std::sync::mpsc::channel;
+    use threadpool::ThreadPool;
+
+    let m = vrs.len();
+    let mut found = false;
+    let n_workers = 4; // assume 4 cores
+    let (tx, rx) = channel();
+    let pool = ThreadPool::new(n_workers);
+    let mut converged = vec![false; m];
+
+    let mut niter: usize = 0;
+    while niter != options.max_iter {
+        niter += 1;
+
+        let mut tol = 0.0;
+
+        for i in 0..m {
+            if converged[i] {
+                continue;
+            }
+            let tx = tx.clone();
+            let vrsc = vrs.clone();
+            let mut pb = pa.clone();
+            pool.execute(move || {
+                // let mut pb = pa.to_owned();
+                let n = pb.len() - 1; // assumed divided by 4
+                let vri = vrsc[i];
+                let vaa = horner(&mut pb, n, &vri);
+                let tol_i = vaa.norm_inf();
+                if tol_i < 1e-15 {
+                    tx.send((None, i))
+                        .expect("channel will be there waiting for a pool");
+                    return;
+                }
+                let mut vaa1 = horner(&mut pb, n - 2, &vri);
+                for (j, vrj) in vrsc.iter().enumerate() {
+                    if j == i {
+                        continue;
+                    }
+                    vaa1 -= delta(&vaa, &vrj, &(vri - vrj));
+                    let vrjn = Vector2::<f64>::new(vrj.x_, 1.0) / vrj.y_;
+                    vaa1 -= delta(&vaa, &vrjn, &(vri - vrjn));
+                }
+                let vrin = Vector2::<f64>::new(vri.x_, 1.0) / vri.y_;
+                vaa1 -= delta(&vaa, &vrin, &(vri - vrin));
+                let dt = delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
+                tx.send((Some((tol_i, dt)), i))
+                    .expect("channel will be there waiting for a pool");
+            });
+        }
+        for (res, i) in rx.iter() {
+            if let Some(result) = res {
+                let (toli, dt) = result;
+                if tol < toli {
+                    tol = toli;
+                }
+                vrs[i] -= dt;
+            } else {
+                converged[i] = true;
+            }
+        }
+        if tol < options.tol {
+            found = true;
+            break;
+        }
+    }
+    (niter, found)
+}
+
+/**
+ * @brief Extract the quadratic function where its roots are within a unit circle
+ *
+ *   x^2 + r*x + t or x^2 + (r/t) * x + (1/t)
+ *   (x + a1)(x + a2) = x^2 + (a1 + a2) x + a1 * a2
+ *
+ * @param[in,out] vr
+ */
+pub fn extract_autocorr(vr: Vec2) -> Vec2 {
+    let Vec2 { x_: r, y_: t } = vr;
+    let hr = r / 2.0;
+    let d = hr * hr - t;
+    if d < 0.0 {
+        // complex conjugate root
+        if t > 1.0 {
+            return Vector2::<f64>::new(r / t, 1.0 / t);
+        }
+    }
+
+    // two real roots
+    let mut a1 = hr + (if hr >= 0.0 { d.sqrt() } else { -d.sqrt() });
+    let mut a2 = t / a1;
+
+    if a1.abs() > 1.0 {
+        if a2.abs() > 1.0 {
+            a2 = 1.0 / a2;
+        }
+        a1 = 1.0 / a1;
+        return Vector2::<f64>::new(a1 + a2, a1 * a2);
+    }
+
+    if a2.abs() > 1.0 {
+        a2 = 1.0 / a2;
+        return Vector2::<f64>::new(a1 + a2, a1 * a2);
+    }
+    // else no need to change
+    return vr;
+}

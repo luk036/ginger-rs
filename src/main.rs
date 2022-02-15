@@ -5,7 +5,9 @@ mod matrix2;
 use crate::matrix2::Matrix2;
 
 mod rootfinding;
-use crate::rootfinding::{initial_guess, pbairstow_even, Options};
+use crate::rootfinding::{
+    initial_autocorr, initial_guess, pbairstow_autocorr_th, pbairstow_even_th, Options,
+};
 
 fn main() {
     let a = Vector2::<f64>::new(1.2, 2.3);
@@ -43,5 +45,5 @@ fn main() {
     };
     let pa = vec![1.0, 3.0, 3.0, 4.0];
     let mut vrs = initial_guess(&pa);
-    let _res = pbairstow_even(&pa, &mut vrs, &options);
+    let _res = pbairstow_even_th(&pa, &mut vrs, &options);
 }
