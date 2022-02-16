@@ -1,14 +1,6 @@
-#include <bairstow/ThreadPool.h>  // for ThreadPool
+use num::Complex;
 
-// #include <__bit_reference>           // for __bit_reference
-#include <bairstow/rootfinding.hpp>  // for Options
-#include <cmath>                     // for acos, cos, sin
-#include <complex>                   // for complex, operator*, operator+
-#include <functional>                // for __base
-#include <future>                    // for future
-#include <thread>                    // for thread
-#include <tuple>                     // for tuple
-#include <vector>                    // for vector, vector<>::reference, __v...
+const TWO_PI: f64 = std::f64::consts::TAU;
 
 /**
  * @brief
@@ -18,15 +10,30 @@
  * @param[in] r
  * @return f64
  */
-template <typename C, typename Tp> inline let horner_eval_g(const C& pb, const Tp& z) -> Tp {
-    Tp ans = pb[0];
-    for (let i = 1U; i != pb.len(); ++i) {
+pub fn horner_eval_c(pb: &[f64], z: &Complex<f64>) -> Complex<f64> {
+    let ans = Complex::<f64>::new(pb[0], 0.0);
+    for i in 1..pb.len() {
         ans = ans * z + pb[i];
     }
-    return ans;
+    ans
 }
 
-const TWO_PI: f64 = std::f64::consts::TAU;
+/**
+ * @brief
+ *
+ * @param[in,out] pb
+ * @param[in] n
+ * @param[in] r
+ * @return f64
+ */
+pub fn horner_eval_f(pb: &[f64], z: f64) -> f64 {
+    let ans = pb[0]
+    for i in 1..pb.len() {
+        ans = ans * z + pb[i];
+    }
+    ans
+}
+
 
 /**
  * @brief
@@ -34,19 +41,19 @@ const TWO_PI: f64 = std::f64::consts::TAU;
  * @param[in] pa
  * @return Vec<Vec2>
  */
-pub fn initial_aberth(pa: &Vec<f64>) -> std::vector<std::complex<f64>> {
-    let nn = pa.len() - 1;
-    let c = -pa[1] / (nn * pa[0]);
-    let Pc = horner_eval_g(pa, c);
-    let re = std::pow(std::complex<f64>(-Pc), 1.0 / nn);
-    let k = TWO_PI / nn;
-    let z0s = std::vector<std::complex<f64>>{};
-    for i in 0..nn {
+pub fn initial_aberth(pa: &[f64]) -> Vec<Complex<f64>> {
+    let n = pa.len() - 1;
+    let c = -pa[1] / (pa[0] * n as f64);
+    let Pc = horner_eval_f(pa, c);
+    let re = (-Pc as Complex<f64>).pow(1.0 / n); // ???
+    let k = TWO_PI / (n as f64);
+    let z0s = vec![];
+    for i in 0..n {
         let theta = k * (i + 0.25);
-        let z0 = c + re * std::complex<f64>{(theta).cos(), std::sin(theta)};
-        z0s.emplace_back(z0);
+        let z0 = c + re * Complex::<f64>::new(theta.cos(), theta.sin());
+        z0s.push(z0);
     }
-    return z0s;
+    z0s
 }
 
 /**
@@ -59,13 +66,13 @@ pub fn initial_aberth(pa: &Vec<f64>) -> std::vector<std::complex<f64>> {
  */
 pub fn aberth(pa, std::vector<std::complex<f64>>& zs,: &Vec<f64>
             options: &Options) -> (unsigned int, bool) {
-    let mm = zs.len();
-    let nn = pa.len() - 1;  // degree, assume even
+    let m = zs.len();
+    let n = pa.len() - 1;  // degree, assume even
     let found = false;
-    let converged = vec![false; mm];
-    let pb = Vec<f64>::new(nn);
-    for i in 0..nn {
-        pb[i] = (nn - i) * pa[i];
+    let converged = vec![false; m];
+    let pb = vec![0.0; n];
+    for i in 0..n {
+        pb[i] = (n - i) * pa[i];
     }
     // let niter = 1U;
     // ThreadPool pool(std::thread::hardware_concurrency());
@@ -74,7 +81,7 @@ pub fn aberth(pa, std::vector<std::complex<f64>>& zs,: &Vec<f64>
         let tol = 0.0;
         // std::vector<std::future<f64>> results;
 
-        for i in 0..mm {
+        for i in 0..m {
             if converged[i]  {
                 continue;
             }
@@ -87,7 +94,7 @@ pub fn aberth(pa, std::vector<std::complex<f64>>& zs,: &Vec<f64>
                     return tol_i;
                 }
                 let P1 = horner_eval_g(pb, zi);
-                for j in 0..mm {  // exclude i
+                for j in 0..m {  // exclude i
                     if j == i  {
                         continue;
                     }

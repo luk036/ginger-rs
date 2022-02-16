@@ -196,6 +196,7 @@ pub fn pbairstow_even_th(pa: &Vec<f64>, vrs: &mut Vec<Vec2>, options: &Options) 
             let tx = tx.clone();
             let vrsc = vrs.clone();
             let mut pb = pa.clone();
+
             pool.execute(move || {
                 // let mut pb = pa.to_owned();
                 let n = pb.len() - 1; // degree, assume even
