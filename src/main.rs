@@ -44,13 +44,16 @@ fn main() {
         max_iter: 2000,
         tol: 1e-3,
     };
-    let pa = vec![1.0, 3.0, 3.0, 4.0];
+    let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
     let mut vrs = initial_guess(&pa);
-    let _res = pbairstow_even(&pa, &mut vrs, &options);
-    let mut vrs = initial_guess(&pa);
-    let _res = pbairstow_even_th(&pa, &mut vrs, &options);
+    let (niter, found) = pbairstow_even(&pa, &mut vrs, &options);
+    println!("{}", niter);
+    // let mut vrs = initial_guess(&pa);
+    // let (niter, found) = pbairstow_even_th(&pa, &mut vrs, &options);
+    // println!("{}", niter);
     let mut vrs = initial_autocorr(&pa);
-    let _res = pbairstow_autocorr(&pa, &mut vrs, &options);
-    let mut vrs = initial_autocorr(&pa);
-    let _res = pbairstow_autocorr_th(&pa, &mut vrs, &options);
+    let (niter, found) = pbairstow_autocorr(&pa, &mut vrs, &options);
+    println!("{}", niter);
+    // let mut vrs = initial_autocorr(&pa);
+    // let _res = pbairstow_autocorr_th(&pa, &mut vrs, &options);
 }

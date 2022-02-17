@@ -141,7 +141,7 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
                         if j == i {
                             continue;
                         }
-                        vaa1 -= delta(&vaa, &vrj, &(vri - vrj));
+                        vaa1 -= delta(&vaa, vrj, &(vri - vrj));
                     }
                     vrs[i] -= delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
                     rx.push(tol_i);
@@ -178,7 +178,7 @@ pub fn pbairstow_even_th(pa: &Vec<f64>, vrs: &mut Vec<Vec2>, options: &Options) 
 
     let m = vrs.len();
     let mut found = false;
-    let n_workers = 4; // assume 4 cores
+    let n_workers = 2; // assume 4 cores
     let (tx, rx) = channel();
     let pool = ThreadPool::new(n_workers);
     let mut converged = vec![false; m];
@@ -213,7 +213,7 @@ pub fn pbairstow_even_th(pa: &Vec<f64>, vrs: &mut Vec<Vec2>, options: &Options) 
                         if j == i {
                             continue;
                         }
-                        vaa1 -= delta(&vaa, &vrj, &(vri - vrj));
+                        vaa1 -= delta(&vaa, vrj, &(vri - vrj));
                     }
                     let dt = delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
                     tx.send((Some((tol_i, dt)), i))
@@ -297,14 +297,14 @@ pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
                     if j == i {
                         continue;
                     }
-                    vaa1 -= delta(&vaa, &vrj, &(vri - vrj));
+                    vaa1 -= delta(&vaa, vrj, &(vri - vrj));
                     let vrjn = Vector2::<f64>::new(vrj.x_, 1.0) / vrj.y_;
                     vaa1 -= delta(&vaa, &vrjn, &(vri - vrjn));
                 }
                 let vrin = Vector2::<f64>::new(vri.x_, 1.0) / vri.y_;
                 vaa1 -= delta(&vaa, &vrin, &(vri - vrin));
                 vrs[i] -= delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
-                return tol_i;
+                tol_i
             };
             let tol_i = job();
             if tol < tol_i {
@@ -328,7 +328,7 @@ pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
  * @return (usize, bool)
  */
 pub fn pbairstow_autocorr_th(
-    pa: &Vec<f64>,
+    pa: &[f64],
     vrs: &mut Vec<Vec2>,
     options: &Options,
 ) -> (usize, bool) {
@@ -354,7 +354,7 @@ pub fn pbairstow_autocorr_th(
             }
             let tx = tx.clone();
             let vrsc = vrs.clone();
-            let mut pb = pa.clone();
+            let mut pb = pa.to_owned();
             pool.execute(move || {
                 // let mut pb = pa.to_owned();
                 let n = pb.len() - 1; // assumed divided by 4
@@ -371,7 +371,7 @@ pub fn pbairstow_autocorr_th(
                     if j == i {
                         continue;
                     }
-                    vaa1 -= delta(&vaa, &vrj, &(vri - vrj));
+                    vaa1 -= delta(&vaa, vrj, &(vri - vrj));
                     let vrjn = Vector2::<f64>::new(vrj.x_, 1.0) / vrj.y_;
                     vaa1 -= delta(&vaa, &vrjn, &(vri - vrjn));
                 }
@@ -416,10 +416,9 @@ pub fn extract_autocorr(vr: Vec2) -> Vec2 {
     if d < 0.0 {
         // complex conjugate root
         if t > 1.0 {
-            return Vector2::<f64>::new(r / t, 1.0 / t);
+            return Vector2::<f64>::new(r, 1.0) / t;
         }
     }
-
     // two real roots
     let mut a1 = hr + (if hr >= 0.0 { d.sqrt() } else { -d.sqrt() });
     let mut a2 = t / a1;
@@ -431,11 +430,10 @@ pub fn extract_autocorr(vr: Vec2) -> Vec2 {
         a1 = 1.0 / a1;
         return Vector2::<f64>::new(a1 + a2, a1 * a2);
     }
-
     if a2.abs() > 1.0 {
         a2 = 1.0 / a2;
         return Vector2::<f64>::new(a1 + a2, a1 * a2);
     }
     // else no need to change
-    return vr;
+    vr
 }
