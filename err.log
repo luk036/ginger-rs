@@ -1,0 +1,18 @@
+    Checking bairstow-rs v0.1.0 (/home/lubuntu/Documents/github/bairstow-rs)
+warning: unused import: `pbairstow_autocorr_th`
+ --> src/main.rs:9:58
+  |
+9 |     initial_autocorr, initial_guess, pbairstow_autocorr, pbairstow_autocorr_th, pbairstow_even,
+  |                                                          ^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+error[E0507]: cannot move out of `*handle` which is behind a mutable reference
+   --> src/rootfinding.rs:220:29
+    |
+220 |             let (res, i) = &(*handle).await_complete();
+    |                             ^^^^^^^^^ move occurs because `*handle` has type `rusty_pool::JoinHandle<(Option<(f64, Vector2<f64>)>, usize)>`, which does not implement the `Copy` trait
+
+For more information about this error, try `rustc --explain E0507`.
+warning: `bairstow-rs` (bin "bairstow-rs") generated 1 warning
+error: could not compile `bairstow-rs` due to previous error; 1 warning emitted

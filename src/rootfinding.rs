@@ -178,9 +178,7 @@ pub fn pbairstow_even_th(pa: &Vec<f64>, vrs: &mut Vec<Vec2>, options: &Options) 
 
     let m = vrs.len();
     let mut found = false;
-    let n_workers = 2; // assume 4 cores
-    let (tx, rx) = channel();
-    let pool = ThreadPool::new(n_workers);
+    let n_workers = 4; // assume 4 cores
     let mut converged = vec![false; m];
 
     let mut niter: usize = 0;
@@ -188,7 +186,9 @@ pub fn pbairstow_even_th(pa: &Vec<f64>, vrs: &mut Vec<Vec2>, options: &Options) 
         niter += 1;
 
         let mut tol = 0.0;
-
+        let (tx, rx) = channel();
+        let pool = ThreadPool::new(n_workers);
+        let mut n_jobs = 0; 
         for i in 0..m {
             if converged[i] {
                 continue;
@@ -197,6 +197,7 @@ pub fn pbairstow_even_th(pa: &Vec<f64>, vrs: &mut Vec<Vec2>, options: &Options) 
             let vrsc = vrs.clone();
             let mut pb = pa.clone();
 
+            n_jobs += 1;
             pool.execute(move || {
                 // let mut pb = pa.to_owned();
                 let n = pb.len() - 1; // degree, assume even
@@ -221,7 +222,7 @@ pub fn pbairstow_even_th(pa: &Vec<f64>, vrs: &mut Vec<Vec2>, options: &Options) 
                 }
             });
         }
-        for (res, i) in rx.iter() {
+        for (res, i) in rx.iter().take(n_jobs) {
             if let Some(result) = res {
                 let (toli, dt) = result;
                 if tol < toli {
