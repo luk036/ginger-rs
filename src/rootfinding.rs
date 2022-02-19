@@ -1,4 +1,5 @@
 use super::{Matrix2, Vector2};
+
 type Vec2 = Vector2<f64>;
 type Mat2 = Matrix2<f64>;
 
@@ -175,10 +176,10 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
 pub fn pbairstow_even_th(pa: &Vec<f64>, vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
     use std::sync::mpsc::channel;
     use threadpool::ThreadPool;
+    let n_workers = 4; // assume 4 cores
 
     let m = vrs.len();
     let mut found = false;
-    let n_workers = 4; // assume 4 cores
     let mut converged = vec![false; m];
 
     let mut niter: usize = 0;
@@ -188,7 +189,7 @@ pub fn pbairstow_even_th(pa: &Vec<f64>, vrs: &mut Vec<Vec2>, options: &Options) 
         let mut tol = 0.0;
         let (tx, rx) = channel();
         let pool = ThreadPool::new(n_workers);
-        let mut n_jobs = 0; 
+        let mut n_jobs = 0;
         for i in 0..m {
             if converged[i] {
                 continue;
@@ -328,11 +329,7 @@ pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
  * @param[in] options maximum iterations and tolorance
  * @return (usize, bool)
  */
-pub fn pbairstow_autocorr_th(
-    pa: &[f64],
-    vrs: &mut Vec<Vec2>,
-    options: &Options,
-) -> (usize, bool) {
+pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
     use std::sync::mpsc::channel;
     use threadpool::ThreadPool;
 
@@ -348,6 +345,7 @@ pub fn pbairstow_autocorr_th(
         niter += 1;
 
         let mut tol = 0.0;
+        let mut n_jobs = 0;
 
         for i in 0..m {
             if converged[i] {
@@ -356,6 +354,7 @@ pub fn pbairstow_autocorr_th(
             let tx = tx.clone();
             let vrsc = vrs.clone();
             let mut pb = pa.to_owned();
+            n_jobs += 1;
             pool.execute(move || {
                 // let mut pb = pa.to_owned();
                 let n = pb.len() - 1; // assumed divided by 4
@@ -383,7 +382,7 @@ pub fn pbairstow_autocorr_th(
                     .expect("channel will be there waiting for a pool");
             });
         }
-        for (res, i) in rx.iter() {
+        for (res, i) in rx.iter().take(n_jobs) {
             if let Some(result) = res {
                 let (toli, dt) = result;
                 if tol < toli {
