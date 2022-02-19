@@ -129,6 +129,87 @@ pub fn aberth(pa: &Vec<f64>, zs: &mut Vec<Complex<f64>>, options: &Options) -> (
  * @param[in] options maximum iterations and tolorance
  * @return (usize, bool)
  */
-pub fn aberth_th(pa: &Vec<f64>, zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
-    unimplemented!()
+pub fn aberth_th(pa: Vec<f64>, mut zs: Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
+    use std::sync::mpsc::channel;
+    use std::sync::Arc;
+    use threadpool::ThreadPool;
+
+    let n_workers = 4; // assume 4 cores
+
+    let m = zs.len();
+    let n = pa.len() - 1; // degree, assume even
+    let mut pb = vec![0.0; n];
+    let n = pa.len() - 1; // degree, assume even
+    for k in 0..n {
+        pb[k] = pa[k] * (n - k) as f64;
+    }
+    let pb = pb; // make imutatable
+    let pa_share = Arc::new(pa);
+    let pb_share = Arc::new(pb);
+    let zs_share = Arc::new(zs);
+
+    let mut found = false;
+    let mut converged = vec![false; m];
+
+    let mut niter: usize = 0;
+    while niter < options.max_iter {
+        niter += 1;
+
+        let mut tol = 0.0;
+        let (tx, rx) = channel();
+        let pool = ThreadPool::new(n_workers);
+        let mut n_jobs = 0;
+
+        for i in 0..m {
+            if converged[i] {
+                continue;
+            }
+            let tx = tx.clone();
+            // let zi = Complex::<f64>::default();
+            let pa_clone = Arc::clone(&pa_share);
+            let pb_clone = Arc::clone(&pb_share);
+            let zs_clone = Arc::clone(&zs_share);
+    
+            // let zs_ref = &zs;
+            // let pa_ref = &pa;
+            // let pb_ref = &pb;
+            n_jobs += 1;
+            pool.execute(move || {
+                let zi = zs_clone[i];
+                let pp = horner_eval_c(&pa_clone, &zi);
+                let tol_i = pp.l1_norm(); // ???
+                if tol_i < 1e-15 {
+                    tx.send((None, i))
+                        .expect("channel will be there waiting for a pool");
+                }
+                let mut pp1 = horner_eval_c(&pb_clone, &zi);
+                for (j, zj) in zs_clone.iter().enumerate() {
+                    // exclude i
+                    if j == i {
+                        continue;
+                    }
+                    pp1 -= pp / (zi - zj);
+                }
+                // zs[i] -= pp / pp1; // Gauss-Seidel fashion
+                tx.send((Some(tol_i), i))
+                    .expect("channel will be there waiting for a pool");
+            });
+        }
+        for (res, i) in rx.iter().take(n_jobs) {
+            if let Some(result) = res {
+                let toli = result;
+                if tol < toli {
+                    tol = toli;
+                }
+                // vrs[i] -= dt;
+            } else {
+                converged[i] = true;
+            }
+        }
+        if tol < options.tol {
+            found = true;
+            break;
+        }
+    }
+    (niter, found)
 }
