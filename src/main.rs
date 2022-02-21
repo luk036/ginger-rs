@@ -11,7 +11,7 @@ use crate::rootfinding::{
 };
 
 mod aberth;
-use crate::aberth::{aberth, initial_aberth};
+use crate::aberth::{aberth, aberth_th, initial_aberth};
 
 fn main() {
     let a = Vector2::<f64>::new(1.2, 2.3);
@@ -63,10 +63,19 @@ fn main() {
     println!("{}", niter);
 
     let mut vrs = initial_autocorr(&pa);
-    let _res = pbairstow_autocorr_th(&pa, &mut vrs, &options);
+    let (niter, _found) = pbairstow_autocorr_th(&pa, &mut vrs, &options);
     println!("{}", niter);
 
-    let mut vrs = initial_aberth(&pa);
-    let _res = aberth(&pa, &mut vrs, &options);
+    let options = Options {
+        max_iter: 2000,
+        tol: 1e-12,
+    };
+
+    let mut zs = initial_aberth(&pa);
+    let (niter, _found) = aberth(&pa, &mut zs, &options);
+    println!("{}", niter);
+
+    let mut zs = initial_aberth(&pa);
+    let (niter, _found) = aberth_th(&pa, &mut zs, &options);
     println!("{}", niter);
 }

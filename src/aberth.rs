@@ -144,11 +144,10 @@ pub fn aberth_th(pa: &Vec<f64>, zs: &mut Vec<Complex<f64>>, options: &Options) -
         pb[k] = pa[k] * (n - k) as f64;
     }
     let pb = pb; // make imutatable
-    let pac = pa.clone();
-    let mut zsc = zs.clone();
-    let pa_share = Arc::new(pac);
+    // let mut zsc = zs.clone();
+    let pa_share = Arc::new(pa.clone());
     let pb_share = Arc::new(pb);
-    let zs_share = Arc::new(Mutex::new(zsc));
+    // let zs_share = Arc::new(Mutex::new(&zs));
 
     let mut found = false;
     let mut converged = vec![false; m];
@@ -167,17 +166,16 @@ pub fn aberth_th(pa: &Vec<f64>, zs: &mut Vec<Complex<f64>>, options: &Options) -
                 continue;
             }
             let tx = tx.clone();
+            let zsc = zs.clone();
+            // let pac = pa.clone();
             // let zi = Complex::<f64>::default();
             let pa_clone = Arc::clone(&pa_share);
             let pb_clone = Arc::clone(&pb_share);
-            let zs_clone = Arc::clone(&zs_share);
+            // let zs_clone = Arc::clone(&zs_share);
     
-            // let zs_ref = &zs;
-            // let pa_ref = &pa;
-            // let pb_ref = &pb;
             n_jobs += 1;
             pool.execute(move || {
-                let zi = zs_clone[i];
+                let zi = zsc[i];
                 let pp = horner_eval_c(&pa_clone, &zi);
                 let tol_i = pp.l1_norm(); // ???
                 if tol_i < 1e-15 {
@@ -185,7 +183,7 @@ pub fn aberth_th(pa: &Vec<f64>, zs: &mut Vec<Complex<f64>>, options: &Options) -
                         .expect("channel will be there waiting for a pool");
                 } else {
                     let mut pp1 = horner_eval_c(&pb_clone, &zi);
-                    for (j, zj) in zs_clone.iter().enumerate() {
+                    for (j, zj) in zsc.iter().enumerate() {
                         // exclude i
                         if j == i {
                             continue;
@@ -193,20 +191,19 @@ pub fn aberth_th(pa: &Vec<f64>, zs: &mut Vec<Complex<f64>>, options: &Options) -
                         pp1 -= pp / (zi - zj);
                     }
                     let dt = pp / pp1; // Gauss-Seidel fashion
-
                     tx.send((Some((tol_i, dt)), i))
                         .expect("channel will be there waiting for a pool");
                 }
             });
         }
-        let mut zsw = zs_share.lock().unwrap();
+        // let mut zsw = zs_share.lock().unwrap();
         for (res, i) in rx.iter().take(n_jobs) {
             if let Some(result) = res {
                 let (toli, dt) = result;
                 if tol < toli {
                     tol = toli;
                 }
-                zsw[i] -= dt;
+                zs[i] -= dt;
             } else {
                 converged[i] = true;
             }
