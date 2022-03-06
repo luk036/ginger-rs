@@ -13,8 +13,8 @@ pub struct Options {
 /**
  * @brief
  *
- * @param[in] vr
- * @param[in] vp
+ * @param vr
+ * @param vp
  * @return Mat2
  */
 #[inline]
@@ -30,9 +30,9 @@ pub fn makeadjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
 /**
  * @brief
  *
- * @param[in] vaa
- * @param[in] vr
- * @param[in] vp
+ * @param vaa
+ * @param vr
+ * @param vp
  * @return Mat2
  */
 #[inline]
@@ -44,9 +44,9 @@ pub fn delta(vaa: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
 /**
  * @brief
  *
- * @param[in,out] pb
- * @param[in] n
- * @param[in] r
+ * @param pb
+ * @param n
+ * @param r
  * @return f64
  */
 #[inline]
@@ -60,9 +60,9 @@ pub fn horner_eval(pb: &mut [f64], n: usize, z: f64) -> f64 {
 /**
  * @brief
  *
- * @param[in,out] pb
- * @param[in] n
- * @param[in] vr
+ * @param pb
+ * @param n
+ * @param vr
  * @return Vec2
  */
 pub fn horner(pb: &mut [f64], n: usize, vr: &Vec2) -> Vec2 {
@@ -78,7 +78,7 @@ pub fn horner(pb: &mut [f64], n: usize, vr: &Vec2) -> Vec2 {
 /**
  * @brief
  *
- * @param[in] pa
+ * @param pa
  * @return Vec<Vec2>
  */
 pub fn initial_guess(pa: &[f64]) -> Vec<Vec2> {
@@ -104,9 +104,9 @@ pub fn initial_guess(pa: &[f64]) -> Vec<Vec2> {
 /**
  * @brief Multi-threading Bairstow's method (even degree only)
  *
- * @param[in] pa polynomial
- * @param[in,out] vrs vector of iterates
- * @param[in] options maximum iterations and tolorance
+ * @param pa polynomial
+ * @param vrs vector of iterates
+ * @param options maximum iterations and tolorance
  * @return (usize, bool)
  */
 pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
@@ -168,9 +168,9 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
 /**
  * @brief Multi-threading Bairstow's method (even degree only)
  *
- * @param[in] pa polynomial
- * @param[in,out] vrs vector of iterates
- * @param[in] options maximum iterations and tolorance
+ * @param pa polynomial
+ * @param vrs vector of iterates
+ * @param options maximum iterations and tolorance
  * @return (usize, bool)
  */
 pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
@@ -245,7 +245,7 @@ pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> 
 /**
  * @brief initial guess (specific for let-correlation function)
  *
- * @param[in] pa
+ * @param pa
  * @return Vec<Vec2>
  */
 pub fn initial_autocorr(pa: &[f64]) -> Vec<Vec2> {
@@ -264,9 +264,9 @@ pub fn initial_autocorr(pa: &[f64]) -> Vec<Vec2> {
 /**
  * @brief Multi-threading Bairstow's method (specific for let-correlation function)
  *
- * @param[in] pa polynomial
- * @param[in,out] vrs vector of iterates
- * @param[in] options maximum iterations and tolorance
+ * @param pa polynomial
+ * @param vrs vector of iterates
+ * @param options maximum iterations and tolorance
  * @return (usize, bool)
  */
 pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
@@ -324,9 +324,9 @@ pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
 /**
  * @brief Multi-threading Bairstow's method (specific for let-correlation function)
  *
- * @param[in] pa polynomial
- * @param[in,out] vrs vector of iterates
- * @param[in] options maximum iterations and tolorance
+ * @param pa polynomial
+ * @param vrs vector of iterates
+ * @param options maximum iterations and tolorance
  * @return (usize, bool)
  */
 pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
@@ -407,7 +407,7 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
  *   x^2 + r*x + t or x^2 + (r/t) * x + (1/t)
  *   (x + a1)(x + a2) = x^2 + (a1 + a2) x + a1 * a2
  *
- * @param[in,out] vr
+ * @param vr
  */
 #[allow(dead_code)]
 pub fn extract_autocorr(vr: Vec2) -> Vec2 {

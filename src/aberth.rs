@@ -6,9 +6,9 @@ const TWO_PI: f64 = std::f64::consts::TAU;
 /**
  * @brief
  *
- * @param[in,out] pb
- * @param[in] n
- * @param[in] r
+ * @param pb
+ * @param n
+ * @param r
  * @return f64
  */
 pub fn horner_eval_c(pb: &[f64], z: &Complex<f64>) -> Complex<f64> {
@@ -23,9 +23,9 @@ pub fn horner_eval_c(pb: &[f64], z: &Complex<f64>) -> Complex<f64> {
 /**
  * @brief
  *
- * @param[in,out] pb
- * @param[in] n
- * @param[in] r
+ * @param pb
+ * @param n
+ * @param r
  * @return f64
  */
 pub fn horner_eval_f(pb: &[f64], z: &f64) -> f64 {
@@ -39,7 +39,7 @@ pub fn horner_eval_f(pb: &[f64], z: &f64) -> f64 {
 /**
  * @brief
  *
- * @param[in] pa
+ * @param pa
  * @return Vec<Vec2>
  */
 pub fn initial_aberth(pa: &[f64]) -> Vec<Complex<f64>> {
@@ -60,9 +60,9 @@ pub fn initial_aberth(pa: &[f64]) -> Vec<Complex<f64>> {
 /**
  * @brief Multi-threading Bairstow's method (even degree only)
  *
- * @param[in] pa polynomial
- * @param[in,out] zs vector of iterates
- * @param[in] options maximum iterations and tolorance
+ * @param pa polynomial
+ * @param zs vector of iterates
+ * @param options maximum iterations and tolorance
  * @return (usize, bool)
  */
 pub fn aberth(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
@@ -123,9 +123,9 @@ pub fn aberth(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usi
 /**
  * @brief Multi-threading Bairstow's method (even degree only)
  *
- * @param[in] pa polynomial
- * @param[in,out] zs vector of iterates
- * @param[in] options maximum iterations and tolorance
+ * @param pa polynomial
+ * @param zs vector of iterates
+ * @param options maximum iterations and tolorance
  * @return (usize, bool)
  */
 pub fn aberth_th(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
