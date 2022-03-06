@@ -13,9 +13,9 @@ const TWO_PI: f64 = std::f64::consts::TAU;
  */
 pub fn horner_eval_c(pb: &[f64], z: &Complex<f64>) -> Complex<f64> {
     let mut ans = Complex::<f64>::new(pb[0], 0.0);
-    for i in 1..pb.len() {
+    for coeff in pb.iter().skip(1) {
         ans *= z;
-        ans += pb[i];
+        ans += coeff;
     }
     ans
 }
@@ -30,8 +30,8 @@ pub fn horner_eval_c(pb: &[f64], z: &Complex<f64>) -> Complex<f64> {
  */
 pub fn horner_eval_f(pb: &[f64], z: &f64) -> f64 {
     let mut ans = pb[0];
-    for i in 1..pb.len() {
-        ans = ans * z + pb[i];
+    for coeff in pb.iter().skip(1) {
+        ans = ans * z + coeff;
     }
     ans
 }
@@ -65,7 +65,7 @@ pub fn initial_aberth(pa: &[f64]) -> Vec<Complex<f64>> {
  * @param[in] options maximum iterations and tolorance
  * @return (usize, bool)
  */
-pub fn aberth(pa: &Vec<f64>, zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
+pub fn aberth(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
     let m = zs.len();
     let n = pa.len() - 1; // degree, assume even
     let mut found = false;
@@ -95,12 +95,11 @@ pub fn aberth(pa: &Vec<f64>, zs: &mut Vec<Complex<f64>>, options: &Options) -> (
                     rx.push(tol_i);
                 }
                 let mut pp1 = horner_eval_c(&pb, zi);
-                for j in 0..m {
+                for (j, zj) in zs.iter().enumerate().take(m) {
                     // exclude i
                     if j == i {
                         continue;
                     }
-                    let zj = zs[j]; // make a copy, don't reference!
                     pp1 -= pp / (zi - zj);
                 }
                 zs[i] -= pp / pp1; // Gauss-Seidel fashion
@@ -129,9 +128,9 @@ pub fn aberth(pa: &Vec<f64>, zs: &mut Vec<Complex<f64>>, options: &Options) -> (
  * @param[in] options maximum iterations and tolorance
  * @return (usize, bool)
  */
-pub fn aberth_th(pa: &Vec<f64>, zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
+pub fn aberth_th(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
     use std::sync::mpsc::channel;
-    use std::sync::{Arc};
+    use std::sync::Arc;
     use threadpool::ThreadPool;
 
     let n_workers = 4; // assume 4 cores
@@ -145,7 +144,7 @@ pub fn aberth_th(pa: &Vec<f64>, zs: &mut Vec<Complex<f64>>, options: &Options) -
     }
     let pb = pb; // make imutatable
     // let mut zsc = zs.clone();
-    let pa_share = Arc::new(pa.clone());
+    let pa_share = Arc::new(pa.to_owned());
     let pb_share = Arc::new(pb);
     // let zs_share = Arc::new(Mutex::new(&zs));
 

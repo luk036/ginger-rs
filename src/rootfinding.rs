@@ -173,7 +173,7 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
  * @param[in] options maximum iterations and tolorance
  * @return (usize, bool)
  */
-pub fn pbairstow_even_th(pa: &Vec<f64>, vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
+pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
     use std::sync::mpsc::channel;
     use threadpool::ThreadPool;
     let n_workers = 4; // assume 4 cores
@@ -196,7 +196,7 @@ pub fn pbairstow_even_th(pa: &Vec<f64>, vrs: &mut Vec<Vec2>, options: &Options) 
             }
             let tx = tx.clone();
             let vrsc = vrs.clone();
-            let mut pb = pa.clone();
+            let mut pb = pa.to_owned();
 
             n_jobs += 1;
             pool.execute(move || {
@@ -409,6 +409,7 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
  *
  * @param[in,out] vr
  */
+#[allow(dead_code)]
 pub fn extract_autocorr(vr: Vec2) -> Vec2 {
     let Vec2 { x_: r, y_: t } = vr;
     let hr = r / 2.0;
