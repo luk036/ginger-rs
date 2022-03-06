@@ -131,7 +131,7 @@ pub fn aberth(pa: &Vec<f64>, zs: &mut Vec<Complex<f64>>, options: &Options) -> (
  */
 pub fn aberth_th(pa: &Vec<f64>, zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
     use std::sync::mpsc::channel;
-    use std::sync::{Mutex, Arc};
+    use std::sync::{Arc};
     use threadpool::ThreadPool;
 
     let n_workers = 4; // assume 4 cores
