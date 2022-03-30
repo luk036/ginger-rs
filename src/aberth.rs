@@ -143,7 +143,7 @@ pub fn aberth_th(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (
         pb[k] = pa[k] * (n - k) as f64;
     }
     let pb = pb; // make imutatable
-    // let mut zsc = zs.clone();
+                 // let mut zsc = zs.clone();
     let pa_share = Arc::new(pa.to_owned());
     let pb_share = Arc::new(pb);
     // let zs_share = Arc::new(Mutex::new(&zs));
@@ -171,7 +171,7 @@ pub fn aberth_th(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (
             let pa_clone = Arc::clone(&pa_share);
             let pb_clone = Arc::clone(&pb_share);
             // let zs_clone = Arc::clone(&zs_share);
-    
+
             n_jobs += 1;
             pool.execute(move || {
                 let zi = zsc[i];
