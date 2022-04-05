@@ -1,5 +1,6 @@
 use super::Options;
 use num::Complex;
+// use lds_rs::lds::Circle;
 
 const TWO_PI: f64 = std::f64::consts::TAU;
 
@@ -68,17 +69,12 @@ pub fn initial_aberth(pa: &[f64]) -> Vec<Complex<f64>> {
 pub fn aberth(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
     let m = zs.len();
     let n = pa.len() - 1; // degree, assume even
-    let mut found = false;
     let mut converged = vec![false; m];
     let mut pb = vec![0.0; n];
     for i in 0..n {
         pb[i] = pa[i] * (n - i) as f64;
     }
-
-    let mut niter: usize = 0;
-    while niter < options.max_iter {
-        niter += 1;
-
+    for niter in 0..options.max_iter {
         let mut tol = 0.0;
         let mut rx = vec![];
 
@@ -113,11 +109,10 @@ pub fn aberth(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usi
             }
         }
         if tol < options.tol {
-            found = true;
-            break;
+            return (niter, true)
         }
     }
-    (niter, found)
+    (options.max_iter, false)
 }
 
 /**
@@ -148,13 +143,9 @@ pub fn aberth_th(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (
     let pb_share = Arc::new(pb);
     // let zs_share = Arc::new(Mutex::new(&zs));
 
-    let mut found = false;
     let mut converged = vec![false; m];
 
-    let mut niter: usize = 0;
-    while niter < options.max_iter {
-        niter += 1;
-
+    for niter in 0..options.max_iter {
         let mut tol = 0.0;
         let (tx, rx) = channel();
         let pool = ThreadPool::new(n_workers);
@@ -208,9 +199,8 @@ pub fn aberth_th(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (
             }
         }
         if tol < options.tol {
-            found = true;
-            break;
+            return (niter, true);
         }
     }
-    (niter, found)
+    (options.max_iter, false)
 }

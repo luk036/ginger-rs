@@ -112,13 +112,9 @@ pub fn initial_guess(pa: &[f64]) -> Vec<Vec2> {
 pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
     // let n = pa.len() - 1; // degree, assume even
     let m = vrs.len();
-    let mut found = false;
     let mut converged = vec![false; m];
 
-    let mut niter: usize = 0;
-    while niter != options.max_iter {
-        niter += 1;
-
+    for niter in 1..options.max_iter {
         let mut tol = 0.0;
         let mut rx = vec![];
 
@@ -158,11 +154,10 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
             }
         }
         if tol < options.tol {
-            found = true;
-            break;
+            return (niter, true);
         }
     }
-    (niter, found)
+    (options.max_iter, false)
 }
 
 /**
@@ -176,24 +171,20 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
 pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
     use std::sync::mpsc::channel;
     use threadpool::ThreadPool;
-    let n_workers = 4; // assume 4 cores
 
+    let n_workers = 4; // assume 4 cores
     let m = vrs.len();
-    let mut found = false;
     let mut converged = vec![false; m];
 
-    let mut niter: usize = 0;
-    while niter != options.max_iter {
-        niter += 1;
-
+    for niter in 1..options.max_iter {
         let mut tol = 0.0;
         let (tx, rx) = channel();
         let pool = ThreadPool::new(n_workers);
         let mut n_jobs = 0;
-        for i in 0..m {
-            if converged[i] {
-                continue;
-            }
+        for i in (0..m).filter(|x| !converged[*x] ) {
+            // if converged[i] {
+            //     continue;
+            // }
             let tx = tx.clone();
             let vrsc = vrs.clone();
             let mut pb = pa.to_owned();
@@ -235,11 +226,10 @@ pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> 
             }
         }
         if tol < options.tol {
-            found = true;
-            break;
+            return (niter, true);
         }
     }
-    (niter, found)
+    (options.max_iter, false)
 }
 
 /**
@@ -271,13 +261,9 @@ pub fn initial_autocorr(pa: &[f64]) -> Vec<Vec2> {
  */
 pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
     let m = vrs.len();
-    let mut found = false;
     let mut converged = vec![false; m];
 
-    let mut niter: usize = 0;
-    while niter != options.max_iter {
-        niter += 1;
-
+    for niter in 1..options.max_iter {
         let mut tol = 0.0;
 
         for i in 0..m {
@@ -295,10 +281,7 @@ pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
                     return tol_i;
                 }
                 let mut vaa1 = horner(&mut pb, n - 2, &vri);
-                for (j, vrj) in vrs.iter().enumerate() {
-                    if j == i {
-                        continue;
-                    }
+                for (_j, vrj) in vrs.iter().enumerate().filter(|t| t.0 != i) {
                     vaa1 -= delta(&vaa, vrj, &(vri - vrj));
                     let vrjn = Vector2::<f64>::new(vrj.x_, 1.0) / vrj.y_;
                     vaa1 -= delta(&vaa, &vrjn, &(vri - vrjn));
@@ -314,11 +297,10 @@ pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
             }
         }
         if tol < options.tol {
-            found = true;
-            break;
+            return (niter, true);
         }
     }
-    (niter, found)
+    (options.max_iter, false)
 }
 
 /**
@@ -334,23 +316,16 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
     use threadpool::ThreadPool;
 
     let m = vrs.len();
-    let mut found = false;
     let n_workers = 4; // assume 4 cores
     let (tx, rx) = channel();
     let pool = ThreadPool::new(n_workers);
     let mut converged = vec![false; m];
 
-    let mut niter: usize = 0;
-    while niter != options.max_iter {
-        niter += 1;
-
+    for niter in 1..options.max_iter {
         let mut tol = 0.0;
         let mut n_jobs = 0;
 
-        for i in 0..m {
-            if converged[i] {
-                continue;
-            }
+        for i in (0..m).filter(|x| !converged[*x] ) {
             let tx = tx.clone();
             let vrsc = vrs.clone();
             let mut pb = pa.to_owned();
@@ -367,11 +342,8 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
                     return;
                 }
                 let mut vaa1 = horner(&mut pb, n - 2, &vri);
-                for (j, vrj) in vrsc.iter().enumerate() {
-                    if j == i {
-                        continue;
-                    }
-                    vaa1 -= delta(&vaa, vrj, &(vri - vrj));
+                for (_j, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
+                    vaa1 -= delta(&vaa, vrj, &(vri - vrj)); 
                     let vrjn = Vector2::<f64>::new(vrj.x_, 1.0) / vrj.y_;
                     vaa1 -= delta(&vaa, &vrjn, &(vri - vrjn));
                 }
@@ -394,11 +366,10 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
             }
         }
         if tol < options.tol {
-            found = true;
-            break;
+            return (niter, true);
         }
     }
-    (niter, found)
+    (options.max_iter, false)
 }
 
 /**
