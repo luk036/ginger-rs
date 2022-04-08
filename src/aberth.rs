@@ -91,11 +91,7 @@ pub fn aberth(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usi
                     rx.push(tol_i);
                 }
                 let mut pp1 = horner_eval_c(&pb, zi);
-                for (j, zj) in zs.iter().enumerate().take(m) {
-                    // exclude i
-                    if j == i {
-                        continue;
-                    }
+                for (_, zj) in zs.iter().enumerate().filter(|t| t.0 != i) {
                     pp1 -= pp / (zi - zj);
                 }
                 zs[i] -= pp / pp1; // Gauss-Seidel fashion
@@ -109,7 +105,7 @@ pub fn aberth(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usi
             }
         }
         if tol < options.tol {
-            return (niter, true)
+            return (niter, true);
         }
     }
     (options.max_iter, false)
@@ -137,8 +133,8 @@ pub fn aberth_th(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (
     for k in 0..n {
         pb[k] = pa[k] * (n - k) as f64;
     }
+    // let mut zsc = zs.clone();
     let pb = pb; // make imutatable
-                 // let mut zsc = zs.clone();
     let pa_share = Arc::new(pa.to_owned());
     let pb_share = Arc::new(pb);
     // let zs_share = Arc::new(Mutex::new(&zs));

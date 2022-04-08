@@ -181,7 +181,7 @@ pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> 
         let (tx, rx) = channel();
         let pool = ThreadPool::new(n_workers);
         let mut n_jobs = 0;
-        for i in (0..m).filter(|x| !converged[*x] ) {
+        for i in (0..m).filter(|x| !converged[*x]) {
             // if converged[i] {
             //     continue;
             // }
@@ -201,11 +201,7 @@ pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> 
                         .expect("channel will be there waiting for a pool");
                 } else {
                     let mut vaa1 = horner(&mut pb, n - 2, &vri);
-                    for (j, vrj) in vrsc.iter().enumerate() {
-                        // exclude i
-                        if j == i {
-                            continue;
-                        }
+                    for (_, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
                         vaa1 -= delta(&vaa, vrj, &(vri - vrj));
                     }
                     let dt = delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
@@ -325,7 +321,7 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
         let mut tol = 0.0;
         let mut n_jobs = 0;
 
-        for i in (0..m).filter(|x| !converged[*x] ) {
+        for i in (0..m).filter(|x| !converged[*x]) {
             let tx = tx.clone();
             let vrsc = vrs.clone();
             let mut pb = pa.to_owned();
@@ -343,7 +339,7 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
                 }
                 let mut vaa1 = horner(&mut pb, n - 2, &vri);
                 for (_j, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
-                    vaa1 -= delta(&vaa, vrj, &(vri - vrj)); 
+                    vaa1 -= delta(&vaa, vrj, &(vri - vrj));
                     let vrjn = Vector2::<f64>::new(vrj.x_, 1.0) / vrj.y_;
                     vaa1 -= delta(&vaa, &vrjn, &(vri - vrjn));
                 }
