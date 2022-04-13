@@ -7,7 +7,7 @@ pub use crate::aberth::{aberth, aberth_th, initial_aberth};
 pub use crate::matrix2::Matrix2;
 pub use crate::rootfinding::{
     initial_autocorr, initial_guess, pbairstow_autocorr, pbairstow_autocorr_th, pbairstow_even,
-    pbairstow_even_th, Options,
+    pbairstow_even_th, Options, horner_eval,
 };
 pub use crate::vector2::Vector2;
 

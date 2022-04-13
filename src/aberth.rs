@@ -21,14 +21,8 @@ pub fn horner_eval_c(pb: &[f64], z: &Complex<f64>) -> Complex<f64> {
     ans
 }
 
-/**
- * @brief
- *
- * @param pb
- * @param n
- * @param r
- * @return f64
- */
+/// Horner evaluation (float)
+///
 pub fn horner_eval_f(pb: &[f64], z: &f64) -> f64 {
     let mut ans = pb[0];
     for coeff in pb.iter().skip(1) {

@@ -10,6 +10,12 @@ pub struct Options {
     pub tol: f64,
 }
 
+impl Default for Options {
+    fn default() -> Self {
+        Options { max_iter: 2000, tol: 1e-12 }
+    } 
+}
+
 /**
  * @brief
  *
@@ -27,28 +33,40 @@ pub fn makeadjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
     )
 }
 
-/**
- * @brief
- *
- * @param vaa
- * @param vr
- * @param vp
- * @return Mat2
- */
+/// Extract the quadratic function where its roots are within a unit circle
+///
+/// r * p - m   -p
+/// q * p       -m
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::rootfinding::delta;
+/// use bairstow::vector2::Vector2;
+/// 
+/// let vd = delta(&Vector2::new(1.0, 2.0), &Vector2::new(2.0, 0.0), &Vector2::new(4.0, 5.0));
+///
+/// assert_eq!(vd, Vector2::new(-0.2, -0.4));
+/// ```
 #[inline]
 pub fn delta(vaa: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
     let mp = makeadjoint(vr, vp); // 2 mul's
     mp.mdot(vaa) / mp.det() // 6 mul's + 2 div's
 }
 
-/**
- * @brief
- *
- * @param pb
- * @param n
- * @param r
- * @return f64
- */
+/// Horner evalution
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::rootfinding::horner_eval;
+/// 
+/// let mut pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let px = horner_eval(&mut pa, 8, 2.0);
+///
+/// assert_eq!(px, 18250.0);
+/// assert_eq!(pa[3], 460.0);
+/// ```
 #[inline]
 pub fn horner_eval(pb: &mut [f64], n: usize, z: f64) -> f64 {
     for i in 0..n {
@@ -57,14 +75,20 @@ pub fn horner_eval(pb: &mut [f64], n: usize, z: f64) -> f64 {
     pb[n]
 }
 
-/**
- * @brief
- *
- * @param pb
- * @param n
- * @param vr
- * @return Vec2
- */
+/// Horner evalution for Bairstow's method
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::rootfinding::horner;
+/// use bairstow::vector2::Vector2;
+/// 
+/// let mut pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let px = horner(&mut pa, 8, &Vector2::new(1.0, 2.0));
+///
+/// assert_eq!(px, Vector2::new(114.0, 134.0));
+/// assert_eq!(pa[3], 15.0);           
+/// ```
 pub fn horner(pb: &mut [f64], n: usize, vr: &Vec2) -> Vec2 {
     let Vec2 { x_: r, y_: t } = vr;
     pb[1] -= pb[0] * r;
@@ -75,12 +99,19 @@ pub fn horner(pb: &mut [f64], n: usize, vr: &Vec2) -> Vec2 {
     Vector2::<f64>::new(pb[n - 1], pb[n])
 }
 
-/**
- * @brief
- *
- * @param pa
- * @return Vec<Vec2>
- */
+/// Initial guess for Bairstow's method
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::rootfinding::initial_guess;
+/// use bairstow::vector2::Vector2;
+/// 
+/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let vr0s = initial_guess(&pa);
+///
+/// assert_eq!(vr0s[0], Vector2::new(-1.4537520283010816, 0.7559947795353074));
+/// ```
 pub fn initial_guess(pa: &[f64]) -> Vec<Vec2> {
     let mut n = pa.len() - 1;
     let c = -pa[1] / (pa[0] * n as f64);
@@ -101,56 +132,50 @@ pub fn initial_guess(pa: &[f64]) -> Vec<Vec2> {
     vr0s
 }
 
-/**
- * @brief Multi-threading Bairstow's method (even degree only)
- *
- * @param pa polynomial
- * @param vrs vector of iterates
- * @param options maximum iterations and tolorance
- * @return (usize, bool)
- */
+/// Bairstow's method (even degree only)
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::rootfinding::{initial_guess, pbairstow_even, Options};
+/// 
+/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let mut vrs = initial_guess(&pa);
+/// let (niter, _found) = pbairstow_even(&pa, &mut vrs, &Options::default());
+///
+/// assert_eq!(niter, 9);
+/// ```
 pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
-    // let n = pa.len() - 1; // degree, assume even
+    let n = pa.len() - 1; // degree, assume even
     let m = vrs.len();
     let mut converged = vec![false; m];
 
     for niter in 1..options.max_iter {
         let mut tol = 0.0;
-        let mut rx = vec![];
-
         for i in 0..m {
             if converged[i] {
                 continue;
             }
-            let mut job = || {
-                let mut pb = pa.to_owned();
-                let n = pa.len() - 1; // degree, assume even
-                let vri = vrs[i];
-                let vaa = horner(&mut pb, n, &vri);
-                let tol_i = vaa.norm_inf();
-                if tol_i < 1e-15 {
-                    converged[i] = true;
-                    rx.push(tol_i);
-                } else {
-                    let mut vaa1 = horner(&mut pb, n - 2, &vri);
-                    for (j, vrj) in vrs.iter().enumerate() {
-                        // exclude i
-                        if j == i {
-                            continue;
-                        }
-                        vaa1 -= delta(&vaa, vrj, &(vri - vrj));
-                    }
-                    vrs[i] -= delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
-                    rx.push(tol_i);
+            let mut pb = pa.to_owned();
+            let vri = vrs[i];
+            let vaa = &horner(&mut pb, n, &vri);
+            let tol_i = vaa.norm_inf();
+            if tol_i < 1e-15 {
+                converged[i] = true;
+                continue;
+            } else {
+                let mut vaa1 = horner(&mut pb, n - 2, &vri);
+                if tol < tol_i {
+                    tol = tol_i;
                 }
-            };
-
-            job();
-            // }));
-        }
-        for result in rx.iter() {
-            if tol < *result {
-                tol = *result;
+                for j in 0..m {
+                    if j == i {
+                        continue;
+                    }
+                    let vrj = vrs[j];
+                    vaa1 -= delta(vaa, &vrj, &(vri - vrj));
+                }
+                vrs[i] -= delta(vaa, &vri, &vaa1); // Gauss-Seidel fashion
             }
         }
         if tol < options.tol {
@@ -160,14 +185,19 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
     (options.max_iter, false)
 }
 
-/**
- * @brief Multi-threading Bairstow's method (even degree only)
- *
- * @param pa polynomial
- * @param vrs vector of iterates
- * @param options maximum iterations and tolorance
- * @return (usize, bool)
- */
+/// Multi-threading Bairstow's method (even degree only)
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::rootfinding::{initial_guess, pbairstow_even_th, Options};
+/// 
+/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let mut vrs = initial_guess(&pa);
+/// let (niter, _found) = pbairstow_even_th(&pa, &mut vrs, &Options::default());
+///
+/// assert_eq!(niter, 7);
+/// ```
 pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
     use std::sync::mpsc::channel;
     use threadpool::ThreadPool;
@@ -228,12 +258,19 @@ pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> 
     (options.max_iter, false)
 }
 
-/**
- * @brief initial guess (specific for let-correlation function)
- *
- * @param pa
- * @return Vec<Vec2>
- */
+/// Initial guess for Bairstow's method (specific for auto-correlation function)
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::rootfinding::initial_autocorr;
+/// use bairstow::vector2::Vector2;
+/// 
+/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let vr0s = initial_autocorr(&pa);
+///
+/// assert_eq!(vr0s[0], Vector2::new(-1.8858840950805662, 1.7782794100389228));
+/// ```
 pub fn initial_autocorr(pa: &[f64]) -> Vec<Vec2> {
     let mut n = pa.len() - 1;
     let re = (pa[n].abs() as f64).powf(1.0 / (n as f64));
@@ -247,14 +284,19 @@ pub fn initial_autocorr(pa: &[f64]) -> Vec<Vec2> {
     vr0s
 }
 
-/**
- * @brief Multi-threading Bairstow's method (specific for let-correlation function)
- *
- * @param pa polynomial
- * @param vrs vector of iterates
- * @param options maximum iterations and tolorance
- * @return (usize, bool)
- */
+/// Simultenous Bairstow's method (specific for auto-correlation function)
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::rootfinding::{initial_autocorr, pbairstow_autocorr, Options};
+/// 
+/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let mut vrs = initial_autocorr(&pa);
+/// let (niter, _found) = pbairstow_autocorr(&pa, &mut vrs, &Options::default());
+///
+/// assert_eq!(niter, 5);
+/// ```
 pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
     let m = vrs.len();
     let mut converged = vec![false; m];
@@ -299,14 +341,19 @@ pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
     (options.max_iter, false)
 }
 
-/**
- * @brief Multi-threading Bairstow's method (specific for let-correlation function)
- *
- * @param pa polynomial
- * @param vrs vector of iterates
- * @param options maximum iterations and tolorance
- * @return (usize, bool)
- */
+/// Multi-threading Bairstow's method (specific for auto-correlation function)
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::rootfinding::{initial_autocorr, pbairstow_autocorr_th, Options};
+/// 
+/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let mut vrs = initial_autocorr(&pa);
+/// let (niter, _found) = pbairstow_autocorr_th(&pa, &mut vrs, &Options::default());
+///
+/// assert_eq!(niter, 5);
+/// ```
 pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
     use std::sync::mpsc::channel;
     use threadpool::ThreadPool;
@@ -368,14 +415,21 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
     (options.max_iter, false)
 }
 
-/**
- * @brief Extract the quadratic function where its roots are within a unit circle
- *
- *   x^2 + r*x + t or x^2 + (r/t) * x + (1/t)
- *   (x + a1)(x + a2) = x^2 + (a1 + a2) x + a1 * a2
- *
- * @param vr
- */
+/// Extract the quadratic function where its roots are within a unit circle
+///
+/// x^2 + r*x + t or x^2 + (r/t) * x + (1/t)
+/// (x + a1)(x + a2) = x^2 + (a1 + a2) x + a1 * a2
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::rootfinding::extract_autocorr;
+/// use bairstow::vector2::Vector2;
+/// 
+/// let vr = extract_autocorr(Vector2::new(-1.0, 4.0));
+///
+/// assert_eq!(vr, Vector2::new(-0.25, 0.25));
+/// ```
 #[allow(dead_code)]
 pub fn extract_autocorr(vr: Vec2) -> Vec2 {
     let Vec2 { x_: r, y_: t } = vr;
