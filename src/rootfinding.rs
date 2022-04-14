@@ -12,8 +12,11 @@ pub struct Options {
 
 impl Default for Options {
     fn default() -> Self {
-        Options { max_iter: 2000, tol: 1e-12 }
-    } 
+        Options {
+            max_iter: 2000,
+            tol: 1e-12,
+        }
+    }
 }
 
 /**
@@ -43,7 +46,7 @@ pub fn makeadjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
 /// ```
 /// use bairstow::rootfinding::delta;
 /// use bairstow::vector2::Vector2;
-/// 
+///
 /// let vd = delta(&Vector2::new(1.0, 2.0), &Vector2::new(2.0, 0.0), &Vector2::new(4.0, 5.0));
 ///
 /// assert_eq!(vd, Vector2::new(-0.2, -0.4));
@@ -60,12 +63,13 @@ pub fn delta(vaa: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
 ///
 /// ```
 /// use bairstow::rootfinding::horner_eval;
-/// 
+/// use approx_eq::assert_approx_eq;
+///
 /// let mut pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let px = horner_eval(&mut pa, 8, 2.0);
 ///
-/// assert_eq!(px, 18250.0);
-/// assert_eq!(pa[3], 460.0);
+/// assert_approx_eq!(px, 18250.0);
+/// assert_approx_eq!(pa[3], 460.0);
 /// ```
 #[inline]
 pub fn horner_eval(pb: &mut [f64], n: usize, z: f64) -> f64 {
@@ -82,12 +86,14 @@ pub fn horner_eval(pb: &mut [f64], n: usize, z: f64) -> f64 {
 /// ```
 /// use bairstow::rootfinding::horner;
 /// use bairstow::vector2::Vector2;
-/// 
+/// use approx_eq::assert_approx_eq;
+///
 /// let mut pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let px = horner(&mut pa, 8, &Vector2::new(1.0, 2.0));
 ///
-/// assert_eq!(px, Vector2::new(114.0, 134.0));
-/// assert_eq!(pa[3], 15.0);           
+/// assert_approx_eq!(px.x_, 114.0);
+/// assert_approx_eq!(px.y_, 134.0);
+/// assert_approx_eq!(pa[3], 15.0);           
 /// ```
 pub fn horner(pb: &mut [f64], n: usize, vr: &Vec2) -> Vec2 {
     let Vec2 { x_: r, y_: t } = vr;
@@ -106,11 +112,13 @@ pub fn horner(pb: &mut [f64], n: usize, vr: &Vec2) -> Vec2 {
 /// ```
 /// use bairstow::rootfinding::initial_guess;
 /// use bairstow::vector2::Vector2;
-/// 
+/// use approx_eq::assert_approx_eq;
+///
 /// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let vr0s = initial_guess(&pa);
 ///
-/// assert_eq!(vr0s[0], Vector2::new(-1.4537520283010816, 0.7559947795353074));
+/// assert_approx_eq!(vr0s[0].x_, -1.4537520283010816);
+/// assert_approx_eq!(vr0s[0].y_, 0.7559947795353074);
 /// ```
 pub fn initial_guess(pa: &[f64]) -> Vec<Vec2> {
     let mut n = pa.len() - 1;
@@ -138,7 +146,7 @@ pub fn initial_guess(pa: &[f64]) -> Vec<Vec2> {
 ///
 /// ```
 /// use bairstow::rootfinding::{initial_guess, pbairstow_even, Options};
-/// 
+///
 /// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let mut vrs = initial_guess(&pa);
 /// let (niter, _found) = pbairstow_even(&pa, &mut vrs, &Options::default());
@@ -191,7 +199,7 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
 ///
 /// ```
 /// use bairstow::rootfinding::{initial_guess, pbairstow_even_th, Options};
-/// 
+///
 /// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let mut vrs = initial_guess(&pa);
 /// let (niter, _found) = pbairstow_even_th(&pa, &mut vrs, &Options::default());
@@ -265,11 +273,13 @@ pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> 
 /// ```
 /// use bairstow::rootfinding::initial_autocorr;
 /// use bairstow::vector2::Vector2;
-/// 
+/// use approx_eq::assert_approx_eq;
+///
 /// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let vr0s = initial_autocorr(&pa);
 ///
-/// assert_eq!(vr0s[0], Vector2::new(-1.8858840950805662, 1.7782794100389228));
+/// assert_approx_eq!(vr0s[0].x_, -1.8858840950805662);
+/// assert_approx_eq!(vr0s[0].y_, 1.7782794100389228);
 /// ```
 pub fn initial_autocorr(pa: &[f64]) -> Vec<Vec2> {
     let mut n = pa.len() - 1;
@@ -290,7 +300,7 @@ pub fn initial_autocorr(pa: &[f64]) -> Vec<Vec2> {
 ///
 /// ```
 /// use bairstow::rootfinding::{initial_autocorr, pbairstow_autocorr, Options};
-/// 
+///
 /// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let mut vrs = initial_autocorr(&pa);
 /// let (niter, _found) = pbairstow_autocorr(&pa, &mut vrs, &Options::default());
@@ -347,7 +357,7 @@ pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
 ///
 /// ```
 /// use bairstow::rootfinding::{initial_autocorr, pbairstow_autocorr_th, Options};
-/// 
+///
 /// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let mut vrs = initial_autocorr(&pa);
 /// let (niter, _found) = pbairstow_autocorr_th(&pa, &mut vrs, &Options::default());
@@ -425,10 +435,12 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
 /// ```
 /// use bairstow::rootfinding::extract_autocorr;
 /// use bairstow::vector2::Vector2;
-/// 
+/// use approx_eq::assert_approx_eq;
+///
 /// let vr = extract_autocorr(Vector2::new(-1.0, 4.0));
 ///
-/// assert_eq!(vr, Vector2::new(-0.25, 0.25));
+/// assert_approx_eq!(vr.x_, -0.25);
+/// assert_approx_eq!(vr.y_, 0.25);
 /// ```
 #[allow(dead_code)]
 pub fn extract_autocorr(vr: Vec2) -> Vec2 {

@@ -4,14 +4,42 @@ use num::Complex;
 
 const TWO_PI: f64 = std::f64::consts::TAU;
 
-/**
- * @brief
- *
- * @param pb
- * @param n
- * @param r
- * @return f64
- */
+/// Horner evalution (float)
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::aberth::horner_eval_f;
+/// use approx_eq::assert_approx_eq;
+///
+/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let px = horner_eval_f(&pa, 2.0);
+///
+/// assert_approx_eq!(px, 18250.0);
+/// ```
+pub fn horner_eval_f(pb: &[f64], z: f64) -> f64 {
+    let mut ans = pb[0];
+    for coeff in pb.iter().skip(1) {
+        ans = ans * z + coeff;
+    }
+    ans
+}
+
+/// Horner evalution (complex)
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::aberth::horner_eval_c;
+/// use approx_eq::assert_approx_eq;
+/// use num::Complex;
+///
+/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let px = horner_eval_c(&pa, &Complex::new(1.0, 2.0));
+///
+/// assert_approx_eq!(px.re, 6080.0);
+/// assert_approx_eq!(px.im, 9120.0);
+/// ```
 pub fn horner_eval_c(pb: &[f64], z: &Complex<f64>) -> Complex<f64> {
     let mut ans = Complex::<f64>::new(pb[0], 0.0);
     for coeff in pb.iter().skip(1) {
@@ -21,26 +49,25 @@ pub fn horner_eval_c(pb: &[f64], z: &Complex<f64>) -> Complex<f64> {
     ans
 }
 
-/// Horner evaluation (float)
+/// Initial guess for Aberth's method
 ///
-pub fn horner_eval_f(pb: &[f64], z: &f64) -> f64 {
-    let mut ans = pb[0];
-    for coeff in pb.iter().skip(1) {
-        ans = ans * z + coeff;
-    }
-    ans
-}
-
-/**
- * @brief
- *
- * @param pa
- * @return Vec<Vec2>
- */
+/// Examples:
+///
+/// ```
+/// use bairstow::aberth::initial_aberth;
+/// use num::Complex;
+/// use approx_eq::assert_approx_eq;
+///
+/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let z0s = initial_aberth(&pa);
+///
+/// assert_approx_eq!(z0s[0].re, 0.6116610247366323);
+/// assert_approx_eq!(z0s[0].im, 0.6926747514925476);
+/// ```
 pub fn initial_aberth(pa: &[f64]) -> Vec<Complex<f64>> {
     let n = pa.len() - 1;
     let c = -pa[1] / (pa[0] * n as f64);
-    let ppc = horner_eval_f(pa, &c);
+    let ppc = horner_eval_f(pa, c);
     let re = Complex::<f64>::new(-ppc, 0.0).powf(1.0 / n as f64);
     let k = TWO_PI / (n as f64);
     let mut z0s = vec![];
@@ -52,14 +79,20 @@ pub fn initial_aberth(pa: &[f64]) -> Vec<Complex<f64>> {
     z0s
 }
 
-/**
- * @brief Multi-threading Bairstow's method (even degree only)
- *
- * @param pa polynomial
- * @param zs vector of iterates
- * @param options maximum iterations and tolorance
- * @return (usize, bool)
- */
+/// Aberth's method
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::rootfinding::Options;
+/// use bairstow::aberth::{initial_aberth, aberth};
+///
+/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let mut zrs = initial_aberth(&pa);
+/// let (niter, _found) = aberth(&pa, &mut zrs, &Options::default());
+///
+/// assert_eq!(niter, 5);
+/// ```
 pub fn aberth(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
     let m = zs.len();
     let n = pa.len() - 1; // degree, assume even
@@ -105,14 +138,20 @@ pub fn aberth(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usi
     (options.max_iter, false)
 }
 
-/**
- * @brief Multi-threading Bairstow's method (even degree only)
- *
- * @param pa polynomial
- * @param zs vector of iterates
- * @param options maximum iterations and tolorance
- * @return (usize, bool)
- */
+/// Multi-threading Aberth's method
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::rootfinding::Options;
+/// use bairstow::aberth::{initial_aberth, aberth_th};
+///
+/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let mut zrs = initial_aberth(&pa);
+/// let (niter, _found) = aberth_th(&pa, &mut zrs, &Options::default());
+///
+/// assert_eq!(niter, 7);
+/// ```
 pub fn aberth_th(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
     use std::sync::mpsc::channel;
     use std::sync::Arc;
