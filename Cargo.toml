@@ -9,8 +9,8 @@ name = "bairstow"
 path = "src/lib.rs"
 
 [dependencies]
-threadpool = { version = "1.8.1" }
-num = { version = "0.4.0" }
-num-traits = { version = "0.2.14" }
-approx_eq = { version = "0.1.8" }
+threadpool = "1.8.1"
+num = "0.4.0"
+num-traits = "0.2.15"
+approx_eq = "0.1.8"
 # lds-rs = { path = "../lds-rs"}
