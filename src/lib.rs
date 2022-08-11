@@ -55,19 +55,19 @@ mod tests {
 
         let mut vrs = initial_guess(&pa);
         let (niter, _found) = pbairstow_even(&pa, &mut vrs, &options);
-        println!("{}", niter);
+        println!("{niter}");
 
         let mut vrs = initial_guess(&pa);
         let (niter, _found) = pbairstow_even_th(&pa, &mut vrs, &options);
-        println!("{}", niter);
+        println!("{niter}");
 
         let mut vrs = initial_autocorr(&pa);
         let (niter, _found) = pbairstow_autocorr(&pa, &mut vrs, &options);
-        println!("{}", niter);
+        println!("{niter}");
 
         let mut vrs = initial_autocorr(&pa);
         let (niter, _found) = pbairstow_autocorr_th(&pa, &mut vrs, &options);
-        println!("{}", niter);
+        println!("{niter}");
 
         let options = Options {
             max_iter: 2000,
@@ -76,10 +76,10 @@ mod tests {
 
         let mut zs = initial_aberth(&pa);
         let (niter, _found) = aberth(&pa, &mut zs, &options);
-        println!("{}", niter);
+        println!("{niter}");
 
         let mut zs = initial_aberth(&pa);
         let (niter, _found) = aberth_th(&pa, &mut zs, &options);
-        println!("{}", niter);
+        println!("{niter}");
     }
 }
