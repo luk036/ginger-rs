@@ -176,12 +176,11 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
                 if tol < tol_i {
                     tol = tol_i;
                 }
-                for j in 0..m {
+                for (j, vrj) in vrs.iter().enumerate().take(m) {
                     if j == i {
                         continue;
                     }
-                    let vrj = vrs[j];
-                    vaa1 -= delta(vaa, &vrj, &(vri - vrj));
+                    vaa1 -= delta(vaa, vrj, &(vri - vrj));
                 }
                 vrs[i] -= delta(vaa, &vri, &vaa1); // Gauss-Seidel fashion
             }
