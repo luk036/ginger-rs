@@ -12,5 +12,7 @@ path = "src/lib.rs"
 threadpool = "1.8.1"
 num = "0.4.0"
 num-traits = "0.2.15"
+
+[dev-dependencies]
 approx_eq = "0.1.8"
 # lds-rs = { path = "../lds-rs"}
