@@ -28,8 +28,8 @@ impl Default for Options {
  */
 #[inline]
 pub fn makeadjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
-    let Vec2 { x_: r, y_: t } = *vr;
-    let Vec2 { x_: p, y_: m } = *vp;
+    let (r, t) = (vr.x_, vr.y_);
+    let (p, m) = (vp.x_, vp.y_);
     Mat2::new(
         Vector2::<f64>::new(-m, p),
         Vector2::<f64>::new(-p * t, p * r - m),
@@ -57,6 +57,25 @@ pub fn delta(vaa: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
     mp.mdot(vaa) / mp.det() // 6 mul's + 2 div's
 }
 
+#[inline]
+pub fn suppress_old(vA: &mut Vec2, vA1: &mut Vec2, vri: &Vec2, vrj: &Vec2) {
+    let (A, B) = (vA.x_, vA.y_);
+    let (A1, B1) = (vA1.x_, vA1.y_);
+    let vp = vri - vrj;
+    let (r, q) = (vri.x_, -vri.y_);
+    let (p, s) = (vp.x_, -vp.y_);
+    let f = (r * p) + s;
+    let qp = q * p;
+    let e = (f * s) - (qp * p);
+    let a = ((A * s) - (B * p)) / e;
+    let b = ((B * f) - (A * qp)) / e;
+    let c = A1 - a;
+    let d = (B1 - b) - (a * p);
+    vA.x_ = a;
+    vA.y_ = b;
+    vA1.x_ = ((c * s) - (d * p)) / e;
+    vA1.y_ = ((d * f) - (c * qp)) / e;
+}
 /// Horner evalution
 ///
 /// Examples:

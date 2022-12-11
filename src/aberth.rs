@@ -12,17 +12,17 @@ const TWO_PI: f64 = std::f64::consts::TAU;
 /// use bairstow::aberth::horner_eval_f;
 /// use approx_eq::assert_approx_eq;
 ///
-/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let px = horner_eval_f(&pa, 2.0);
+/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let px = horner_eval_f(&coeffs, 2.0);
 ///
 /// assert_approx_eq!(px, 18250.0);
 /// ```
-pub fn horner_eval_f(pb: &[f64], z: f64) -> f64 {
-    let mut ans = pb[0];
-    for coeff in pb.iter().skip(1) {
-        ans = ans * z + coeff;
+pub fn horner_eval_f(coeffs: &[f64], zval: f64) -> f64 {
+    let mut res = coeffs[0];
+    for coeff in coeffs.iter().skip(1) {
+        res = res * zval + coeff;
     }
-    ans
+    res
 }
 
 /// Horner evalution (complex)
@@ -34,19 +34,19 @@ pub fn horner_eval_f(pb: &[f64], z: f64) -> f64 {
 /// use approx_eq::assert_approx_eq;
 /// use num::Complex;
 ///
-/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let px = horner_eval_c(&pa, &Complex::new(1.0, 2.0));
+/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let px = horner_eval_c(&coeffs, &Complex::new(1.0, 2.0));
 ///
 /// assert_approx_eq!(px.re, 6080.0);
 /// assert_approx_eq!(px.im, 9120.0);
 /// ```
-pub fn horner_eval_c(pb: &[f64], z: &Complex<f64>) -> Complex<f64> {
-    let mut ans = Complex::<f64>::new(pb[0], 0.0);
-    for coeff in pb.iter().skip(1) {
-        ans *= z;
-        ans += coeff;
+pub fn horner_eval_c(coeffs: &[f64], zval: &Complex<f64>) -> Complex<f64> {
+    let mut res = Complex::<f64>::new(coeffs[0], 0.0);
+    for coeff in coeffs.iter().skip(1) {
+        res *= zval;
+        res += coeff;
     }
-    ans
+    res
 }
 
 /// Initial guess for Aberth's method
@@ -58,22 +58,22 @@ pub fn horner_eval_c(pb: &[f64], z: &Complex<f64>) -> Complex<f64> {
 /// use num::Complex;
 /// use approx_eq::assert_approx_eq;
 ///
-/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let z0s = initial_aberth(&pa);
+/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let z0s = initial_aberth(&coeffs);
 ///
 /// assert_approx_eq!(z0s[0].re, 0.6116610247366323);
 /// assert_approx_eq!(z0s[0].im, 0.6926747514925476);
 /// ```
-pub fn initial_aberth(pa: &[f64]) -> Vec<Complex<f64>> {
-    let n = pa.len() - 1;
-    let c = -pa[1] / (pa[0] * n as f64);
-    let ppc = horner_eval_f(pa, c);
-    let re = Complex::<f64>::new(-ppc, 0.0).powf(1.0 / n as f64);
-    let k = TWO_PI / (n as f64);
+pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
+    let degree = coeffs.len() - 1;
+    let center = -coeffs[1] / (coeffs[0] * degree as f64);
+    let ppc = horner_eval_f(coeffs, center);
+    let re = Complex::<f64>::new(-ppc, 0.0).powf(1.0 / degree as f64);
+    let k = TWO_PI / (degree as f64);
     let mut z0s = vec![];
-    for i in 0..n {
-        let theta = k * (0.25 + i as f64);
-        let z0 = c + re * Complex::<f64>::new(theta.cos(), theta.sin());
+    for idx in 0..degree {
+        let theta = k * (0.25 + idx as f64);
+        let z0 = center + re * Complex::<f64>::new(theta.cos(), theta.sin());
         z0s.push(z0);
     }
     z0s
@@ -161,15 +161,15 @@ pub fn aberth_th(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (
 
     let m = zs.len();
     let n = pa.len() - 1; // degree, assume even
-    let mut pb = vec![0.0; n];
+    let mut coeffs = vec![0.0; n];
     let n = pa.len() - 1; // degree, assume even
     for k in 0..n {
-        pb[k] = pa[k] * (n - k) as f64;
+        coeffs[k] = pa[k] * (n - k) as f64;
     }
     // let mut zsc = zs.clone();
-    let pb = pb; // make imutatable
+    let coeffs = coeffs; // make imutatable
     let pa_share = Arc::new(pa.to_owned());
-    let pb_share = Arc::new(pb);
+    let pb_share = Arc::new(coeffs);
     // let zs_share = Arc::new(Mutex::new(&zs));
 
     let mut converged = vec![false; m];
