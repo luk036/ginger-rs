@@ -83,6 +83,25 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 
 /// Aberth's method
 ///
+/// <pre>
+///                 P ⎛z ⎞
+///      new          ⎝ i⎠
+///     z    = z  - ───────
+///      i      i   P' ⎛z ⎞
+///                    ⎝ i⎠
+/// where
+///                           n
+///                         _____
+///                         ╲
+///                          ╲    P ⎛z ⎞
+///                           ╲     ⎝ i⎠
+///     P' ⎛z ⎞ = P  ⎛z ⎞ -   ╱   ───────
+///        ⎝ i⎠    1 ⎝ i⎠    ╱    z  - z
+///                         ╱      i    j
+///                         ‾‾‾‾‾
+///                         j ≠ i
+/// </pre>
+///
 /// Examples:
 ///
 /// ```
