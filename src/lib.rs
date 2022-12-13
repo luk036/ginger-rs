@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 pub mod aberth;
 pub mod matrix2;
 pub mod rootfinding;

@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use super::Options;
 use num::Complex;
 // use lds_rs::lds::Circle;
