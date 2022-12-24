@@ -8,6 +8,7 @@ const PI: f64 = std::f64::consts::PI;
 pub struct Options {
     pub max_iter: usize,
     pub tol: f64,
+    pub tol_ind: f64,
 }
 
 impl Default for Options {
@@ -15,6 +16,7 @@ impl Default for Options {
         Options {
             max_iter: 2000,
             tol: 1e-12,
+            tol_ind: 1e-15,
         }
     }
 }
@@ -57,6 +59,26 @@ pub fn delta(vaa: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
     mp.mdot(vaa) / mp.det() // 6 mul's + 2 div's
 }
 
+/// For ri - rj
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::rootfinding::delta1;
+/// use bairstow::vector2::Vector2;
+///
+/// let vd = delta1(&Vector2::new(1.0, 2.0), &Vector2::new(-2.0, 0.0), &Vector2::new(4.0, -5.0));
+///
+/// assert_eq!(vd, Vector2::new(0.2, 0.4));
+/// ```
+#[inline]
+pub fn delta1(vaa: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
+    let (r, q) = (vr.x_, vr.y_);
+    let (p, s) = (vp.x_, vp.y_);
+    let mp = Matrix2::new(Vec2::new(-s, -p), Vec2::new(p * q, p * r - s));
+    mp.mdot(vaa) / mp.det() // 6 mul's + 2 div's
+}
+
 #[inline]
 pub fn suppress_old(vA: &mut Vec2, vA1: &mut Vec2, vri: &Vec2, vrj: &Vec2) {
     let (A, B) = (vA.x_, vA.y_);
@@ -76,6 +98,7 @@ pub fn suppress_old(vA: &mut Vec2, vA1: &mut Vec2, vri: &Vec2, vrj: &Vec2) {
     vA1.x_ = ((c * s) - (d * p)) / e;
     vA1.y_ = ((d * f) - (c * qp)) / e;
 }
+
 /// Horner evalution
 ///
 /// Examples:

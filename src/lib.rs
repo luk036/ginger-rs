@@ -51,6 +51,7 @@ mod tests {
         let options = Options {
             max_iter: 2000,
             tol: 1e-14,
+            tol_ind: 1e-15,
         };
 
         let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
@@ -74,6 +75,7 @@ mod tests {
         let options = Options {
             max_iter: 2000,
             tol: 1e-12,
+            tol_ind: 1e-15,
         };
 
         let mut zs = initial_aberth(&pa);
