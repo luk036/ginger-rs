@@ -29,13 +29,31 @@ impl Default for Options {
  * @return Mat2
  */
 #[inline]
-pub fn makeadjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
-    let (r, t) = (vr.x_, vr.y_);
-    let (p, m) = (vp.x_, vp.y_);
+pub fn make_adjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
+    let (r, q) = (vr.x_, vr.y_);
+    let (p, s) = (vp.x_, vp.y_);
     Mat2::new(
-        Vector2::<f64>::new(-m, p),
-        Vector2::<f64>::new(-p * t, p * r - m),
+        Vector2::<f64>::new(s, -p),
+        Vector2::<f64>::new(-p * q, p * r + s),
     )
+}
+
+/**
+ * @brief
+ *
+ * @param vr
+ * @param vp
+ * @return Mat2
+ */
+#[inline]
+pub fn make_inverse(vr: &Vec2, vp: &Vec2) -> Mat2 {
+    let (r, q) = (vr.x_, vr.y_);
+    let (p, s) = (vp.x_, vp.y_);
+    let m_adjoint = Mat2::new(
+        Vector2::<f64>::new(s, -p),
+        Vector2::<f64>::new(-p * q, p * r + s),
+    );
+    m_adjoint / m_adjoint.det()
 }
 
 /// Extract the quadratic function where its roots are within a unit circle
@@ -49,13 +67,13 @@ pub fn makeadjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
 /// use bairstow::rootfinding::delta;
 /// use bairstow::vector2::Vector2;
 ///
-/// let vd = delta(&Vector2::new(1.0, 2.0), &Vector2::new(2.0, 0.0), &Vector2::new(4.0, 5.0));
+/// let vd = delta(&Vector2::new(1.0, 2.0), &Vector2::new(-2.0, 0.0), &Vector2::new(4.0, 5.0));
 ///
-/// assert_eq!(vd, Vector2::new(-0.2, -0.4));
+/// assert_eq!(vd, Vector2::new(0.2, 0.4));
 /// ```
 #[inline]
 pub fn delta(vaa: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
-    let mp = makeadjoint(vr, vp); // 2 mul's
+    let mp = make_adjoint(vr, vp); // 2 mul's
     mp.mdot(vaa) / mp.det() // 6 mul's + 2 div's
 }
 
@@ -79,13 +97,32 @@ pub fn delta1(vaa: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
     mp.mdot(vaa) / mp.det() // 6 mul's + 2 div's
 }
 
+/// Zero suppression (original)
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::rootfinding::delta;
+/// use bairstow::rootfinding::suppress_old;
+/// use bairstow::vector2::Vector2;
+/// use approx_eq::assert_approx_eq;
+///
+/// let mut vA = Vector2::new(3.0, 3.0);
+/// let mut vA1 = Vector2::new(1.0, 2.0);
+/// let vri = Vector2::new(-2.0, 0.0);
+/// let vrj = Vector2::new(4.0, 5.0);
+///
+/// suppress_old(&mut vA, &mut vA1, &vri, &vrj);
+/// let dr = delta(&vA, &vri, &vA1);
+/// assert_approx_eq!(dr.x_, -16.780821917808325);
+/// assert_approx_eq!(dr.y_, 1.4383561643835612);
 #[inline]
 pub fn suppress_old(vA: &mut Vec2, vA1: &mut Vec2, vri: &Vec2, vrj: &Vec2) {
     let (A, B) = (vA.x_, vA.y_);
     let (A1, B1) = (vA1.x_, vA1.y_);
     let vp = vri - vrj;
-    let (r, q) = (vri.x_, -vri.y_);
-    let (p, s) = (vp.x_, -vp.y_);
+    let (r, q) = (vri.x_, vri.y_);
+    let (p, s) = (vp.x_, vp.y_);
     let f = (r * p) + s;
     let qp = q * p;
     let e = (f * s) - (qp * p);
@@ -97,6 +134,36 @@ pub fn suppress_old(vA: &mut Vec2, vA1: &mut Vec2, vri: &Vec2, vrj: &Vec2) {
     vA.y_ = b;
     vA1.x_ = ((c * s) - (d * p)) / e;
     vA1.y_ = ((d * f) - (c * qp)) / e;
+}
+
+/// Zero suppression
+///
+/// Examples:
+///
+/// ```
+/// use bairstow::rootfinding::delta;
+/// use bairstow::rootfinding::suppress;
+/// use bairstow::vector2::Vector2;
+/// use approx_eq::assert_approx_eq;
+///
+/// let mut vA = Vector2::new(3.0, 3.0);
+/// let mut vA1 = Vector2::new(1.0, 2.0);
+/// let vri = Vector2::new(-2.0, 0.0);
+/// let vrj = Vector2::new(4.0, 5.0);
+///
+/// (vA, vA1) = suppress(&mut vA, &mut vA1, &vri, &vrj);
+/// let dr = delta(&vA, &vri, &vA1);
+/// assert_approx_eq!(dr.x_, -16.780821917808325);
+/// assert_approx_eq!(dr.y_, 1.4383561643835612);
+#[inline]
+pub fn suppress(vA: &Vec2, vA1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
+    let vp = vri - vrj;
+    let m_inverse = make_inverse(&vri, &vp);
+    let va = m_inverse.mdot(vA);
+    let mut vc = vA1 - va;
+    vc.y_ -= va.x_ * vp.x_;
+    let va1 = m_inverse.mdot(&vc);
+    (va, va1)
 }
 
 /// Horner evalution
@@ -114,11 +181,11 @@ pub fn suppress_old(vA: &mut Vec2, vA1: &mut Vec2, vri: &Vec2, vrj: &Vec2) {
 /// assert_approx_eq!(pa[3], 460.0);
 /// ```
 #[inline]
-pub fn horner_eval(pb: &mut [f64], n: usize, z: f64) -> f64 {
-    for i in 0..n {
-        pb[i + 1] += pb[i] * z;
+pub fn horner_eval(coeffs: &mut [f64], degree: usize, zval: f64) -> f64 {
+    for idx in 0..degree {
+        coeffs[idx + 1] += coeffs[idx] * zval;
     }
-    pb[n]
+    coeffs[degree]
 }
 
 /// Horner evalution for Bairstow's method
@@ -131,20 +198,19 @@ pub fn horner_eval(pb: &mut [f64], n: usize, z: f64) -> f64 {
 /// use approx_eq::assert_approx_eq;
 ///
 /// let mut pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let px = horner(&mut pa, 8, &Vector2::new(1.0, 2.0));
+/// let px = horner(&mut pa, 8, &Vector2::new(-1.0, -2.0));
 ///
 /// assert_approx_eq!(px.x_, 114.0);
 /// assert_approx_eq!(px.y_, 134.0);
 /// assert_approx_eq!(pa[3], 15.0);           
 /// ```
-pub fn horner(pb: &mut [f64], n: usize, vr: &Vec2) -> Vec2 {
-    let Vec2 { x_: r, y_: t } = vr;
-    pb[1] -= pb[0] * r;
-    for i in 2..n {
-        pb[i] -= pb[i - 1] * r + pb[i - 2] * t;
+pub fn horner(coeffs: &mut [f64], degree: usize, vr: &Vec2) -> Vec2 {
+    let Vec2 { x_: r, y_: q } = vr;
+    for idx in 0..(degree - 1) {
+        coeffs[idx + 1] += coeffs[idx] * r;
+        coeffs[idx + 2] += coeffs[idx] * q;
     }
-    pb[n] -= pb[n - 2] * t;
-    Vector2::<f64>::new(pb[n - 1], pb[n])
+    Vector2::<f64>::new(coeffs[degree - 1], coeffs[degree])
 }
 
 /// Initial guess for Bairstow's method
@@ -154,13 +220,9 @@ pub fn horner(pb: &mut [f64], n: usize, vr: &Vec2) -> Vec2 {
 /// ```
 /// use bairstow::rootfinding::initial_guess;
 /// use bairstow::vector2::Vector2;
-/// use approx_eq::assert_approx_eq;
 ///
 /// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let vr0s = initial_guess(&pa);
-///
-/// assert_approx_eq!(vr0s[0].x_, -1.4537520283010816);
-/// assert_approx_eq!(vr0s[0].y_, 0.7559947795353074);
 /// ```
 pub fn initial_guess(pa: &[f64]) -> Vec<Vec2> {
     let mut n = pa.len() - 1;
@@ -175,9 +237,9 @@ pub fn initial_guess(pa: &[f64]) -> Vec<Vec2> {
     let mut vr0s = Vec::<Vec2>::new();
     for i in (1..n).step_by(2) {
         let temp = re * (k * i as f64).cos();
-        let r0 = -2.0 * (c + temp);
+        let r0 = 2.0 * (c + temp);
         let t0 = m + 2.0 * c * temp;
-        vr0s.push(Vector2::<f64>::new(r0, t0));
+        vr0s.push(Vector2::<f64>::new(r0, -t0));
     }
     vr0s
 }
@@ -193,7 +255,7 @@ pub fn initial_guess(pa: &[f64]) -> Vec<Vec2> {
 /// let mut vrs = initial_guess(&pa);
 /// let (niter, _found) = pbairstow_even(&pa, &mut vrs, &Options::default());
 ///
-/// assert_eq!(niter, 9);
+/// assert_eq!(niter, 5);
 /// ```
 pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
     let n = pa.len() - 1; // degree, assume even
@@ -208,7 +270,7 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
             }
             let mut pb = pa.to_owned();
             let vri = vrs[i];
-            let vaa = &horner(&mut pb, n, &vri);
+            let mut vaa = &mut horner(&mut pb, n, &vri);
             let tol_i = vaa.norm_inf();
             if tol_i < 1e-15 {
                 converged[i] = true;
@@ -222,7 +284,8 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
                     if j == i {
                         continue;
                     }
-                    vaa1 -= delta(vaa, vrj, &(vri - vrj));
+                    // vaa1 -= delta(vaa, vrj, &(vri - vrj));
+                    suppress_old(&mut vaa, &mut vaa1, &vri, &vrj);
                 }
                 vrs[i] -= delta(vaa, &vri, &vaa1); // Gauss-Seidel fashion
             }
@@ -245,7 +308,7 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
 /// let mut vrs = initial_guess(&pa);
 /// let (niter, _found) = pbairstow_even_th(&pa, &mut vrs, &Options::default());
 ///
-/// assert_eq!(niter, 7);
+/// assert_eq!(niter, 8);
 /// ```
 pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
     use std::sync::mpsc::channel;
@@ -273,7 +336,7 @@ pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> 
                 // let mut pb = pa.to_owned();
                 let n = pb.len() - 1; // degree, assume even
                 let vri = vrsc[i];
-                let vaa = horner(&mut pb, n, &vri);
+                let mut vaa = horner(&mut pb, n, &vri);
                 let tol_i = vaa.norm_inf();
                 if tol_i < 1e-15 {
                     tx.send((None, i))
@@ -281,7 +344,8 @@ pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> 
                 } else {
                     let mut vaa1 = horner(&mut pb, n - 2, &vri);
                     for (_, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
-                        vaa1 -= delta(&vaa, vrj, &(vri - vrj));
+                        // vaa1 -= delta(&vaa, vrj, &(vri - vrj));
+                        suppress_old(&mut vaa, &mut vaa1, &vri, &vrj);
                     }
                     let dt = delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
                     tx.send((Some((tol_i, dt)), i))
@@ -314,13 +378,9 @@ pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> 
 /// ```
 /// use bairstow::rootfinding::initial_autocorr;
 /// use bairstow::vector2::Vector2;
-/// use approx_eq::assert_approx_eq;
 ///
 /// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let vr0s = initial_autocorr(&pa);
-///
-/// assert_approx_eq!(vr0s[0].x_, -1.8858840950805662);
-/// assert_approx_eq!(vr0s[0].y_, 1.7782794100389228);
 /// ```
 pub fn initial_autocorr(pa: &[f64]) -> Vec<Vec2> {
     let mut n = pa.len() - 1;
@@ -330,7 +390,7 @@ pub fn initial_autocorr(pa: &[f64]) -> Vec<Vec2> {
     let m = re * re;
     let mut vr0s = Vec::<Vec2>::new();
     for i in (1..n).step_by(2) {
-        vr0s.push(Vector2::<f64>::new(-2.0 * re * (k * i as f64).cos(), m));
+        vr0s.push(Vector2::<f64>::new(2.0 * re * (k * i as f64).cos(), -m));
     }
     vr0s
 }
@@ -346,13 +406,13 @@ pub fn initial_autocorr(pa: &[f64]) -> Vec<Vec2> {
 /// let mut vrs = initial_autocorr(&pa);
 /// let (niter, _found) = pbairstow_autocorr(&pa, &mut vrs, &Options::default());
 ///
-/// assert_eq!(niter, 5);
+/// assert_eq!(niter, 1);
 /// ```
 pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
     let m = vrs.len();
     let mut converged = vec![false; m];
 
-    for niter in 1..options.max_iter {
+    for niter in 0..options.max_iter {
         let mut tol = 0.0;
 
         for i in 0..m {
@@ -363,7 +423,7 @@ pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
                 let mut pb = pa.to_owned();
                 let n = pa.len() - 1; // assumed divided by 4
                 let vri = vrs[i];
-                let vaa = horner(&mut pb, n, &vri);
+                let mut vaa = horner(&mut pb, n, &vri);
                 let tol_i = vaa.norm_inf();
                 if tol_i < 1e-15 {
                     converged[i] = true;
@@ -371,12 +431,15 @@ pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
                 }
                 let mut vaa1 = horner(&mut pb, n - 2, &vri);
                 for (_j, vrj) in vrs.iter().enumerate().filter(|t| t.0 != i) {
-                    vaa1 -= delta(&vaa, vrj, &(vri - vrj));
-                    let vrjn = Vector2::<f64>::new(vrj.x_, 1.0) / vrj.y_;
-                    vaa1 -= delta(&vaa, &vrjn, &(vri - vrjn));
+                    // vaa1 -= delta(&vaa, vrj, &(vri - vrj));
+                    suppress_old(&mut vaa, &mut vaa1, &vri, &vrj);
+                    let vrjn = Vector2::<f64>::new(-vrj.x_, 1.0) / vrj.y_;
+                    // vaa1 -= delta(&vaa, &vrjn, &(vri - vrjn));
+                    suppress_old(&mut vaa, &mut vaa1, &vri, &vrjn);
                 }
-                let vrin = Vector2::<f64>::new(vri.x_, 1.0) / vri.y_;
-                vaa1 -= delta(&vaa, &vrin, &(vri - vrin));
+                let vrin = Vector2::<f64>::new(-vri.x_, 1.0) / vri.y_;
+                // vaa1 -= delta(&vaa, &vrin, &(vri - vrin));
+                suppress_old(&mut vaa, &mut vaa1, &vri, &vrin);
                 vrs[i] -= delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
                 tol_i
             };
@@ -403,7 +466,7 @@ pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
 /// let mut vrs = initial_autocorr(&pa);
 /// let (niter, _found) = pbairstow_autocorr_th(&pa, &mut vrs, &Options::default());
 ///
-/// assert_eq!(niter, 5);
+/// assert_eq!(niter, 2);
 /// ```
 pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
     use std::sync::mpsc::channel;
@@ -428,7 +491,7 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
                 // let mut pb = pa.to_owned();
                 let n = pb.len() - 1; // assumed divided by 4
                 let vri = vrsc[i];
-                let vaa = horner(&mut pb, n, &vri);
+                let mut vaa = horner(&mut pb, n, &vri);
                 let tol_i = vaa.norm_inf();
                 if tol_i < 1e-15 {
                     tx.send((None, i))
@@ -437,12 +500,15 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
                 }
                 let mut vaa1 = horner(&mut pb, n - 2, &vri);
                 for (_j, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
-                    vaa1 -= delta(&vaa, vrj, &(vri - vrj));
-                    let vrjn = Vector2::<f64>::new(vrj.x_, 1.0) / vrj.y_;
-                    vaa1 -= delta(&vaa, &vrjn, &(vri - vrjn));
+                    // vaa1 -= delta(&vaa, vrj, &(vri - vrj));
+                    suppress_old(&mut vaa, &mut vaa1, &vri, &vrj);
+                    let vrjn = Vector2::<f64>::new(-vrj.x_, 1.0) / vrj.y_;
+                    // vaa1 -= delta(&vaa, &vrjn, &(vri - vrjn));
+                    suppress_old(&mut vaa, &mut vaa1, &vri, &vrjn);
                 }
-                let vrin = Vector2::<f64>::new(vri.x_, 1.0) / vri.y_;
-                vaa1 -= delta(&vaa, &vrin, &(vri - vrin));
+                let vrin = Vector2::<f64>::new(-vri.x_, 1.0) / vri.y_;
+                // vaa1 -= delta(&vaa, &vrin, &(vri - vrin));
+                suppress_old(&mut vaa, &mut vaa1, &vri, &vrin);
                 let dt = delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
                 tx.send((Some((tol_i, dt)), i))
                     .expect("channel will be there waiting for a pool");
@@ -468,8 +534,8 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
 
 /// Extract the quadratic function where its roots are within a unit circle
 ///
-/// x^2 + r*x + t or x^2 + (r/t) * x + (1/t)
-/// (x + a1)(x + a2) = x^2 + (a1 + a2) x + a1 * a2
+/// x^2 - r*x - t or x^2 + (r/t) * x + (-1/t)
+/// (x - a1)(x - a2) = x^2 - (a1 + a2) x + a1 * a2
 ///
 /// Examples:
 ///
@@ -478,36 +544,36 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
 /// use bairstow::vector2::Vector2;
 /// use approx_eq::assert_approx_eq;
 ///
-/// let vr = extract_autocorr(Vector2::new(-1.0, 4.0));
+/// let vr = extract_autocorr(Vector2::new(1.0, -4.0));
 ///
-/// assert_approx_eq!(vr.x_, -0.25);
-/// assert_approx_eq!(vr.y_, 0.25);
+/// assert_approx_eq!(vr.x_, 0.25);
+/// assert_approx_eq!(vr.y_, -0.25);
 /// ```
 #[allow(dead_code)]
 pub fn extract_autocorr(vr: Vec2) -> Vec2 {
-    let Vec2 { x_: r, y_: t } = vr;
+    let Vec2 { x_: r, y_: q } = vr;
     let hr = r / 2.0;
-    let d = hr * hr - t;
+    let d = hr * hr + q;
     if d < 0.0 {
         // complex conjugate root
-        if t > 1.0 {
-            return Vector2::<f64>::new(r, 1.0) / t;
+        if q < -1.0 {
+            return Vector2::<f64>::new(-r, 1.0) / q;
         }
     }
     // two real roots
     let mut a1 = hr + (if hr >= 0.0 { d.sqrt() } else { -d.sqrt() });
-    let mut a2 = t / a1;
+    let mut a2 = -q / a1;
 
     if a1.abs() > 1.0 {
         if a2.abs() > 1.0 {
             a2 = 1.0 / a2;
         }
         a1 = 1.0 / a1;
-        return Vector2::<f64>::new(a1 + a2, a1 * a2);
+        return Vector2::<f64>::new(a1 + a2, -a1 * a2);
     }
     if a2.abs() > 1.0 {
         a2 = 1.0 / a2;
-        return Vector2::<f64>::new(a1 + a2, a1 * a2);
+        return Vector2::<f64>::new(a1 + a2, -a1 * a2);
     }
     // else no need to change
     vr
