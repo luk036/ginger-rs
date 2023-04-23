@@ -276,7 +276,7 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
                 converged[i] = true;
                 continue;
             } else {
-                let mut vaa1 = horner(&mut pb, n - 2, &vri);
+                let vaa1 = &mut horner(&mut pb, n - 2, &vri);
                 if tol < tol_i {
                     tol = tol_i;
                 }
@@ -285,9 +285,9 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
                         continue;
                     }
                     // vaa1 -= delta(vaa, vrj, &(vri - vrj));
-                    suppress_old(vaa, &mut vaa1, &vri, vrj);
+                    suppress_old(vaa, vaa1, &vri, vrj);
                 }
-                vrs[i] -= delta(vaa, &vri, &vaa1); // Gauss-Seidel fashion
+                vrs[i] -= delta(vaa, &vri, vaa1); // Gauss-Seidel fashion
             }
         }
         if tol < options.tol {
