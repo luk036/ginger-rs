@@ -158,7 +158,7 @@ pub fn suppress_old(vA: &mut Vec2, vA1: &mut Vec2, vri: &Vec2, vrj: &Vec2) {
 #[inline]
 pub fn suppress(vA: &Vec2, vA1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
     let vp = vri - vrj;
-    let m_inverse = make_inverse(&vri, &vp);
+    let m_inverse = make_inverse(vri, &vp);
     let va = m_inverse.mdot(vA);
     let mut vc = vA1 - va;
     vc.y_ -= va.x_ * vp.x_;
@@ -270,7 +270,7 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
             }
             let mut pb = pa.to_owned();
             let vri = vrs[i];
-            let mut vaa = &mut horner(&mut pb, n, &vri);
+            let vaa = &mut horner(&mut pb, n, &vri);
             let tol_i = vaa.norm_inf();
             if tol_i < 1e-15 {
                 converged[i] = true;
@@ -285,7 +285,7 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
                         continue;
                     }
                     // vaa1 -= delta(vaa, vrj, &(vri - vrj));
-                    suppress_old(&mut vaa, &mut vaa1, &vri, &vrj);
+                    suppress_old(vaa, &mut vaa1, &vri, vrj);
                 }
                 vrs[i] -= delta(vaa, &vri, &vaa1); // Gauss-Seidel fashion
             }
@@ -345,7 +345,7 @@ pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> 
                     let mut vaa1 = horner(&mut pb, n - 2, &vri);
                     for (_, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
                         // vaa1 -= delta(&vaa, vrj, &(vri - vrj));
-                        suppress_old(&mut vaa, &mut vaa1, &vri, &vrj);
+                        suppress_old(&mut vaa, &mut vaa1, &vri, vrj);
                     }
                     let dt = delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
                     tx.send((Some((tol_i, dt)), i))
@@ -384,7 +384,7 @@ pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> 
 /// ```
 pub fn initial_autocorr(pa: &[f64]) -> Vec<Vec2> {
     let mut n = pa.len() - 1;
-    let re = (pa[n].abs() as f64).powf(1.0 / (n as f64));
+    let re = pa[n].abs().powf(1.0 / (n as f64));
     n /= 2;
     let k = PI / (n as f64);
     let m = re * re;
@@ -432,7 +432,7 @@ pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
                 let mut vaa1 = horner(&mut pb, n - 2, &vri);
                 for (_j, vrj) in vrs.iter().enumerate().filter(|t| t.0 != i) {
                     // vaa1 -= delta(&vaa, vrj, &(vri - vrj));
-                    suppress_old(&mut vaa, &mut vaa1, &vri, &vrj);
+                    suppress_old(&mut vaa, &mut vaa1, &vri, vrj);
                     let vrjn = Vector2::<f64>::new(-vrj.x_, 1.0) / vrj.y_;
                     // vaa1 -= delta(&vaa, &vrjn, &(vri - vrjn));
                     suppress_old(&mut vaa, &mut vaa1, &vri, &vrjn);
@@ -501,7 +501,7 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
                 let mut vaa1 = horner(&mut pb, n - 2, &vri);
                 for (_j, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
                     // vaa1 -= delta(&vaa, vrj, &(vri - vrj));
-                    suppress_old(&mut vaa, &mut vaa1, &vri, &vrj);
+                    suppress_old(&mut vaa, &mut vaa1, &vri, vrj);
                     let vrjn = Vector2::<f64>::new(-vrj.x_, 1.0) / vrj.y_;
                     // vaa1 -= delta(&vaa, &vrjn, &(vri - vrjn));
                     suppress_old(&mut vaa, &mut vaa1, &vri, &vrjn);
