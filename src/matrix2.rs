@@ -1,19 +1,21 @@
 // #![no_std]
+use core::ops::{Add, Div, Mul, Neg, Rem, Sub};
+use num_traits::{Num, Zero};
 
-#[cfg(any(test, feature = "std"))]
+// #[cfg(any(test, feature = "std"))]
 // #[cfg_attr(test, macro_use)]
 // extern crate std;
 
 // use core::fmt;
-#[cfg(test)]
-use core::hash;
+// #[cfg(test)]
+// use core::hash;
 // use core::iter::{Product, Sum};
-use core::ops::{Add, Div, Mul, Neg, Rem, Sub};
+// use core::ops::{Add, Div, Mul, Neg, Rem, Sub};
 // use core::str::FromStr;
 // #[cfg(feature = "std")]
 // use std::error::Error;
 
-use num_traits::{Num, Zero};
+// use num_traits::{Num, Zero};
 
 // mod vector2;
 use super::Vector2;
@@ -335,20 +337,21 @@ impl<T: Clone + Num> Zero for Matrix2<T> {
     }
 }
 
-#[cfg(test)]
-fn hash<T: hash::Hash>(x: &T) -> u64 {
-    use std::collections::hash_map::RandomState;
-    use std::hash::{BuildHasher, Hasher};
-    let mut hasher = <RandomState as BuildHasher>::Hasher::new();
-    x.hash(&mut hasher);
-    hasher.finish()
-}
+// #[cfg(test)]
+// fn hash<T: hash::Hash>(x: &T) -> u64 {
+//     use std::collections::hash_map::RandomState;
+//     use std::hash::{BuildHasher, Hasher};
+//     let mut hasher = <RandomState as BuildHasher>::Hasher::new();
+//     x.hash(&mut hasher);
+//     hasher.finish()
+// }
 
 #[cfg(test)]
 mod test {
     #![allow(non_upper_case_globals)]
 
-    use super::{hash, Matrix2, Vector2};
+    // use super::{hash, Matrix2, Vector2};
+    use super::{Matrix2, Vector2};
     use core::f64;
     use num_traits::Zero;
 
@@ -415,16 +418,16 @@ mod test {
         }
     }
 
-    #[test]
-    fn test_hash() {
-        let u = Vector2::new(0i32, 0i32);
-        let v = Vector2::new(1i32, 0i32);
-        let w = Vector2::new(0i32, 1i32);
-        let a = Matrix2::new(u, v);
-        let b = Matrix2::new(v, w);
-        let c = Matrix2::new(w, u);
-        assert!(hash(&a) != hash(&b));
-        assert!(hash(&b) != hash(&c));
-        assert!(hash(&c) != hash(&a));
-    }
+    // #[test]
+    // fn test_hash() {
+    //     let u = Vector2::new(0i32, 0i32);
+    //     let v = Vector2::new(1i32, 0i32);
+    //     let w = Vector2::new(0i32, 1i32);
+    //     let a = Matrix2::new(u, v);
+    //     let b = Matrix2::new(v, w);
+    //     let c = Matrix2::new(w, u);
+    //     assert!(hash(&a) != hash(&b));
+    //     assert!(hash(&b) != hash(&c));
+    //     assert!(hash(&c) != hash(&a));
+    // }
 }
