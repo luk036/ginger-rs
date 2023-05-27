@@ -6,7 +6,7 @@ type Mat2 = Matrix2<f64>;
 const PI: f64 = std::f64::consts::PI;
 
 pub struct Options {
-    pub max_iter: usize,
+    pub max_iters: usize,
     pub tol: f64,
     pub tol_ind: f64,
 }
@@ -14,7 +14,7 @@ pub struct Options {
 impl Default for Options {
     fn default() -> Self {
         Options {
-            max_iter: 2000,
+            max_iters: 2000,
             tol: 1e-12,
             tol_ind: 1e-15,
         }
@@ -262,7 +262,7 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
     let m = vrs.len();
     let mut converged = vec![false; m];
 
-    for niter in 1..options.max_iter {
+    for niter in 1..options.max_iters {
         let mut tol = 0.0;
         for i in 0..m {
             if converged[i] {
@@ -294,7 +294,7 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
             return (niter, true);
         }
     }
-    (options.max_iter, false)
+    (options.max_iters, false)
 }
 
 /// Multi-threading Bairstow's method (even degree only)
@@ -318,7 +318,7 @@ pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> 
     let m = vrs.len();
     let mut converged = vec![false; m];
 
-    for niter in 1..options.max_iter {
+    for niter in 1..options.max_iters {
         let mut tol = 0.0;
         let (tx, rx) = channel();
         let pool = ThreadPool::new(n_workers);
@@ -368,7 +368,7 @@ pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> 
             return (niter, true);
         }
     }
-    (options.max_iter, false)
+    (options.max_iters, false)
 }
 
 /// Initial guess for Bairstow's method (specific for auto-correlation function)
@@ -412,7 +412,7 @@ pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
     let m = vrs.len();
     let mut converged = vec![false; m];
 
-    for niter in 0..options.max_iter {
+    for niter in 0..options.max_iters {
         let mut tol = 0.0;
 
         for i in 0..m {
@@ -452,7 +452,7 @@ pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
             return (niter, true);
         }
     }
-    (options.max_iter, false)
+    (options.max_iters, false)
 }
 
 /// Multi-threading Bairstow's method (specific for auto-correlation function)
@@ -478,7 +478,7 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
     let pool = ThreadPool::new(n_workers);
     let mut converged = vec![false; m];
 
-    for niter in 1..options.max_iter {
+    for niter in 1..options.max_iters {
         let mut tol = 0.0;
         let mut n_jobs = 0;
 
@@ -529,7 +529,7 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
             return (niter, true);
         }
     }
-    (options.max_iter, false)
+    (options.max_iters, false)
 }
 
 /// Extract the quadratic function where its roots are within a unit circle

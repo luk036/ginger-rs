@@ -122,7 +122,7 @@ pub fn aberth(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usi
     for i in 0..n {
         pb[i] = pa[i] * (n - i) as f64;
     }
-    for niter in 0..options.max_iter {
+    for niter in 0..options.max_iters {
         let mut tol = 0.0;
         let mut rx = vec![];
 
@@ -156,7 +156,7 @@ pub fn aberth(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usi
             return (niter, true);
         }
     }
-    (options.max_iter, false)
+    (options.max_iters, false)
 }
 
 /// Multi-threading Aberth's method
@@ -195,7 +195,7 @@ pub fn aberth_th(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (
 
     let mut converged = vec![false; m];
 
-    for niter in 0..options.max_iter {
+    for niter in 0..options.max_iters {
         let mut tol = 0.0;
         let (tx, rx) = channel();
         let pool = ThreadPool::new(n_workers);
@@ -252,5 +252,5 @@ pub fn aberth_th(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (
             return (niter, true);
         }
     }
-    (options.max_iter, false)
+    (options.max_iters, false)
 }

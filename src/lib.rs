@@ -49,7 +49,7 @@ mod tests {
         println!("{:?}", b % 3);
 
         let options = Options {
-            max_iter: 2000,
+            max_iters: 2000,
             tol: 1e-14,
             tol_ind: 1e-15,
         };
@@ -73,7 +73,7 @@ mod tests {
         println!("{niter}");
 
         let options = Options {
-            max_iter: 2000,
+            max_iters: 2000,
             tol: 1e-12,
             tol_ind: 1e-15,
         };
