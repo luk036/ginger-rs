@@ -69,8 +69,8 @@ pub fn horner_eval_c(coeffs: &[f64], zval: &Complex<f64>) -> Complex<f64> {
 pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
     let degree = coeffs.len() - 1;
     let center = -coeffs[1] / (coeffs[0] * degree as f64);
-    let ppc = horner_eval_f(coeffs, center);
-    let re = Complex::<f64>::new(-ppc, 0.0).powf(1.0 / degree as f64);
+    let Pc = horner_eval_f(coeffs, center);
+    let re = Complex::<f64>::new(-Pc, 0.0).powf(1.0 / degree as f64);
     let k = TWO_PI / (degree as f64);
     let mut z0s = vec![];
     for idx in 0..degree {
