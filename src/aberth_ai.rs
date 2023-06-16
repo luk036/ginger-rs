@@ -28,7 +28,7 @@ fn aberth(
     pa: &Vec<FoC>,
     zs: &mut Vec<Complex<f64>>,
     options: &Options,
-) -> (Vec<Complex<f64>>, i32, bool) {
+) -> (Vec<Complex<f64>>, usize, bool) {
     let M = zs.len();
     let N = pa.len() - 1;
     let mut converged = vec![false; M];
