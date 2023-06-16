@@ -6,7 +6,6 @@ pub mod rootfinding;
 pub mod vector2;
 // pub mod robin;
 
-
 pub use crate::aberth::{aberth, aberth_th, initial_aberth};
 pub use crate::matrix2::Matrix2;
 pub use crate::rootfinding::{
