@@ -5,6 +5,7 @@ type Mat2 = Matrix2<f64>;
 
 const PI: f64 = std::f64::consts::PI;
 
+#[derive(Debug)]
 pub struct Options {
     pub max_iters: usize,
     pub tol: f64,
@@ -21,13 +22,7 @@ impl Default for Options {
     }
 }
 
-/**
- * @brief
- *
- * @param vr
- * @param vp
- * @return Mat2
- */
+/// Make adjoint between two vectors
 #[inline]
 pub fn make_adjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
     let (r, q) = (vr.x_, vr.y_);
@@ -61,45 +56,49 @@ pub fn make_inverse(vr: &Vec2, vp: &Vec2) -> Mat2 {
 /// r * p - m   -p
 /// q * p       -m
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::rootfinding::delta;
 /// use bairstow::vector2::Vector2;
 ///
-/// let vd = delta(&Vector2::new(1.0, 2.0), &Vector2::new(-2.0, 0.0), &Vector2::new(4.0, 5.0));
-///
+/// let mut vA1 = Vector2::new(1.0, 2.0);
+/// let vri = Vector2::new(-2.0, 0.0);
+/// let vrj = Vector2::new(4.0, 5.0);
+/// let vd = delta(&vA1, &vri, &vrj);
 /// assert_eq!(vd, Vector2::new(0.2, 0.4));
 /// ```
 #[inline]
-pub fn delta(vaa: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
+pub fn delta(vA: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
     let mp = make_adjoint(vr, vp); // 2 mul's
-    mp.mdot(vaa) / mp.det() // 6 mul's + 2 div's
+    mp.mdot(vA) / mp.det() // 6 mul's + 2 div's
 }
 
-/// For ri - rj
+/// delta 1 for ri - rj
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::rootfinding::delta1;
 /// use bairstow::vector2::Vector2;
 ///
-/// let vd = delta1(&Vector2::new(1.0, 2.0), &Vector2::new(-2.0, 0.0), &Vector2::new(4.0, -5.0));
-///
+/// let mut vA1 = Vector2::new(1.0, 2.0);
+/// let vri = Vector2::new(-2.0, -0.0);
+/// let vrj = Vector2::new(4.0, -5.0);
+/// let vd = delta1(&vA1, &vri, &vrj);
 /// assert_eq!(vd, Vector2::new(0.2, 0.4));
 /// ```
 #[inline]
-pub fn delta1(vaa: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
+pub fn delta1(vA: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
     let (r, q) = (vr.x_, vr.y_);
     let (p, s) = (vp.x_, vp.y_);
     let mp = Matrix2::new(Vec2::new(-s, -p), Vec2::new(p * q, p * r - s));
-    mp.mdot(vaa) / mp.det() // 6 mul's + 2 div's
+    mp.mdot(vA) / mp.det() // 6 mul's + 2 div's
 }
 
 /// Zero suppression (original)
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::rootfinding::delta;
@@ -138,7 +137,7 @@ pub fn suppress_old(vA: &mut Vec2, vA1: &mut Vec2, vri: &Vec2, vrj: &Vec2) {
 
 /// Zero suppression
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::rootfinding::delta;
@@ -168,7 +167,7 @@ pub fn suppress(vA: &Vec2, vA1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
 
 /// Horner evalution
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::rootfinding::horner_eval;
@@ -190,7 +189,7 @@ pub fn horner_eval(coeffs: &mut [f64], degree: usize, zval: f64) -> f64 {
 
 /// Horner evalution for Bairstow's method
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::rootfinding::horner;
@@ -215,7 +214,7 @@ pub fn horner(coeffs: &mut [f64], degree: usize, vr: &Vec2) -> Vec2 {
 
 /// Initial guess for Bairstow's method
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::rootfinding::initial_guess;
@@ -246,7 +245,7 @@ pub fn initial_guess(pa: &[f64]) -> Vec<Vec2> {
 
 /// Bairstow's method (even degree only)
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::rootfinding::{initial_guess, pbairstow_even, Options};
@@ -299,7 +298,7 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
 
 /// Multi-threading Bairstow's method (even degree only)
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::rootfinding::{initial_guess, pbairstow_even_th, Options};
@@ -373,7 +372,7 @@ pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> 
 
 /// Initial guess for Bairstow's method (specific for auto-correlation function)
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::rootfinding::initial_autocorr;
@@ -397,7 +396,7 @@ pub fn initial_autocorr(pa: &[f64]) -> Vec<Vec2> {
 
 /// Simultenous Bairstow's method (specific for auto-correlation function)
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::rootfinding::{initial_autocorr, pbairstow_autocorr, Options};
@@ -457,7 +456,7 @@ pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
 
 /// Multi-threading Bairstow's method (specific for auto-correlation function)
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::rootfinding::{initial_autocorr, pbairstow_autocorr_th, Options};
@@ -537,7 +536,7 @@ pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
 /// x^2 - r*x - t or x^2 + (r/t) * x + (-1/t)
 /// (x - a1)(x - a2) = x^2 - (a1 + a2) x + a1 * a2
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::rootfinding::extract_autocorr;

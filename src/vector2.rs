@@ -2,20 +2,6 @@
 use core::ops::{Add, Div, Mul, Neg, Rem, Sub};
 use num_traits::{Num, Signed, Zero};
 
-// #[cfg(any(test, feature = "std"))]
-// #[cfg_attr(test, macro_use)]
-// extern crate std;
-
-// use core::fmt;
-// #[cfg(test)]
-// use core::hash;
-// use core::iter::{Product, Sum};
-
-// use core::str::FromStr;
-// #[cfg(feature = "std")]
-// use std::error::Error;
-
-// #[repr(C)]
 #[derive(PartialEq, Eq, Copy, Clone, Hash, Debug, Default)]
 pub struct Vector2<T> {
     /// Real portion of the vector2 object
@@ -25,7 +11,15 @@ pub struct Vector2<T> {
 }
 
 impl<T> Vector2<T> {
-    /// Create a new Vector2
+    /// Creates a new [`Vector2<T>`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bairstow::vector2::Vector2;
+    ///
+    /// assert_eq!(Vector2::new(3, 4), Vector2 { x_: 3, y_: 4});
+    /// ```
     #[inline]
     pub const fn new(x_: T, y_: T) -> Self {
         Vector2 { x_, y_ }
@@ -34,29 +28,77 @@ impl<T> Vector2<T> {
 
 impl<T: Clone + Num> Vector2<T> {
     /// Returns the dot product
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bairstow::vector2::Vector2;
+    ///
+    /// let vector2 = &Vector2::new(3, 4);
+    /// let other = &Vector2::new(5, 6); 
+    /// assert_eq!(vector2.dot(other), 15 + 24);
+    /// ```
     #[inline]
     pub fn dot(&self, other: &Self) -> T {
         self.x_.clone() * other.x_.clone() + self.y_.clone() * other.y_.clone()
     }
 
-    /// Returns the dot product
+    /// Returns the cross product
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bairstow::vector2::Vector2;
+    ///
+    /// let vector2 = &Vector2::new(3, 4);
+    /// let other = &Vector2::new(5, 6); 
+    /// assert_eq!(vector2.cross(other), 18 - 20);
+    /// ```
     #[inline]
     pub fn cross(&self, other: &Self) -> T {
         self.x_.clone() * other.y_.clone() - self.y_.clone() * other.x_.clone()
     }
 
+    /// Returns the norm sqr of this [`Vector2<T>`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bairstow::vector2::Vector2;
+    ///
+    /// let vector2 = &Vector2::new(3, 4);
+    /// assert_eq!(vector2.norm_sqr(), 9 + 16);
+    /// ```
     #[inline]
     pub fn norm_sqr(&self) -> T {
         self.dot(self)
     }
 
     /// Multiplies `self` by the scalar `t`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bairstow::vector2::Vector2;
+    ///
+    /// let vector2 = &Vector2::new(3, 4);
+    /// assert_eq!(vector2.scale(10), Vector2::new(30, 40));
+    /// ```
     #[inline]
     pub fn scale(&self, t: T) -> Self {
         Self::new(self.x_.clone() * t.clone(), self.y_.clone() * t)
     }
 
     /// Divides `self` by the scalar `t`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bairstow::vector2::Vector2;
+    ///
+    /// let vector2 = &Vector2::new(30, 40);
+    /// assert_eq!(vector2.unscale(10), Vector2::new(3, 4));
+    /// ```
     #[inline]
     pub fn unscale(&self, t: T) -> Self {
         Self::new(self.x_.clone() / t.clone(), self.y_.clone() / t)
@@ -67,6 +109,15 @@ impl<T: Clone + Signed> Vector2<T> {
     /// Returns the L1 norm `|x_| + |y_|` -- the [Manhattan distance] from the origin.
     ///
     /// [Manhattan distance]: https://en.wikipedia.org/wiki/Taxicab_geometry
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bairstow::vector2::Vector2;
+    ///
+    /// let vector2 = &Vector2::new(3, -4);
+    /// assert_eq!(vector2.l1_norm(), 7);
+    /// ```
     #[inline]
     pub fn l1_norm(&self) -> T {
         self.x_.abs() + self.y_.abs()
@@ -77,6 +128,15 @@ impl<T: Clone + PartialOrd> Vector2<T> {
     /// Returns the L1 norm `|x_| + |y_|` -- the [Manhattan distance] from the origin.
     ///
     /// [Manhattan distance]: https://en.wikipedia.org/wiki/Taxicab_geometry
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bairstow::vector2::Vector2;
+    ///
+    /// let vector2 = &Vector2::new(3, -4);
+    /// assert_eq!(vector2.norm_inf(), 3);
+    /// ```
     #[inline]
     pub fn norm_inf(&self) -> T {
         if self.x_ > self.y_ {

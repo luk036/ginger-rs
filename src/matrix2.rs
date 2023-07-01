@@ -2,21 +2,6 @@
 use core::ops::{Add, Div, Mul, Neg, Rem, Sub};
 use num_traits::{Num, Zero};
 
-// #[cfg(any(test, feature = "std"))]
-// #[cfg_attr(test, macro_use)]
-// extern crate std;
-
-// use core::fmt;
-// #[cfg(test)]
-// use core::hash;
-// use core::iter::{Product, Sum};
-// use core::ops::{Add, Div, Mul, Neg, Rem, Sub};
-// use core::str::FromStr;
-// #[cfg(feature = "std")]
-// use std::error::Error;
-
-// use num_traits::{Num, Zero};
-
 // mod vector2;
 use super::Vector2;
 
@@ -30,7 +15,18 @@ pub struct Matrix2<T> {
 }
 
 impl<T> Matrix2<T> {
-    /// Create a new Matrix2
+    /// Creates a new [`Matrix2<T>`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bairstow::matrix2::Matrix2;
+    /// use bairstow::vector2::Vector2;
+    ///
+    /// let x = Vector2::new(3, 4);
+    /// let y = Vector2::new(5, 6);
+    /// assert_eq!(Matrix2::new(x, y), Matrix2 { x_: x, y_: y });
+    /// ```
     #[inline]
     pub const fn new(x_: Vector2<T>, y_: Vector2<T>) -> Self {
         Matrix2 { x_, y_ }
@@ -38,24 +34,74 @@ impl<T> Matrix2<T> {
 }
 
 impl<T: Clone + Num> Matrix2<T> {
+    /// Returns the determinant of this [`Matrix2<T>`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bairstow::matrix2::Matrix2;
+    /// use bairstow::vector2::Vector2;
+    ///
+    /// let x = Vector2::new(3, 4);
+    /// let y = Vector2::new(5, 6);
+    /// let matrix2 = Matrix2::new(x, y);
+    /// assert_eq!(matrix2.det(), -2);
+    /// ```
     #[inline]
     pub fn det(&self) -> T {
         self.x_.cross(&self.y_)
     }
 
     /// Multiplies `self` by the vector2 `v`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bairstow::matrix2::Matrix2;
+    /// use bairstow::vector2::Vector2;
+    ///
+    /// let x = Vector2::new(3, 4);
+    /// let y = Vector2::new(5, 6);
+    /// let v = &Vector2::new(1, 1);
+    /// let matrix2 = Matrix2::new(x, y);
+    /// assert_eq!(matrix2.mdot(v), Vector2::new(7, 11));
+    /// ```
     #[inline]
     pub fn mdot(&self, v: &Vector2<T>) -> Vector2<T> {
         Vector2::<T>::new(self.x_.dot(v), self.y_.dot(v))
     }
 
     /// Multiplies `self` by the scalar `t`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bairstow::matrix2::Matrix2;
+    /// use bairstow::vector2::Vector2;
+    ///
+    /// let x = Vector2::new(3, 4);
+    /// let y = Vector2::new(5, 6);
+    /// let matrix2 = Matrix2::new(x, y);
+    /// assert_eq!(matrix2.scale(10), Matrix2 { x_: Vector2::new(30, 40), y_: Vector2::new(50, 60)});
+    /// ```
     #[inline]
     pub fn scale(&self, t: T) -> Self {
         Self::new(self.x_.clone() * t.clone(), self.y_.clone() * t)
     }
 
     /// Divides `self` by the scalar `t`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bairstow::matrix2::Matrix2;
+    /// use bairstow::vector2::Vector2;
+    ///
+    /// let x = Vector2::new(30, 40);
+    /// let y = Vector2::new(50, 60);
+    /// let matrix2 = Matrix2::new(x, y);
+    /// assert_eq!(matrix2.unscale(10), Matrix2 { x_: Vector2::new(3, 4), y_: Vector2::new(5, 6)});
+    /// ```
     #[inline]
     pub fn unscale(&self, t: T) -> Self {
         Self::new(self.x_.clone() / t.clone(), self.y_.clone() / t)

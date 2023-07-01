@@ -8,7 +8,7 @@ const TWO_PI: f64 = std::f64::consts::TAU;
 
 /// Horner evalution (float)
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::aberth::horner_eval_f;
@@ -29,7 +29,7 @@ pub fn horner_eval_f(coeffs: &[f64], zval: f64) -> f64 {
 
 /// Horner evalution (complex)
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::aberth::horner_eval_c;
@@ -53,7 +53,7 @@ pub fn horner_eval_c(coeffs: &[f64], zval: &Complex<f64>) -> Complex<f64> {
 
 /// Initial guess for Aberth's method
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::aberth::initial_aberth;
@@ -102,7 +102,7 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 ///                         j ≠ i
 /// </pre>
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::rootfinding::Options;
@@ -161,7 +161,7 @@ pub fn aberth(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usi
 
 /// Multi-threading Aberth's method
 ///
-/// Examples:
+/// # Examples:
 ///
 /// ```
 /// use bairstow::rootfinding::Options;
