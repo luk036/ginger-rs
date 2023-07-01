@@ -4,6 +4,7 @@ pub mod aberth;
 pub mod matrix2;
 pub mod rootfinding;
 pub mod vector2;
+// pub mod robin;
 
 pub use crate::aberth::{aberth, aberth_th, initial_aberth};
 pub use crate::matrix2::Matrix2;
