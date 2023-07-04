@@ -94,23 +94,23 @@ fn initial_guess(coeffs: &[f64]) -> Vec<Vector2> {
     vr0s
 }
 
-fn pbairstow_even(pa: &[f64], vrs: &mut [Vector2]) -> (Vec<Vector2>, i32, bool) {
-    let m = vrs.len();
-    let n = pa.len() - 1;
-    let mut converged = vec![false; m];
-    let mut robin = Robin::new(m);
+fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vector2]) -> (Vec<Vector2>, i32, bool) {
+    let m_rs_rs = vrs.len();
+    let degree = coeffs.len() - 1;
+    let mut converged = vec![false; m_rs];
+    let mut robin = Robin::new(m_rs_rs);
     for niter in 0..MAX_ITERS {
         let mut tol = 0.0;
 
-        for i in (0..m).filter(|&i| !converged[i]) {
-            let mut pb = pa.to_vec();
-            let vA = horner(&pb, n, vrs[i]);
+        for i in (0..m_rs).filter(|&i| !converged[i]) {
+            let mut pb = coeffs.to_vec();
+            let vA = horner(&pb, degree, vrs[i]);
             let tol_i = vA.x.abs().max(vA.y.abs());
             if tol_i < TOL_IND {
                 converged[i] = true;
                 continue;
             }
-            let mut vA1 = horner(&pb, n - 2, vrs[i]);
+            let mut vA1 = horner(&pb, degree - 2, vrs[i]);
             tol = tol.max(tol_i);
 
             for j in robin.exclude(i) {

@@ -6,11 +6,11 @@ pub mod rootfinding;
 pub mod vector2;
 // pub mod robin;
 
-pub use crate::aberth::{aberth, aberth_th, initial_aberth};
+pub use crate::aberth::{aberth, aberth_mt, initial_aberth};
 pub use crate::matrix2::Matrix2;
 pub use crate::rootfinding::{
-    horner_eval, initial_autocorr, initial_guess, pbairstow_autocorr, pbairstow_autocorr_th,
-    pbairstow_even, pbairstow_even_th, Options,
+    horner_eval, initial_autocorr, initial_guess, pbairstow_autocorr, pbairstow_autocorr_mt,
+    pbairstow_even, pbairstow_even_mt, Options,
 };
 pub use crate::vector2::Vector2;
 
@@ -55,22 +55,22 @@ mod tests {
             tol_ind: 1e-15,
         };
 
-        let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 
-        let mut vrs = initial_guess(&pa);
-        let (niter, _found) = pbairstow_even(&pa, &mut vrs, &options);
+        let mut vrs = initial_guess(&coeffs);
+        let (niter, _found) = pbairstow_even(&coeffs, &mut vrs, &options);
         println!("{niter}");
 
-        let mut vrs = initial_guess(&pa);
-        let (niter, _found) = pbairstow_even_th(&pa, &mut vrs, &options);
+        let mut vrs = initial_guess(&coeffs);
+        let (niter, _found) = pbairstow_even_mt(&coeffs, &mut vrs, &options);
         println!("{niter}");
 
-        let mut vrs = initial_autocorr(&pa);
-        let (niter, _found) = pbairstow_autocorr(&pa, &mut vrs, &options);
+        let mut vrs = initial_autocorr(&coeffs);
+        let (niter, _found) = pbairstow_autocorr(&coeffs, &mut vrs, &options);
         println!("{niter}");
 
-        let mut vrs = initial_autocorr(&pa);
-        let (niter, _found) = pbairstow_autocorr_th(&pa, &mut vrs, &options);
+        let mut vrs = initial_autocorr(&coeffs);
+        let (niter, _found) = pbairstow_autocorr_mt(&coeffs, &mut vrs, &options);
         println!("{niter}");
 
         let options = Options {
@@ -79,12 +79,12 @@ mod tests {
             tol_ind: 1e-15,
         };
 
-        let mut zs = initial_aberth(&pa);
-        let (niter, _found) = aberth(&pa, &mut zs, &options);
+        let mut zs = initial_aberth(&coeffs);
+        let (niter, _found) = aberth(&coeffs, &mut zs, &options);
         println!("{niter}");
 
-        let mut zs = initial_aberth(&pa);
-        let (niter, _found) = aberth_th(&pa, &mut zs, &options);
+        let mut zs = initial_aberth(&coeffs);
+        let (niter, _found) = aberth_mt(&coeffs, &mut zs, &options);
         println!("{niter}");
     }
 }

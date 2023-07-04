@@ -90,7 +90,7 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 ///      i      i   P' ⎛z ⎞
 ///                    ⎝ i⎠
 /// where
-///                           n
+///                           degree
 ///                         _____
 ///                         ╲
 ///                          ╲    P ⎛z ⎞
@@ -108,31 +108,31 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 /// use bairstow::rootfinding::Options;
 /// use bairstow::aberth::{initial_aberth, aberth};
 ///
-/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let mut zrs = initial_aberth(&pa);
-/// let (niter, _found) = aberth(&pa, &mut zrs, &Options::default());
+/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let mut zrs = initial_aberth(&coeffs);
+/// let (niter, _found) = aberth(&coeffs, &mut zrs, &Options::default());
 ///
 /// assert_eq!(niter, 5);
 /// ```
-pub fn aberth(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
-    let m = zs.len();
-    let n = pa.len() - 1; // degree, assume even
-    let mut converged = vec![false; m];
-    let mut pb = vec![0.0; n];
-    for i in 0..n {
-        pb[i] = pa[i] * (n - i) as f64;
+pub fn aberth(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
+    let m_rs = zs.len();
+    let degree = coeffs.len() - 1; // degree, assume even
+    let mut converged = vec![false; m_rs];
+    let mut pb = vec![0.0; degree];
+    for i in 0..degree {
+        pb[i] = coeffs[i] * (degree - i) as f64;
     }
     for niter in 0..options.max_iters {
         let mut tol = 0.0;
         let mut rx = vec![];
 
-        for i in 0..m {
+        for i in 0..m_rs {
             if converged[i] {
                 continue;
             }
             let mut job = || {
                 let zi = &zs[i];
-                let pp = horner_eval_c(pa, zi);
+                let pp = horner_eval_c(coeffs, zi);
                 let tol_i = pp.l1_norm(); // ???
                 if tol_i < 1e-15 {
                     converged[i] = true;
@@ -165,35 +165,34 @@ pub fn aberth(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usi
 ///
 /// ```
 /// use bairstow::rootfinding::Options;
-/// use bairstow::aberth::{initial_aberth, aberth_th};
+/// use bairstow::aberth::{initial_aberth, aberth_mt};
 ///
-/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let mut zrs = initial_aberth(&pa);
-/// let (niter, _found) = aberth_th(&pa, &mut zrs, &Options::default());
+/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let mut zrs = initial_aberth(&coeffs);
+/// let (niter, _found) = aberth_mt(&coeffs, &mut zrs, &Options::default());
 ///
 /// assert_eq!(niter, 7);
 /// ```
-pub fn aberth_th(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
+pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
     use std::sync::mpsc::channel;
     use std::sync::Arc;
     use threadpool::ThreadPool;
 
     let n_workers = 4; // assume 4 cores
 
-    let m = zs.len();
-    let n = pa.len() - 1; // degree, assume even
-    let mut coeffs = vec![0.0; n];
-    let n = pa.len() - 1; // degree, assume even
-    for k in 0..n {
-        coeffs[k] = pa[k] * (n - k) as f64;
+    let m_rs = zs.len();
+    let degree = coeffs.len() - 1; // degree, assume even
+    let mut pb = vec![0.0; degree];
+    for i in 0..degree {
+        pb[i] = coeffs[i] * (degree - i) as f64;
     }
     // let mut zsc = zs.clone();
     let coeffs = coeffs; // make imutatable
-    let pa_share = Arc::new(pa.to_owned());
-    let pb_share = Arc::new(coeffs);
+    let pa_share = Arc::new(coeffs.to_owned());
+    let pb_share = Arc::new(pb.to_owned());
     // let zs_share = Arc::new(Mutex::new(&zs));
 
-    let mut converged = vec![false; m];
+    let mut converged = vec![false; m_rs];
 
     for niter in 0..options.max_iters {
         let mut tol = 0.0;
@@ -201,13 +200,13 @@ pub fn aberth_th(pa: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (
         let pool = ThreadPool::new(n_workers);
         let mut n_jobs = 0;
 
-        for i in 0..m {
+        for i in 0..m_rs {
             if converged[i] {
                 continue;
             }
             let tx = tx.clone();
             let zsc = zs.clone();
-            // let pac = pa.clone();
+            // let pac = coeffs.clone();
             // let zi = Complex::<f64>::default();
             let pa_clone = Arc::clone(&pa_share);
             let pb_clone = Arc::clone(&pb_share);

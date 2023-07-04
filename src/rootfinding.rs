@@ -173,11 +173,11 @@ pub fn suppress(vA: &Vec2, vA1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
 /// use bairstow::rootfinding::horner_eval;
 /// use approx_eq::assert_approx_eq;
 ///
-/// let mut pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let px = horner_eval(&mut pa, 8, 2.0);
+/// let mut coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let px = horner_eval(&mut coeffs, 8, 2.0);
 ///
 /// assert_approx_eq!(px, 18250.0);
-/// assert_approx_eq!(pa[3], 460.0);
+/// assert_approx_eq!(coeffs[3], 460.0);
 /// ```
 #[inline]
 pub fn horner_eval(coeffs: &mut [f64], degree: usize, zval: f64) -> f64 {
@@ -196,12 +196,12 @@ pub fn horner_eval(coeffs: &mut [f64], degree: usize, zval: f64) -> f64 {
 /// use bairstow::vector2::Vector2;
 /// use approx_eq::assert_approx_eq;
 ///
-/// let mut pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let px = horner(&mut pa, 8, &Vector2::new(-1.0, -2.0));
+/// let mut coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let px = horner(&mut coeffs, 8, &Vector2::new(-1.0, -2.0));
 ///
 /// assert_approx_eq!(px.x_, 114.0);
 /// assert_approx_eq!(px.y_, 134.0);
-/// assert_approx_eq!(pa[3], 15.0);           
+/// assert_approx_eq!(coeffs[3], 15.0);           
 /// ```
 pub fn horner(coeffs: &mut [f64], degree: usize, vr: &Vec2) -> Vec2 {
     let Vec2 { x_: r, y_: q } = vr;
@@ -220,73 +220,85 @@ pub fn horner(coeffs: &mut [f64], degree: usize, vr: &Vec2) -> Vec2 {
 /// use bairstow::rootfinding::initial_guess;
 /// use bairstow::vector2::Vector2;
 ///
-/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let vr0s = initial_guess(&pa);
+/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let vr0s = initial_guess(&coeffs);
 /// ```
-pub fn initial_guess(pa: &[f64]) -> Vec<Vec2> {
-    let mut n = pa.len() - 1;
-    let c = -pa[1] / (pa[0] * n as f64);
-    let mut pb = pa.to_owned();
-    let centroid = horner_eval(&mut pb, n, c); // ???
-    let re = centroid.abs().powf(1.0 / (n as f64));
-    n /= 2;
-    n *= 2; // make even
-    let k = PI / (n as f64);
-    let m = c * c + re * re;
+pub fn initial_guess(coeffs: &[f64]) -> Vec<Vec2> {
+    let mut degree = coeffs.len() - 1;
+    let center = -coeffs[1] / (coeffs[0] * degree as f64);
+    let mut pb = coeffs.to_owned();
+    let centroid = horner_eval(&mut pb, degree, center); // ???
+    let re = centroid.abs().powf(1.0 / (degree as f64));
+    degree /= 2;
+    degree *= 2; // make even
+    let k = PI / (degree as f64);
+    let m = center * center + re * re;
     let mut vr0s = Vec::<Vec2>::new();
-    for i in (1..n).step_by(2) {
+    for i in (1..degree).step_by(2) {
         let temp = re * (k * i as f64).cos();
-        let r0 = 2.0 * (c + temp);
-        let t0 = m + 2.0 * c * temp;
+        let r0 = 2.0 * (center + temp);
+        let t0 = m + 2.0 * center * temp;
         vr0s.push(Vector2::<f64>::new(r0, -t0));
     }
     vr0s
 }
 
-/// Bairstow's method (even degree only)
+/// Parallel Bairstow's method (even degree only)
 ///
+/// The `pbairstow_even` function implements the parallel Bairstow's method for finding roots of
+/// even-degree polynomials.
+/// 
+/// Arguments:
+/// 
+/// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a polynomial.
+/// It is assumed that the polynomial has an even degree.
+/// * `vrs`: A vector of initial guesses for the roots of the polynomial. Each element of the vector is
+/// a complex number representing a root guess.
+/// * `options`: The `options` parameter is an instance of the `Options` struct, which contains the
+/// following fields:
+/// 
 /// # Examples:
 ///
 /// ```
 /// use bairstow::rootfinding::{initial_guess, pbairstow_even, Options};
 ///
-/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let mut vrs = initial_guess(&pa);
-/// let (niter, _found) = pbairstow_even(&pa, &mut vrs, &Options::default());
+/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let mut vrs = initial_guess(&coeffs);
+/// let (niter, _found) = pbairstow_even(&coeffs, &mut vrs, &Options::default());
 ///
 /// assert_eq!(niter, 5);
 /// ```
-pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
-    let n = pa.len() - 1; // degree, assume even
-    let m = vrs.len();
-    let mut converged = vec![false; m];
+pub fn pbairstow_even(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
+    let degree = coeffs.len() - 1; // degree, assume even
+    let m_rs = vrs.len();
+    let mut converged = vec![false; m_rs];
 
     for niter in 1..options.max_iters {
         let mut tol = 0.0;
-        for i in 0..m {
+        for i in 0..m_rs {
             if converged[i] {
                 continue;
             }
-            let mut pb = pa.to_owned();
+            let mut pb = coeffs.to_owned();
             let vri = vrs[i];
-            let vaa = &mut horner(&mut pb, n, &vri);
-            let tol_i = vaa.norm_inf();
+            let vA = &mut horner(&mut pb, degree, &vri);
+            let tol_i = vA.norm_inf();
             if tol_i < 1e-15 {
                 converged[i] = true;
                 continue;
             } else {
-                let vaa1 = &mut horner(&mut pb, n - 2, &vri);
+                let vA1 = &mut horner(&mut pb, degree - 2, &vri);
                 if tol < tol_i {
                     tol = tol_i;
                 }
-                for (j, vrj) in vrs.iter().enumerate().take(m) {
+                for (j, vrj) in vrs.iter().enumerate().take(m_rs) {
                     if j == i {
                         continue;
                     }
-                    // vaa1 -= delta(vaa, vrj, &(vri - vrj));
-                    suppress_old(vaa, vaa1, &vri, vrj);
+                    // vA1 -= delta(vA, vrj, &(vri - vrj));
+                    suppress_old(vA, vA1, &vri, vrj);
                 }
-                vrs[i] -= delta(vaa, &vri, vaa1); // Gauss-Seidel fashion
+                vrs[i] -= delta(vA, &vri, vA1); // Gauss-Seidel fashion
             }
         }
         if tol < options.tol {
@@ -298,55 +310,67 @@ pub fn pbairstow_even(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (us
 
 /// Multi-threading Bairstow's method (even degree only)
 ///
+/// The `pbairstow_even_mt` function implements the multi-threading parallel Bairstow's
+/// method for finding roots of even-degree polynomials.
+/// 
+/// Arguments:
+/// 
+/// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a polynomial.
+/// It is assumed that the polynomial has an even degree.
+/// * `vrs`: A vector of initial guesses for the roots of the polynomial. Each element of the vector is
+/// a complex number representing a root guess.
+/// * `options`: The `options` parameter is an instance of the `Options` struct, which contains the
+/// following fields:
+///
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::{initial_guess, pbairstow_even_th, Options};
+/// use bairstow::rootfinding::{initial_guess, pbairstow_even_mt, Options};
 ///
-/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let mut vrs = initial_guess(&pa);
-/// let (niter, _found) = pbairstow_even_th(&pa, &mut vrs, &Options::default());
+/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let mut vrs = initial_guess(&coeffs);
+/// let (niter, _found) = pbairstow_even_mt(&coeffs, &mut vrs, &Options::default());
 ///
 /// assert_eq!(niter, 8);
 /// ```
-pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
+pub fn pbairstow_even_mt(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
     use std::sync::mpsc::channel;
     use threadpool::ThreadPool;
 
     let n_workers = 4; // assume 4 cores
-    let m = vrs.len();
-    let mut converged = vec![false; m];
+    let m_rs = vrs.len();
+    let mut converged = vec![false; m_rs];
 
     for niter in 1..options.max_iters {
         let mut tol = 0.0;
         let (tx, rx) = channel();
         let pool = ThreadPool::new(n_workers);
         let mut n_jobs = 0;
-        for i in (0..m).filter(|x| !converged[*x]) {
+        for i in (0..m_rs).filter(|x| !converged[*x]) {
             // if converged[i] {
             //     continue;
             // }
             let tx = tx.clone();
             let vrsc = vrs.clone();
-            let mut pb = pa.to_owned();
+            let mut pb = coeffs.to_owned();
 
             n_jobs += 1;
             pool.execute(move || {
-                // let mut pb = pa.to_owned();
-                let n = pb.len() - 1; // degree, assume even
+                // let mut pb = coeffs.to_owned();
+                let degree = pb.len() - 1; // degree, assume even
                 let vri = vrsc[i];
-                let mut vaa = horner(&mut pb, n, &vri);
-                let tol_i = vaa.norm_inf();
+                let mut vA = horner(&mut pb, degree, &vri);
+                let tol_i = vA.norm_inf();
                 if tol_i < 1e-15 {
                     tx.send((None, i))
                         .expect("channel will be there waiting for a pool");
                 } else {
-                    let mut vaa1 = horner(&mut pb, n - 2, &vri);
+                    let mut vA1 = horner(&mut pb, degree - 2, &vri);
                     for (_, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
-                        // vaa1 -= delta(&vaa, vrj, &(vri - vrj));
-                        suppress_old(&mut vaa, &mut vaa1, &vri, vrj);
+                        // vA1 -= delta(&vA, vrj, &(vri - vrj));
+                        suppress_old(&mut vA, &mut vA1, &vri, vrj);
                     }
-                    let dt = delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
+                    let dt = delta(&vA, &vri, &vA1); // Gauss-Seidel fashion
                     tx.send((Some((tol_i, dt)), i))
                         .expect("channel will be there waiting for a pool");
                 }
@@ -378,17 +402,17 @@ pub fn pbairstow_even_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> 
 /// use bairstow::rootfinding::initial_autocorr;
 /// use bairstow::vector2::Vector2;
 ///
-/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let vr0s = initial_autocorr(&pa);
+/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let vr0s = initial_autocorr(&coeffs);
 /// ```
-pub fn initial_autocorr(pa: &[f64]) -> Vec<Vec2> {
-    let mut n = pa.len() - 1;
-    let re = pa[n].abs().powf(1.0 / (n as f64));
-    n /= 2;
-    let k = PI / (n as f64);
+pub fn initial_autocorr(coeffs: &[f64]) -> Vec<Vec2> {
+    let mut degree = coeffs.len() - 1;
+    let re = coeffs[degree].abs().powf(1.0 / (degree as f64));
+    degree /= 2;
+    let k = PI / (degree as f64);
     let m = re * re;
     let mut vr0s = Vec::<Vec2>::new();
-    for i in (1..n).step_by(2) {
+    for i in (1..degree).step_by(2) {
         vr0s.push(Vector2::<f64>::new(2.0 * re * (k * i as f64).cos(), -m));
     }
     vr0s
@@ -401,45 +425,45 @@ pub fn initial_autocorr(pa: &[f64]) -> Vec<Vec2> {
 /// ```
 /// use bairstow::rootfinding::{initial_autocorr, pbairstow_autocorr, Options};
 ///
-/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let mut vrs = initial_autocorr(&pa);
-/// let (niter, _found) = pbairstow_autocorr(&pa, &mut vrs, &Options::default());
+/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let mut vrs = initial_autocorr(&coeffs);
+/// let (niter, _found) = pbairstow_autocorr(&coeffs, &mut vrs, &Options::default());
 ///
 /// assert_eq!(niter, 1);
 /// ```
-pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
-    let m = vrs.len();
-    let mut converged = vec![false; m];
+pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
+    let m_rs = vrs.len();
+    let mut converged = vec![false; m_rs];
 
     for niter in 0..options.max_iters {
         let mut tol = 0.0;
 
-        for i in 0..m {
+        for i in 0..m_rs {
             if converged[i] {
                 continue;
             }
             let mut job = || {
-                let mut pb = pa.to_owned();
-                let n = pa.len() - 1; // assumed divided by 4
+                let mut pb = coeffs.to_owned();
+                let degree = coeffs.len() - 1; // assumed divided by 4
                 let vri = vrs[i];
-                let mut vaa = horner(&mut pb, n, &vri);
-                let tol_i = vaa.norm_inf();
+                let mut vA = horner(&mut pb, degree, &vri);
+                let tol_i = vA.norm_inf();
                 if tol_i < 1e-15 {
                     converged[i] = true;
                     return tol_i;
                 }
-                let mut vaa1 = horner(&mut pb, n - 2, &vri);
+                let mut vA1 = horner(&mut pb, degree - 2, &vri);
                 for (_j, vrj) in vrs.iter().enumerate().filter(|t| t.0 != i) {
-                    // vaa1 -= delta(&vaa, vrj, &(vri - vrj));
-                    suppress_old(&mut vaa, &mut vaa1, &vri, vrj);
+                    // vA1 -= delta(&vA, vrj, &(vri - vrj));
+                    suppress_old(&mut vA, &mut vA1, &vri, vrj);
                     let vrjn = Vector2::<f64>::new(-vrj.x_, 1.0) / vrj.y_;
-                    // vaa1 -= delta(&vaa, &vrjn, &(vri - vrjn));
-                    suppress_old(&mut vaa, &mut vaa1, &vri, &vrjn);
+                    // vA1 -= delta(&vA, &vrjn, &(vri - vrjn));
+                    suppress_old(&mut vA, &mut vA1, &vri, &vrjn);
                 }
                 let vrin = Vector2::<f64>::new(-vri.x_, 1.0) / vri.y_;
-                // vaa1 -= delta(&vaa, &vrin, &(vri - vrin));
-                suppress_old(&mut vaa, &mut vaa1, &vri, &vrin);
-                vrs[i] -= delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
+                // vA1 -= delta(&vA, &vrin, &(vri - vrin));
+                suppress_old(&mut vA, &mut vA1, &vri, &vrin);
+                vrs[i] -= delta(&vA, &vri, &vA1); // Gauss-Seidel fashion
                 tol_i
             };
             let tol_i = job();
@@ -459,56 +483,56 @@ pub fn pbairstow_autocorr(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::{initial_autocorr, pbairstow_autocorr_th, Options};
+/// use bairstow::rootfinding::{initial_autocorr, pbairstow_autocorr_mt, Options};
 ///
-/// let pa = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let mut vrs = initial_autocorr(&pa);
-/// let (niter, _found) = pbairstow_autocorr_th(&pa, &mut vrs, &Options::default());
+/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let mut vrs = initial_autocorr(&coeffs);
+/// let (niter, _found) = pbairstow_autocorr_mt(&coeffs, &mut vrs, &Options::default());
 ///
 /// assert_eq!(niter, 2);
 /// ```
-pub fn pbairstow_autocorr_th(pa: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
+pub fn pbairstow_autocorr_mt(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
     use std::sync::mpsc::channel;
     use threadpool::ThreadPool;
 
-    let m = vrs.len();
+    let m_rs = vrs.len();
     let n_workers = 4; // assume 4 cores
     let (tx, rx) = channel();
     let pool = ThreadPool::new(n_workers);
-    let mut converged = vec![false; m];
+    let mut converged = vec![false; m_rs];
 
     for niter in 1..options.max_iters {
         let mut tol = 0.0;
         let mut n_jobs = 0;
 
-        for i in (0..m).filter(|x| !converged[*x]) {
+        for i in (0..m_rs).filter(|x| !converged[*x]) {
             let tx = tx.clone();
             let vrsc = vrs.clone();
-            let mut pb = pa.to_owned();
+            let mut pb = coeffs.to_owned();
             n_jobs += 1;
             pool.execute(move || {
-                // let mut pb = pa.to_owned();
-                let n = pb.len() - 1; // assumed divided by 4
+                // let mut pb = coeffs.to_owned();
+                let degree = pb.len() - 1; // assumed divided by 4
                 let vri = vrsc[i];
-                let mut vaa = horner(&mut pb, n, &vri);
-                let tol_i = vaa.norm_inf();
+                let mut vA = horner(&mut pb, degree, &vri);
+                let tol_i = vA.norm_inf();
                 if tol_i < 1e-15 {
                     tx.send((None, i))
                         .expect("channel will be there waiting for a pool");
                     return;
                 }
-                let mut vaa1 = horner(&mut pb, n - 2, &vri);
+                let mut vA1 = horner(&mut pb, degree - 2, &vri);
                 for (_j, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
-                    // vaa1 -= delta(&vaa, vrj, &(vri - vrj));
-                    suppress_old(&mut vaa, &mut vaa1, &vri, vrj);
+                    // vA1 -= delta(&vA, vrj, &(vri - vrj));
+                    suppress_old(&mut vA, &mut vA1, &vri, vrj);
                     let vrjn = Vector2::<f64>::new(-vrj.x_, 1.0) / vrj.y_;
-                    // vaa1 -= delta(&vaa, &vrjn, &(vri - vrjn));
-                    suppress_old(&mut vaa, &mut vaa1, &vri, &vrjn);
+                    // vA1 -= delta(&vA, &vrjn, &(vri - vrjn));
+                    suppress_old(&mut vA, &mut vA1, &vri, &vrjn);
                 }
                 let vrin = Vector2::<f64>::new(-vri.x_, 1.0) / vri.y_;
-                // vaa1 -= delta(&vaa, &vrin, &(vri - vrin));
-                suppress_old(&mut vaa, &mut vaa1, &vri, &vrin);
-                let dt = delta(&vaa, &vri, &vaa1); // Gauss-Seidel fashion
+                // vA1 -= delta(&vA, &vrin, &(vri - vrin));
+                suppress_old(&mut vA, &mut vA1, &vri, &vrin);
+                let dt = delta(&vA, &vri, &vA1); // Gauss-Seidel fashion
                 tx.send((Some((tol_i, dt)), i))
                     .expect("channel will be there waiting for a pool");
             });
