@@ -7,6 +7,16 @@ use std::f64::consts::PI;
 
 type FoC = Complex<f64>;
 
+/// The function `initial_aberth_orig` calculates the initial values for the Aberth method in Rust.
+/// 
+/// Arguments:
+/// 
+/// * `coeffs`: A vector of coefficients of a polynomial, where the first element is the coefficient of
+/// the highest degree term and the last element is the constant term.
+/// 
+/// Returns:
+/// 
+/// The function `initial_aberth_orig` returns a vector of complex numbers (`Vec<Complex<f64>>`).
 fn initial_aberth_orig(coeffs: &Vec<FoC>) -> Vec<Complex<f64>> {
     let degree: usize = coeffs.len() - 1;
     let centerenter: FoC = -coeffs[1] / (degree.try_into().unwrap() * coeffs[0]);
@@ -24,6 +34,14 @@ fn initial_aberth_orig(coeffs: &Vec<FoC>) -> Vec<Complex<f64>> {
     z0s
 }
 
+/// The `aberth` function implements the Aberth method for finding the roots of a polynomial.
+/// 
+/// Arguments:
+/// 
+/// * `coeffs`: The `coeffs` parameter is a reference to a vector of `FoC` values.
+/// * `zs`: `zs` is a mutable vector of complex numbers.
+/// * `options`: The `options` parameter is a struct that contains various options for the Aberth
+/// method. It includes the following fields:
 fn aberth(
     coeffs: &Vec<FoC>,
     zs: &mut Vec<Complex<f64>>,

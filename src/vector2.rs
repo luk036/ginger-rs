@@ -2,16 +2,37 @@
 use core::ops::{Add, Div, Mul, Neg, Rem, Sub};
 use num_traits::{Num, Signed, Zero};
 
+/// The `Vector2` struct represents a 2-dimensional vector with elements of type `T`.
+///
+/// Properties:
+///
+/// * `x_`: The `x_` property represents the first element of the `Vector2` object. It is of type `T`,
+/// which means it can be any type that is specified when creating an instance of `Vector2`.
+/// * `y_`: The `y_` property is the second element of the `Vector2` object. It represents the
+/// y-coordinate of a 2D vector.
 #[derive(PartialEq, Eq, Copy, Clone, Hash, Debug, Default)]
 pub struct Vector2<T> {
-    /// Real portion of the vector2 object
+    /// The first element of the vector2 object
     pub x_: T,
-    /// Imaginary portion of the vector2 object
+    /// The second element of the vector2 object
     pub y_: T,
 }
 
 impl<T> Vector2<T> {
     /// Creates a new [`Vector2<T>`].
+    ///
+    /// The `new` function creates a new `Vector2` instance with the given `x` and `y` values.
+    ///
+    /// Arguments:
+    ///
+    /// * `x_`: The parameter `x_` represents the x-coordinate of the vector. It is of type `T`, which means
+    /// it can be any type that implements the necessary operations for vector calculations (e.g., addition,
+    /// subtraction, multiplication).
+    /// * `y_`: The `y_` parameter represents the y-coordinate of the vector.
+    ///
+    /// Returns:
+    ///
+    /// The `new` function returns a new instance of the `Vector2<T>` struct.
     ///
     /// # Examples
     ///
@@ -27,7 +48,16 @@ impl<T> Vector2<T> {
 }
 
 impl<T: Clone + Num> Vector2<T> {
-    /// Returns the dot product
+    /// The `dot` function calculates the dot product of two vectors.
+    ///
+    /// Arguments:
+    ///
+    /// * `other`: The `other` parameter is a reference to another `Vector2` object that we want to
+    /// calculate the dot product with.
+    ///
+    /// Returns:
+    ///
+    /// The dot product of two vectors is being returned.
     ///
     /// # Examples
     ///
@@ -35,7 +65,7 @@ impl<T: Clone + Num> Vector2<T> {
     /// use bairstow::vector2::Vector2;
     ///
     /// let vector2 = &Vector2::new(3, 4);
-    /// let other = &Vector2::new(5, 6); 
+    /// let other = &Vector2::new(5, 6);
     /// assert_eq!(vector2.dot(other), 15 + 24);
     /// ```
     #[inline]
@@ -43,7 +73,16 @@ impl<T: Clone + Num> Vector2<T> {
         self.x_.clone() * other.x_.clone() + self.y_.clone() * other.y_.clone()
     }
 
-    /// Returns the cross product
+    /// The `cross` function calculates the cross product of two vectors.
+    ///
+    /// Arguments:
+    ///
+    /// * `other`: The `other` parameter is a reference to another `Vector2` object that we want to
+    /// calculate the cross product with.
+    ///
+    /// Returns:
+    ///
+    /// The cross product of two vectors is being returned.
     ///
     /// # Examples
     ///
@@ -51,7 +90,7 @@ impl<T: Clone + Num> Vector2<T> {
     /// use bairstow::vector2::Vector2;
     ///
     /// let vector2 = &Vector2::new(3, 4);
-    /// let other = &Vector2::new(5, 6); 
+    /// let other = &Vector2::new(5, 6);
     /// assert_eq!(vector2.cross(other), 18 - 20);
     /// ```
     #[inline]
@@ -60,6 +99,12 @@ impl<T: Clone + Num> Vector2<T> {
     }
 
     /// Returns the norm sqr of this [`Vector2<T>`].
+    ///
+    /// The `norm_sqr` function calculates the squared norm of a `Vector2` object.
+    ///
+    /// Returns:
+    ///
+    /// The `norm_sqr` function returns the squared norm of the `Vector2<T>`.
     ///
     /// # Examples
     ///
@@ -74,7 +119,16 @@ impl<T: Clone + Num> Vector2<T> {
         self.dot(self)
     }
 
-    /// Multiplies `self` by the scalar `t`.
+    /// The `scale` function multiplies the x and y components of a `Vector2` object by a given scalar
+    /// value.
+    ///
+    /// Arguments:
+    ///
+    /// * `alpha`: The parameter `alpha` represents the scaling factor that will be applied to the vector.
+    ///
+    /// Returns:
+    ///
+    /// The `scale` method returns a new `Vector2` object.
     ///
     /// # Examples
     ///
@@ -85,11 +139,20 @@ impl<T: Clone + Num> Vector2<T> {
     /// assert_eq!(vector2.scale(10), Vector2::new(30, 40));
     /// ```
     #[inline]
-    pub fn scale(&self, t: T) -> Self {
-        Self::new(self.x_.clone() * t.clone(), self.y_.clone() * t)
+    pub fn scale(&self, alpha: T) -> Self {
+        Self::new(self.x_.clone() * alpha.clone(), self.y_.clone() * alpha)
     }
 
-    /// Divides `self` by the scalar `t`.
+    /// The `unscale` function divides the x and y components of a `Vector2` by a given value.
+    ///
+    /// Arguments:
+    ///
+    /// * `alpha`: The `alpha` parameter is a value of type `T` that is used to divide the `x_` and `y_`
+    /// values of the `Vector2` object.
+    ///
+    /// Returns:
+    ///
+    /// The `unscale` method returns a new `Vector2` object.
     ///
     /// # Examples
     ///
@@ -100,15 +163,20 @@ impl<T: Clone + Num> Vector2<T> {
     /// assert_eq!(vector2.unscale(10), Vector2::new(3, 4));
     /// ```
     #[inline]
-    pub fn unscale(&self, t: T) -> Self {
-        Self::new(self.x_.clone() / t.clone(), self.y_.clone() / t)
+    pub fn unscale(&self, alpha: T) -> Self {
+        Self::new(self.x_.clone() / alpha.clone(), self.y_.clone() / alpha)
     }
 }
 
 impl<T: Clone + Signed> Vector2<T> {
-    /// Returns the L1 norm `|x_| + |y_|` -- the [Manhattan distance] from the origin.
+    /// The `l1_norm` function calculates the Manhattan distance from the origin for a 2D vector.
     ///
     /// [Manhattan distance]: https://en.wikipedia.org/wiki/Taxicab_geometry
+    ///
+    /// Returns:
+    ///
+    /// The function `l1_norm` returns the L1 norm of a `Vector2` object, which is the sum of the absolute
+    /// values of its `x_` and `y_` components.
     ///
     /// # Examples
     ///
@@ -125,9 +193,12 @@ impl<T: Clone + Signed> Vector2<T> {
 }
 
 impl<T: Clone + PartialOrd> Vector2<T> {
-    /// Returns the L1 norm `|x_| + |y_|` -- the [Manhattan distance] from the origin.
+    /// The `norm_inf` function returns the maximum absolute value of the two elements in a `Vector2`
+    /// object.
     ///
-    /// [Manhattan distance]: https://en.wikipedia.org/wiki/Taxicab_geometry
+    /// Returns:
+    ///
+    /// The `norm_inf` function returns the maximum value between `self.x_` and `self.y_`.
     ///
     /// # Examples
     ///

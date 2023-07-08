@@ -5,6 +5,18 @@ type Mat2 = Matrix2<f64>;
 
 const PI: f64 = std::f64::consts::PI;
 
+/// The above code defines a struct named Options with three fields: max_iters, tol, and tol_ind.
+/// 
+/// Properties:
+/// 
+/// * `max_iters`: The `max_iters` property represents the maximum number of iterations allowed for a
+/// certain algorithm or process. It is of type `usize`, which means it can only hold non-negative
+/// integer values.
+/// * `tol`: The `tol` property is a floating-point number that represents the tolerance for convergence
+/// in an algorithm. It is used to determine when the algorithm has reached a satisfactory solution.
+/// * `tol_ind`: The `tol_ind` property in the `Options` struct represents the tolerance for individual
+/// values. It is a floating-point number (`f64`) that determines the acceptable difference between the
+/// expected value and the actual value for each element in a calculation or comparison.
 #[derive(Debug)]
 pub struct Options {
     pub max_iters: usize,
@@ -12,6 +24,10 @@ pub struct Options {
     pub tol_ind: f64,
 }
 
+/// The above code is implementing the `Default` trait for the `Options` struct in Rust. The `Default`
+/// trait provides a default value for a type, which can be used when creating an instance of the type
+/// without specifying any values. In this case, the `default` function is defined to return an instance
+/// of the `Options` struct with default values for the `max_iters`, `tol`, and `tol_ind` fields.
 impl Default for Options {
     fn default() -> Self {
         Options {
@@ -22,7 +38,17 @@ impl Default for Options {
     }
 }
 
-/// Make adjoint between two vectors
+/// The function `make_adjoint` calculates the adjoint matrix between two vectors.
+/// 
+/// Arguments:
+/// 
+/// * `vr`: A vector representing the direction of the reference frame's x-axis.
+/// * `vp`: The parameter `vp` represents a vector `vp = (p, s)`, where `p` and `s` are the components
+/// of the vector.
+/// 
+/// Returns:
+/// 
+/// The function `make_adjoint` returns a `Mat2` object.
 #[inline]
 pub fn make_adjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
     let (r, q) = (vr.x_, vr.y_);
@@ -33,13 +59,17 @@ pub fn make_adjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
     )
 }
 
-/**
- * @brief
- *
- * @param vr
- * @param vp
- * @return Mat2
- */
+/// The function `make_inverse` calculates the inverse of a 2x2 matrix.
+/// 
+/// Arguments:
+/// 
+/// * `vr`: A vector representing the row of a 2x2 matrix. The components of the vector are vr.x_ and
+/// vr.y_.
+/// * `vp`: The parameter `vp` represents a 2D vector with components `x` and `y`.
+/// 
+/// Returns:
+/// 
+/// The function `make_inverse` returns a `Mat2` object.
 #[inline]
 pub fn make_inverse(vr: &Vec2, vp: &Vec2) -> Mat2 {
     let (r, q) = (vr.x_, vr.y_);
@@ -51,7 +81,17 @@ pub fn make_inverse(vr: &Vec2, vp: &Vec2) -> Mat2 {
     m_adjoint / m_adjoint.det()
 }
 
-/// Extract the quadratic function where its roots are within a unit circle
+/// The `delta` function calculates the delta value for the Bairstow's method
+/// 
+/// Arguments:
+/// 
+/// * `vA`: A vector representing the coefficients of a polynomial equation.
+/// * `vr`: The parameter `vr` represents the vector `[-2.0, 0.0]`.
+/// * `vp`: The parameter `vp` represents the vector vr - vrj
+/// 
+/// Returns:
+/// 
+/// The function `delta` returns a `Vec2` object.
 ///
 /// r * p - m   -p
 /// q * p       -m
@@ -96,7 +136,16 @@ pub fn delta1(vA: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
     mp.mdot(vA) / mp.det() // 6 mul's + 2 div's
 }
 
-/// Zero suppression (original)
+/// The `suppress_old` function performs zero suppression on a set of vectors.
+/// 
+/// Arguments:
+/// 
+/// * `vA`: A mutable reference to a Vector2 object representing the coefficients of a polynomial. The
+/// coefficients are stored in the x_ and y_ fields of the Vector2 object.
+/// * `vA1`: vA1 is a mutable reference to a Vector2 object.
+/// * `vri`: The parameter `vri` represents a vector with components `r` and `i`. It is used in the
+/// `suppress_old` function to perform calculations.
+/// * `vrj`: The parameter `vrj` represents a vector with components `x` and `y`.
 ///
 /// # Examples:
 ///
@@ -135,6 +184,17 @@ pub fn suppress_old(vA: &mut Vec2, vA1: &mut Vec2, vri: &Vec2, vrj: &Vec2) {
     vA1.y_ = ((d * f) - (c * qp)) / e;
 }
 
+/// The `suppress` function in Rust performs zero suppression on a set of vectors.
+/// 
+/// Arguments:
+/// 
+/// * `vA`: A vector representing the coefficients of a polynomial function.
+/// * `vA1`: The parameter `vA1` is a `Vector2` object representing a vector with two components. It is
+/// used as an input parameter in the `suppress` function.
+/// * `vri`: The parameter `vri` represents the vector `ri`, and `vrj` represents the vector `rj`. These
+/// vectors are used in the calculation of the suppression step in the Bairstow's method for root
+/// finding.
+/// * `vrj`: The parameter `vrj` represents a vector with coordinates (4.0, 5.0).
 /// Zero suppression
 ///
 /// # Examples:
@@ -165,7 +225,21 @@ pub fn suppress(vA: &Vec2, vA1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
     (va, va1)
 }
 
-/// Horner evalution
+/// The `horner_eval` function in Rust implements the Horner's method for polynomial evaluation.
+/// 
+/// Arguments:
+/// 
+/// * `coeffs`: A mutable slice of f64 values representing the coefficients of a polynomial. The
+/// coefficients are ordered from highest degree to lowest degree.
+/// * `degree`: The `degree` parameter represents the degree of the polynomial. In the given example,
+/// the polynomial has a degree of 8.
+/// * `zval`: The `zval` parameter in the `horner_eval` function represents the value at which the
+/// polynomial is evaluated. It is the value of the independent variable in the polynomial expression.
+/// 
+/// Returns:
+/// 
+/// The function `horner_eval` returns a `f64` value, which is the result of evaluating the polynomial
+/// with the given coefficients at the specified value `zval`.
 ///
 /// # Examples:
 ///
@@ -187,7 +261,21 @@ pub fn horner_eval(coeffs: &mut [f64], degree: usize, zval: f64) -> f64 {
     coeffs[degree]
 }
 
-/// Horner evalution for Bairstow's method
+/// The `horner` function implements Horner's evaluation for Bairstow's method in Rust.
+/// 
+/// Arguments:
+/// 
+/// * `coeffs`: A mutable slice of f64 values representing the coefficients of the polynomial. The
+/// coefficients are in descending order of degree.
+/// * `degree`: The `degree` parameter represents the degree of the polynomial. It is used to determine
+/// the number of coefficients in the `coeffs` array.
+/// * `vr`: The parameter `vr` is a `Vec2` struct that contains two values, `x_` and `y_`. In the
+/// example, `vr` is initialized with the values `-1.0` and `-2.0`.
+/// 
+/// Returns:
+/// 
+/// The function `horner` returns a `Vec2` struct, which contains two `f64` values representing the
+/// results of the Horner evaluation.
 ///
 /// # Examples:
 ///
@@ -212,7 +300,17 @@ pub fn horner(coeffs: &mut [f64], degree: usize, vr: &Vec2) -> Vec2 {
     Vector2::<f64>::new(coeffs[degree - 1], coeffs[degree])
 }
 
-/// Initial guess for Bairstow's method
+/// The `initial_guess` function in Rust calculates the initial guesses for the roots of a polynomial
+/// using Bairstow's method.
+/// 
+/// Arguments:
+/// 
+/// * `coeffs`: A vector of coefficients representing a polynomial.
+/// 
+/// Returns:
+/// 
+/// The function `initial_guess` returns a vector of `Vector2` structs, which represent the initial
+/// guesses for the roots of a polynomial equation.
 ///
 /// # Examples:
 ///
@@ -394,7 +492,17 @@ pub fn pbairstow_even_mt(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
     (options.max_iters, false)
 }
 
-/// Initial guess for Bairstow's method (specific for auto-correlation function)
+/// The `initial_autocorr` function calculates the initial guesses for Bairstow's method for finding
+/// roots of a polynomial, specifically for the auto-correlation function.
+/// 
+/// Arguments:
+/// 
+/// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
+/// polynomial. The coefficients are ordered from highest degree to lowest degree.
+/// 
+/// Returns:
+/// 
+/// The function `initial_autocorr` returns a vector of `Vec2` structs.
 ///
 /// # Examples:
 ///
@@ -418,7 +526,18 @@ pub fn initial_autocorr(coeffs: &[f64]) -> Vec<Vec2> {
     vr0s
 }
 
-/// Simultenous Bairstow's method (specific for auto-correlation function)
+/// The `pbairstow_autocorr` function implements the simultaneous Bairstow's method for finding roots of
+/// a polynomial, specifically for the auto-correlation function.
+/// 
+/// Arguments:
+/// 
+/// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
+/// polynomial. These coefficients are used to calculate the auto-correlation function.
+/// * `vrs`: `vrs` is a vector of complex numbers representing the initial guesses for the roots of the
+/// polynomial. Each element of `vrs` is a `Vec2` struct, which contains two fields: `x_` and `y_`.
+/// These fields represent the real and imaginary parts of the
+/// * `options`: The `Options` struct is used to specify the parameters for the Bairstow's method
+/// algorithm. It has the following fields:
 ///
 /// # Examples:
 ///
@@ -478,7 +597,18 @@ pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options
     (options.max_iters, false)
 }
 
-/// Multi-threading Bairstow's method (specific for auto-correlation function)
+/// The `pbairstow_autocorr_mt` function is a multi-threaded implementation of Bairstow's method for
+/// finding roots of a polynomial, specifically for auto-correlation functions.
+/// 
+/// Arguments:
+/// 
+/// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
+/// polynomial. These coefficients are used as input for the Bairstow's method algorithm.
+/// * `vrs`: `vrs` is a vector of complex numbers representing the initial guesses for the roots of the
+/// polynomial. Each element of `vrs` is a `Vec2` struct, which contains the real and imaginary parts of
+/// the complex number.
+/// * `options`: The `options` parameter is an instance of the `Options` struct, which contains the
+/// following fields:
 ///
 /// # Examples:
 ///
@@ -555,10 +685,20 @@ pub fn pbairstow_autocorr_mt(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Opti
     (options.max_iters, false)
 }
 
-/// Extract the quadratic function where its roots are within a unit circle
-///
+/// The `extract_autocorr` function extracts the quadratic function where its roots are within a unit
+/// circle.
+/// 
 /// x^2 - r*x - t or x^2 + (r/t) * x + (-1/t)
 /// (x - a1)(x - a2) = x^2 - (a1 + a2) x + a1 * a2
+///
+/// Arguments:
+/// 
+/// * `vr`: A vector containing two values, representing the coefficients of a quadratic function. The
+/// first value represents the coefficient of x^2, and the second value represents the coefficient of x.
+/// 
+/// Returns:
+/// 
+/// The function `extract_autocorr` returns a `Vec2` struct, which contains two elements `x_` and `y_`.
 ///
 /// # Examples:
 ///

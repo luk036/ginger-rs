@@ -5,17 +5,38 @@ use num_traits::{Num, Zero};
 // mod vector2;
 use super::Vector2;
 
+/// The code defines a generic struct called Matrix2 with two fields, x_ and y_, which are both of type
+/// Vector2.
+/// 
+/// Properties:
+/// 
+/// * `x_`: The `x_` property represents the first row of the `Matrix2` object. It is of type
+/// `Vector2<T>`, where `T` is a generic type parameter. This means that the elements of the first row
+/// are stored in a `Vector2` object.
+/// * `y_`: The `y_` property is a public field of type `Vector2<T>`. It represents the second row of
+/// the `Matrix2` object.
 #[derive(PartialEq, Eq, Copy, Clone, Hash, Debug, Default)]
 // #[repr(C)]
 pub struct Matrix2<T> {
-    /// Real portion of the vector2 object
+    /// The first row of the Matrix2 object
     pub x_: Vector2<T>,
-    /// Imaginary portion of the vector2 object
+    /// The second row of the Matrix2 object
     pub y_: Vector2<T>,
 }
 
 impl<T> Matrix2<T> {
     /// Creates a new [`Matrix2<T>`].
+    /// 
+    /// The `new` function creates a new [`Matrix2`] object with the given [`Vector2`] objects.
+    /// 
+    /// Arguments:
+    /// 
+    /// * `x_`: A vector representing the first row of the matrix.
+    /// * `y_`: The parameter `y_` is a `Vector2<T>` object representing the second row of the matrix.
+    /// 
+    /// Returns:
+    /// 
+    /// The `new` function returns a `Matrix2<T>` object.
     ///
     /// # Examples
     ///
@@ -34,7 +55,13 @@ impl<T> Matrix2<T> {
 }
 
 impl<T: Clone + Num> Matrix2<T> {
-    /// Returns the determinant of this [`Matrix2<T>`].
+    /// Calculate the determinant of this [`Matrix2<T>`].
+    /// 
+    /// The `det` function calculates the determinant of a 2x2 matrix.
+    /// 
+    /// Returns:
+    /// 
+    /// The `det()` function returns the determinant of the `Matrix2<T>`.
     ///
     /// # Examples
     ///
@@ -52,7 +79,18 @@ impl<T: Clone + Num> Matrix2<T> {
         self.x_.cross(&self.y_)
     }
 
-    /// Multiplies `self` by the vector2 `v`.
+    /// Matrix-vector multiplication
+    /// 
+    /// The `mdot` function performs matrix-vector multiplication.
+    /// 
+    /// Arguments:
+    /// 
+    /// * `v`: The parameter `v` is a reference to a `Vector2<T>` object, where `T` is the type of the
+    /// elements in the vector.
+    /// 
+    /// Returns:
+    /// 
+    /// The `mdot` function returns a `Vector2<T>` object.
     ///
     /// # Examples
     ///
@@ -71,7 +109,15 @@ impl<T: Clone + Num> Matrix2<T> {
         Vector2::<T>::new(self.x_.dot(v), self.y_.dot(v))
     }
 
-    /// Multiplies `self` by the scalar `t`.
+    /// The `scale` function multiplies a matrix by a scalar.
+    /// 
+    /// Arguments:
+    /// 
+    /// * `alpha`: The parameter `alpha` represents the scalar value by which the matrix is multiplied.
+    /// 
+    /// Returns:
+    /// 
+    /// The `scale` method returns a new `Matrix2` object.
     ///
     /// # Examples
     ///
@@ -85,11 +131,21 @@ impl<T: Clone + Num> Matrix2<T> {
     /// assert_eq!(matrix2.scale(10), Matrix2 { x_: Vector2::new(30, 40), y_: Vector2::new(50, 60)});
     /// ```
     #[inline]
-    pub fn scale(&self, t: T) -> Self {
-        Self::new(self.x_.clone() * t.clone(), self.y_.clone() * t)
+    pub fn scale(&self, alpha: T) -> Self {
+        Self::new(self.x_.clone() * alpha.clone(), self.y_.clone() * alpha)
     }
 
-    /// Divides `self` by the scalar `t`.
+    /// The `unscale` function divides each element of a matrix by a scalar value.
+    /// 
+    /// Arguments:
+    /// 
+    /// * `alpha`: The parameter `alpha` is a scalar value that is used to divide each element of the matrix
+    /// by. It is used to scale down the matrix by dividing each element by `alpha`.
+    /// 
+    /// Returns:
+    /// 
+    /// The `unscale` method returns a new instance of `Matrix2` with the elements of `self` divided by the
+    /// scalar `alpha`.
     ///
     /// # Examples
     ///
@@ -103,8 +159,8 @@ impl<T: Clone + Num> Matrix2<T> {
     /// assert_eq!(matrix2.unscale(10), Matrix2 { x_: Vector2::new(3, 4), y_: Vector2::new(5, 6)});
     /// ```
     #[inline]
-    pub fn unscale(&self, t: T) -> Self {
-        Self::new(self.x_.clone() / t.clone(), self.y_.clone() / t)
+    pub fn unscale(&self, alpha: T) -> Self {
+        Self::new(self.x_.clone() / alpha.clone(), self.y_.clone() / alpha)
     }
 }
 
