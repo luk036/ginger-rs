@@ -63,15 +63,15 @@ impl Robin {
     /// 
     /// The `new` function is returning an instance of the struct that it is defined in.
     pub fn new(num_parts: usize) -> Self {
-        let mut cycle = Vec::new();
-        for k in 0..num_parts {
-            cycle.push(SlNode {
+        let mut cycle = (0..num_parts)
+            .into_iter()
+            .map(|k| SlNode {
                 next: None,
                 data: k,
-            });
-        }
+            })
+            .collect();
         let mut sl2 = &mut cycle[num_parts - 1];
-        for sl1 in &mut cycle {
+        for sl1 in cycle {
             sl2.next = Some(Box::new(sl1.clone()));
             sl2 = sl2.next.as_mut().unwrap();
         }
