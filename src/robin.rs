@@ -1,4 +1,4 @@
-/// The above code defines a struct called SlNode that represents a node in a singly linked list.
+/// The below code defines a struct called SlNode that represents a node in a singly linked list.
 /// 
 /// Properties:
 /// 

@@ -5,7 +5,7 @@ type Mat2 = Matrix2<f64>;
 
 const PI: f64 = std::f64::consts::PI;
 
-/// The above code defines a struct named Options with three fields: max_iters, tol, and tol_ind.
+/// The below code defines a struct named Options with three fields: max_iters, tol, and tol_ind.
 /// 
 /// Properties:
 /// 
@@ -24,7 +24,7 @@ pub struct Options {
     pub tol_ind: f64,
 }
 
-/// The above code is implementing the `Default` trait for the `Options` struct in Rust. The `Default`
+/// The below code is implementing the `Default` trait for the `Options` struct in Rust. The `Default`
 /// trait provides a default value for a type, which can be used when creating an instance of the type
 /// without specifying any values. In this case, the `default` function is defined to return an instance
 /// of the `Options` struct with default values for the `max_iters`, `tol`, and `tol_ind` fields.
