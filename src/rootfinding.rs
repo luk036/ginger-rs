@@ -432,58 +432,44 @@ pub fn pbairstow_even(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
 /// assert_eq!(niter, 8);
 /// ```
 pub fn pbairstow_even_mt(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
-    use std::sync::mpsc::channel;
-    use threadpool::ThreadPool;
+    use rayon::prelude::*;
 
-    let n_workers = 4; // assume 4 cores
     let m_rs = vrs.len();
+    let mut vrsc = vec![Vec2::default(); m_rs];
     let mut converged = vec![false; m_rs];
 
     for niter in 1..options.max_iters {
         let mut tol = 0.0;
-        let (tx, rx) = channel();
-        let pool = ThreadPool::new(n_workers);
-        let mut n_jobs = 0;
-        for i in (0..m_rs).filter(|x| !converged[*x]) {
-            // if converged[i] {
-            //     continue;
-            // }
-            let tx = tx.clone();
-            let vrsc = vrs.clone();
-            let mut pb = coeffs.to_owned();
+        vrsc.copy_from_slice(vrs);
 
-            n_jobs += 1;
-            pool.execute(move || {
+        let tol_i = vrs
+            .par_iter_mut()
+            .zip(converged.par_iter_mut())
+            .enumerate()
+            .filter(|(_, (_, converged))| !**converged)
+            .filter_map(|(i, (vri, converged))| {
+                let mut pb = coeffs.to_owned();
                 // let mut pb = coeffs.to_owned();
                 let degree = pb.len() - 1; // degree, assume even
-                let vri = vrsc[i];
-                let mut vA = horner(&mut pb, degree, &vri);
+                let mut vA = horner(&mut pb, degree, vri);
                 let tol_i = vA.norm_inf();
                 if tol_i < 1e-15 {
-                    tx.send((None, i))
-                        .expect("channel will be there waiting for a pool");
+                    *converged = true;
+                    None
                 } else {
-                    let mut vA1 = horner(&mut pb, degree - 2, &vri);
+                    let mut vA1 = horner(&mut pb, degree - 2, vri);
                     for (_, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
-                        // vA1 -= delta(&vA, vrj, &(vri - vrj));
-                        suppress_old(&mut vA, &mut vA1, &vri, vrj);
+                        // vA1 -= delta(&vA, vrj, &(*vri - vrj));
+                        suppress_old(&mut vA, &mut vA1, vri, vrj);
                     }
-                    let dt = delta(&vA, &vri, &vA1); // Gauss-Seidel fashion
-                    tx.send((Some((tol_i, dt)), i))
-                        .expect("channel will be there waiting for a pool");
+                    let dt = delta(&vA, vri, &vA1); // Gauss-Seidel fashion
+                    *vri -= dt;
+                    Some(tol_i)
                 }
-            });
-        }
-        for (res, i) in rx.iter().take(n_jobs) {
-            if let Some(result) = res {
-                let (toli, dt) = result;
-                if tol < toli {
-                    tol = toli;
-                }
-                vrs[i] -= dt;
-            } else {
-                converged[i] = true;
-            }
+            })
+            .reduce(|| tol, |x, y| x.max(y));
+        if tol < tol_i {
+            tol = tol_i;
         }
         if tol < options.tol {
             return (niter, true);
@@ -621,62 +607,54 @@ pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options
 ///
 /// assert_eq!(niter, 2);
 /// ```
-pub fn pbairstow_autocorr_mt(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
-    use std::sync::mpsc::channel;
-    use threadpool::ThreadPool;
+pub fn pbairstow_autocorr_mt(
+    coeffs: &[f64],
+    vrs: &mut Vec<Vec2>,
+    options: &Options,
+) -> (usize, bool) {
+    use rayon::prelude::*;
 
     let m_rs = vrs.len();
-    let n_workers = 4; // assume 4 cores
-    let (tx, rx) = channel();
-    let pool = ThreadPool::new(n_workers);
+    let mut vrsc = vec![Vec2::default(); m_rs];
     let mut converged = vec![false; m_rs];
 
     for niter in 1..options.max_iters {
         let mut tol = 0.0;
-        let mut n_jobs = 0;
+        vrsc.copy_from_slice(vrs);
 
-        for i in (0..m_rs).filter(|x| !converged[*x]) {
-            let tx = tx.clone();
-            let vrsc = vrs.clone();
-            let mut pb = coeffs.to_owned();
-            n_jobs += 1;
-            pool.execute(move || {
+        let tol_i = vrs
+            .par_iter_mut()
+            .zip(converged.par_iter_mut())
+            .enumerate()
+            .filter(|(_, (_, converged))| !**converged)
+            .filter_map(|(i, (vri, converged))| {
+                let mut pb = coeffs.to_owned();
                 // let mut pb = coeffs.to_owned();
                 let degree = pb.len() - 1; // assumed divided by 4
-                let vri = vrsc[i];
-                let mut vA = horner(&mut pb, degree, &vri);
+                let mut vA = horner(&mut pb, degree, vri);
                 let tol_i = vA.norm_inf();
                 if tol_i < 1e-15 {
-                    tx.send((None, i))
-                        .expect("channel will be there waiting for a pool");
-                    return;
+                    *converged = true;
+                    return None;
                 }
-                let mut vA1 = horner(&mut pb, degree - 2, &vri);
+                let mut vA1 = horner(&mut pb, degree - 2, vri);
                 for (_j, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
-                    // vA1 -= delta(&vA, vrj, &(vri - vrj));
-                    suppress_old(&mut vA, &mut vA1, &vri, vrj);
+                    // vA1 -= delta(&vA, vrj, &(*vri - vrj));
+                    suppress_old(&mut vA, &mut vA1, vri, vrj);
                     let vrjn = Vector2::<f64>::new(-vrj.x_, 1.0) / vrj.y_;
-                    // vA1 -= delta(&vA, &vrjn, &(vri - vrjn));
-                    suppress_old(&mut vA, &mut vA1, &vri, &vrjn);
+                    // vA1 -= delta(&vA, &vrjn, &(*vri - vrjn));
+                    suppress_old(&mut vA, &mut vA1, vri, &vrjn);
                 }
                 let vrin = Vector2::<f64>::new(-vri.x_, 1.0) / vri.y_;
-                // vA1 -= delta(&vA, &vrin, &(vri - vrin));
-                suppress_old(&mut vA, &mut vA1, &vri, &vrin);
-                let dt = delta(&vA, &vri, &vA1); // Gauss-Seidel fashion
-                tx.send((Some((tol_i, dt)), i))
-                    .expect("channel will be there waiting for a pool");
-            });
-        }
-        for (res, i) in rx.iter().take(n_jobs) {
-            if let Some(result) = res {
-                let (toli, dt) = result;
-                if tol < toli {
-                    tol = toli;
-                }
-                vrs[i] -= dt;
-            } else {
-                converged[i] = true;
-            }
+                // vA1 -= delta(&vA, &vrin, &(*vri - vrin));
+                suppress_old(&mut vA, &mut vA1, vri, &vrin);
+                let dt = delta(&vA, vri, &vA1); // Gauss-Seidel fashion
+                *vri -= dt;
+                Some(tol_i)
+            })
+            .reduce(|| tol, |x, y| x.max(y));
+        if tol < tol_i {
+            tol = tol_i;
         }
         if tol < options.tol {
             return (niter, true);

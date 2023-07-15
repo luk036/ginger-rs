@@ -241,11 +241,7 @@ pub fn aberth(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> 
 /// assert_eq!(niter, 7);
 /// ```
 pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
-    use std::sync::mpsc::channel;
-    use std::sync::Arc;
-    use threadpool::ThreadPool;
-
-    let n_workers = 4; // assume 4 cores
+    use rayon::prelude::*;
 
     let m_rs = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
@@ -253,66 +249,41 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
     for i in 0..degree {
         pb[i] = coeffs[i] * (degree - i) as f64;
     }
-    // let mut zsc = zs.clone();
-    let coeffs = coeffs; // make imutatable
-    let pa_share = Arc::new(coeffs.to_owned());
-    let pb_share = Arc::new(pb.to_owned());
-    // let zs_share = Arc::new(Mutex::new(&zs));
-
+    let mut zsc = vec![Complex::default(); m_rs];
     let mut converged = vec![false; m_rs];
 
     for niter in 0..options.max_iters {
         let mut tol = 0.0;
-        let (tx, rx) = channel();
-        let pool = ThreadPool::new(n_workers);
-        let mut n_jobs = 0;
+        zsc.copy_from_slice(zs);
 
-        for i in 0..m_rs {
-            if converged[i] {
-                continue;
-            }
-            let tx = tx.clone();
-            let zsc = zs.clone();
-            // let pac = coeffs.clone();
-            // let zi = Complex::<f64>::default();
-            let pa_clone = Arc::clone(&pa_share);
-            let pb_clone = Arc::clone(&pb_share);
-            // let zs_clone = Arc::clone(&zs_share);
-
-            n_jobs += 1;
-            pool.execute(move || {
-                let zi = zsc[i];
-                let pp = horner_eval_c(&pa_clone, &zi);
+        let tol_i = zs
+            .par_iter_mut()
+            .zip(converged.par_iter_mut())
+            .enumerate()
+            .filter(|(_, (_, converged))| !**converged)
+            .filter_map(|(i, (zi, converged))| {
+                let pp = horner_eval_c(coeffs, zi);
                 let tol_i = pp.l1_norm(); // ???
                 if tol_i < 1e-15 {
-                    tx.send((None, i))
-                        .expect("channel will be there waiting for a pool");
+                    *converged = true;
+                    None
                 } else {
-                    let mut pp1 = horner_eval_c(&pb_clone, &zi);
+                    let mut pp1 = horner_eval_c(&pb, zi);
                     for (j, zj) in zsc.iter().enumerate() {
                         // exclude i
                         if j == i {
                             continue;
                         }
-                        pp1 -= pp / (zi - zj);
+                        pp1 -= pp / (*zi - zj);
                     }
                     let dt = pp / pp1; // Gauss-Seidel fashion
-                    tx.send((Some((tol_i, dt)), i))
-                        .expect("channel will be there waiting for a pool");
+                    *zi -= dt;
+                    Some(tol_i)
                 }
-            });
-        }
-        // let mut zsw = zs_share.lock().unwrap();
-        for (res, i) in rx.iter().take(n_jobs) {
-            if let Some(result) = res {
-                let (toli, dt) = result;
-                if tol < toli {
-                    tol = toli;
-                }
-                zs[i] -= dt;
-            } else {
-                converged[i] = true;
-            }
+            })
+            .reduce(|| tol, |x, y| x.max(y));
+        if tol < tol_i {
+            tol = tol_i;
         }
         if tol < options.tol {
             return (niter, true);
