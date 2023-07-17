@@ -6,9 +6,9 @@ type Mat2 = Matrix2<f64>;
 const PI: f64 = std::f64::consts::PI;
 
 /// The below code defines a struct named Options with three fields: max_iters, tol, and tol_ind.
-/// 
+///
 /// Properties:
-/// 
+///
 /// * `max_iters`: The `max_iters` property represents the maximum number of iterations allowed for a
 /// certain algorithm or process. It is of type `usize`, which means it can only hold non-negative
 /// integer values.
@@ -39,15 +39,15 @@ impl Default for Options {
 }
 
 /// The function `make_adjoint` calculates the adjoint matrix between two vectors.
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `vr`: A vector representing the direction of the reference frame's x-axis.
 /// * `vp`: The parameter `vp` represents a vector `vp = (p, s)`, where `p` and `s` are the components
 /// of the vector.
-/// 
+///
 /// Returns:
-/// 
+///
 /// The function `make_adjoint` returns a `Mat2` object.
 #[inline]
 pub fn make_adjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
@@ -60,15 +60,15 @@ pub fn make_adjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
 }
 
 /// The function `make_inverse` calculates the inverse of a 2x2 matrix.
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `vr`: A vector representing the row of a 2x2 matrix. The components of the vector are vr.x_ and
 /// vr.y_.
 /// * `vp`: The parameter `vp` represents a 2D vector with components `x` and `y`.
-/// 
+///
 /// Returns:
-/// 
+///
 /// The function `make_inverse` returns a `Mat2` object.
 #[inline]
 pub fn make_inverse(vr: &Vec2, vp: &Vec2) -> Mat2 {
@@ -82,15 +82,15 @@ pub fn make_inverse(vr: &Vec2, vp: &Vec2) -> Mat2 {
 }
 
 /// The `delta` function calculates the delta value for the Bairstow's method
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `vA`: A vector representing the coefficients of a polynomial equation.
 /// * `vr`: The parameter `vr` represents the vector `[-2.0, 0.0]`.
 /// * `vp`: The parameter `vp` represents the vector vr - vrj
-/// 
+///
 /// Returns:
-/// 
+///
 /// The function `delta` returns a `Vec2` object.
 ///
 /// r * p - m   -p
@@ -137,9 +137,9 @@ pub fn delta1(vA: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
 }
 
 /// The `suppress_old` function performs zero suppression on a set of vectors.
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `vA`: A mutable reference to a Vector2 object representing the coefficients of a polynomial. The
 /// coefficients are stored in the x_ and y_ fields of the Vector2 object.
 /// * `vA1`: vA1 is a mutable reference to a Vector2 object.
@@ -185,9 +185,9 @@ pub fn suppress_old(vA: &mut Vec2, vA1: &mut Vec2, vri: &Vec2, vrj: &Vec2) {
 }
 
 /// The `suppress` function in Rust performs zero suppression on a set of vectors.
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `vA`: A vector representing the coefficients of a polynomial function.
 /// * `vA1`: The parameter `vA1` is a `Vector2` object representing a vector with two components. It is
 /// used as an input parameter in the `suppress` function.
@@ -226,18 +226,18 @@ pub fn suppress(vA: &Vec2, vA1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
 }
 
 /// The `horner_eval` function in Rust implements the Horner's method for polynomial evaluation.
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `coeffs`: A mutable slice of f64 values representing the coefficients of a polynomial. The
 /// coefficients are ordered from highest degree to lowest degree.
 /// * `degree`: The `degree` parameter represents the degree of the polynomial. In the given example,
 /// the polynomial has a degree of 8.
 /// * `zval`: The `zval` parameter in the `horner_eval` function represents the value at which the
 /// polynomial is evaluated. It is the value of the independent variable in the polynomial expression.
-/// 
+///
 /// Returns:
-/// 
+///
 /// The function `horner_eval` returns a `f64` value, which is the result of evaluating the polynomial
 /// with the given coefficients at the specified value `zval`.
 ///
@@ -262,18 +262,18 @@ pub fn horner_eval(coeffs: &mut [f64], degree: usize, zval: f64) -> f64 {
 }
 
 /// The `horner` function implements Horner's evaluation for Bairstow's method in Rust.
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `coeffs`: A mutable slice of f64 values representing the coefficients of the polynomial. The
 /// coefficients are in descending order of degree.
 /// * `degree`: The `degree` parameter represents the degree of the polynomial. It is used to determine
 /// the number of coefficients in the `coeffs` array.
 /// * `vr`: The parameter `vr` is a `Vec2` struct that contains two values, `x_` and `y_`. In the
 /// example, `vr` is initialized with the values `-1.0` and `-2.0`.
-/// 
+///
 /// Returns:
-/// 
+///
 /// The function `horner` returns a `Vec2` struct, which contains two `f64` values representing the
 /// results of the Horner evaluation.
 ///
@@ -302,13 +302,13 @@ pub fn horner(coeffs: &mut [f64], degree: usize, vr: &Vec2) -> Vec2 {
 
 /// The `initial_guess` function in Rust calculates the initial guesses for the roots of a polynomial
 /// using Bairstow's method.
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `coeffs`: A vector of coefficients representing a polynomial.
-/// 
+///
 /// Returns:
-/// 
+///
 /// The function `initial_guess` returns a vector of `Vector2` structs, which represent the initial
 /// guesses for the roots of a polynomial equation.
 ///
@@ -345,16 +345,16 @@ pub fn initial_guess(coeffs: &[f64]) -> Vec<Vec2> {
 ///
 /// The `pbairstow_even` function implements the parallel Bairstow's method for finding roots of
 /// even-degree polynomials.
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a polynomial.
 /// It is assumed that the polynomial has an even degree.
 /// * `vrs`: A vector of initial guesses for the roots of the polynomial. Each element of the vector is
 /// a complex number representing a root guess.
 /// * `options`: The `options` parameter is an instance of the `Options` struct, which contains the
 /// following fields:
-/// 
+///
 /// # Examples:
 ///
 /// ```
@@ -367,7 +367,6 @@ pub fn initial_guess(coeffs: &[f64]) -> Vec<Vec2> {
 /// assert_eq!(niter, 5);
 /// ```
 pub fn pbairstow_even(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
-    let degree = coeffs.len() - 1; // degree, assume even
     let m_rs = vrs.len();
     let mut converged = vec![false; m_rs];
 
@@ -377,27 +376,13 @@ pub fn pbairstow_even(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
             if converged[i] {
                 continue;
             }
-            let mut pb = coeffs.to_owned();
-            let vri = vrs[i];
-            let vA = &mut horner(&mut pb, degree, &vri);
-            let tol_i = vA.norm_inf();
-            if tol_i < 1e-15 {
-                converged[i] = true;
-                continue;
-            } else {
-                let vA1 = &mut horner(&mut pb, degree - 2, &vri);
+            let mut vri = vrs[i];
+            if let Some(tol_i) = pbairstow_even_job(coeffs, i, &mut vri, &mut converged[i], &vrs) {
                 if tol < tol_i {
                     tol = tol_i;
                 }
-                for (j, vrj) in vrs.iter().enumerate().take(m_rs) {
-                    if j == i {
-                        continue;
-                    }
-                    // vA1 -= delta(vA, vrj, &(vri - vrj));
-                    suppress_old(vA, vA1, &vri, vrj);
-                }
-                vrs[i] -= delta(vA, &vri, vA1); // Gauss-Seidel fashion
             }
+            vrs[i] = vri;
         }
         if tol < options.tol {
             return (niter, true);
@@ -410,9 +395,9 @@ pub fn pbairstow_even(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
 ///
 /// The `pbairstow_even_mt` function implements the multi-threading parallel Bairstow's
 /// method for finding roots of even-degree polynomials.
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a polynomial.
 /// It is assumed that the polynomial has an even degree.
 /// * `vrs`: A vector of initial guesses for the roots of the polynomial. Each element of the vector is
@@ -448,24 +433,7 @@ pub fn pbairstow_even_mt(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
             .enumerate()
             .filter(|(_, (_, converged))| !**converged)
             .filter_map(|(i, (vri, converged))| {
-                let mut pb = coeffs.to_owned();
-                // let mut pb = coeffs.to_owned();
-                let degree = pb.len() - 1; // degree, assume even
-                let mut vA = horner(&mut pb, degree, vri);
-                let tol_i = vA.norm_inf();
-                if tol_i < 1e-15 {
-                    *converged = true;
-                    None
-                } else {
-                    let mut vA1 = horner(&mut pb, degree - 2, vri);
-                    for (_, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
-                        // vA1 -= delta(&vA, vrj, &(*vri - vrj));
-                        suppress_old(&mut vA, &mut vA1, vri, vrj);
-                    }
-                    let dt = delta(&vA, vri, &vA1); // Gauss-Seidel fashion
-                    *vri -= dt;
-                    Some(tol_i)
-                }
+                pbairstow_even_job(coeffs, i, vri, converged, &vrsc)
             })
             .reduce(|| tol, |x, y| x.max(y));
         if tol < tol_i {
@@ -478,16 +446,42 @@ pub fn pbairstow_even_mt(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
     (options.max_iters, false)
 }
 
+fn pbairstow_even_job(
+    coeffs: &[f64],
+    i: usize,
+    vri: &mut Vec2,
+    converged: &mut bool,
+    vrsc: &[Vec2],
+) -> Option<f64> {
+    let mut pb = coeffs.to_owned();
+    // let mut pb = coeffs.to_owned();
+    let degree = pb.len() - 1; // degree, assume even
+    let mut vA = horner(&mut pb, degree, vri);
+    let tol_i = vA.norm_inf();
+    if tol_i < 1e-15 {
+        *converged = true;
+        return None;
+    }
+    let mut vA1 = horner(&mut pb, degree - 2, vri);
+    for (_, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
+        // vA1 -= delta(&vA, vrj, &(*vri - vrj));
+        suppress_old(&mut vA, &mut vA1, vri, vrj);
+    }
+    let dt = delta(&vA, vri, &vA1); // Gauss-Seidel fashion
+    *vri -= dt;
+    Some(tol_i)
+}
+
 /// The `initial_autocorr` function calculates the initial guesses for Bairstow's method for finding
 /// roots of a polynomial, specifically for the auto-correlation function.
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
 /// polynomial. The coefficients are ordered from highest degree to lowest degree.
-/// 
+///
 /// Returns:
-/// 
+///
 /// The function `initial_autocorr` returns a vector of `Vec2` structs.
 ///
 /// # Examples:
@@ -514,9 +508,9 @@ pub fn initial_autocorr(coeffs: &[f64]) -> Vec<Vec2> {
 
 /// The `pbairstow_autocorr` function implements the simultaneous Bairstow's method for finding roots of
 /// a polynomial, specifically for the auto-correlation function.
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
 /// polynomial. These coefficients are used to calculate the auto-correlation function.
 /// * `vrs`: `vrs` is a vector of complex numbers representing the initial guesses for the roots of the
@@ -547,34 +541,14 @@ pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options
             if converged[i] {
                 continue;
             }
-            let mut job = || {
-                let mut pb = coeffs.to_owned();
-                let degree = coeffs.len() - 1; // assumed divided by 4
-                let vri = vrs[i];
-                let mut vA = horner(&mut pb, degree, &vri);
-                let tol_i = vA.norm_inf();
-                if tol_i < 1e-15 {
-                    converged[i] = true;
-                    return tol_i;
+            let mut vri = vrs[i];
+            let tol_i = pbairstow_autocorr_mt_job(coeffs, i, &mut vri, &mut converged[i], &vrs);
+            if let Some(tol_i) = tol_i {
+                if tol < tol_i {
+                    tol = tol_i;
                 }
-                let mut vA1 = horner(&mut pb, degree - 2, &vri);
-                for (_j, vrj) in vrs.iter().enumerate().filter(|t| t.0 != i) {
-                    // vA1 -= delta(&vA, vrj, &(vri - vrj));
-                    suppress_old(&mut vA, &mut vA1, &vri, vrj);
-                    let vrjn = Vector2::<f64>::new(-vrj.x_, 1.0) / vrj.y_;
-                    // vA1 -= delta(&vA, &vrjn, &(vri - vrjn));
-                    suppress_old(&mut vA, &mut vA1, &vri, &vrjn);
-                }
-                let vrin = Vector2::<f64>::new(-vri.x_, 1.0) / vri.y_;
-                // vA1 -= delta(&vA, &vrin, &(vri - vrin));
-                suppress_old(&mut vA, &mut vA1, &vri, &vrin);
-                vrs[i] -= delta(&vA, &vri, &vA1); // Gauss-Seidel fashion
-                tol_i
-            };
-            let tol_i = job();
-            if tol < tol_i {
-                tol = tol_i;
             }
+            vrs[i] = vri;
         }
         if tol < options.tol {
             return (niter, true);
@@ -585,9 +559,9 @@ pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options
 
 /// The `pbairstow_autocorr_mt` function is a multi-threaded implementation of Bairstow's method for
 /// finding roots of a polynomial, specifically for auto-correlation functions.
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
 /// polynomial. These coefficients are used as input for the Bairstow's method algorithm.
 /// * `vrs`: `vrs` is a vector of complex numbers representing the initial guesses for the roots of the
@@ -628,29 +602,7 @@ pub fn pbairstow_autocorr_mt(
             .enumerate()
             .filter(|(_, (_, converged))| !**converged)
             .filter_map(|(i, (vri, converged))| {
-                let mut pb = coeffs.to_owned();
-                // let mut pb = coeffs.to_owned();
-                let degree = pb.len() - 1; // assumed divided by 4
-                let mut vA = horner(&mut pb, degree, vri);
-                let tol_i = vA.norm_inf();
-                if tol_i < 1e-15 {
-                    *converged = true;
-                    return None;
-                }
-                let mut vA1 = horner(&mut pb, degree - 2, vri);
-                for (_j, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
-                    // vA1 -= delta(&vA, vrj, &(*vri - vrj));
-                    suppress_old(&mut vA, &mut vA1, vri, vrj);
-                    let vrjn = Vector2::<f64>::new(-vrj.x_, 1.0) / vrj.y_;
-                    // vA1 -= delta(&vA, &vrjn, &(*vri - vrjn));
-                    suppress_old(&mut vA, &mut vA1, vri, &vrjn);
-                }
-                let vrin = Vector2::<f64>::new(-vri.x_, 1.0) / vri.y_;
-                // vA1 -= delta(&vA, &vrin, &(*vri - vrin));
-                suppress_old(&mut vA, &mut vA1, vri, &vrin);
-                let dt = delta(&vA, vri, &vA1); // Gauss-Seidel fashion
-                *vri -= dt;
-                Some(tol_i)
+                pbairstow_autocorr_mt_job(coeffs, i, vri, converged, &vrsc)
             })
             .reduce(|| tol, |x, y| x.max(y));
         if tol < tol_i {
@@ -663,19 +615,51 @@ pub fn pbairstow_autocorr_mt(
     (options.max_iters, false)
 }
 
+fn pbairstow_autocorr_mt_job(
+    coeffs: &[f64],
+    i: usize,
+    vri: &mut Vec2,
+    converged: &mut bool,
+    vrsc: &[Vec2],
+) -> Option<f64> {
+    let mut pb = coeffs.to_owned();
+    // let mut pb = coeffs.to_owned();
+    let degree = pb.len() - 1; // assumed divided by 4
+    let mut vA = horner(&mut pb, degree, vri);
+    let tol_i = vA.norm_inf();
+    if tol_i < 1e-15 {
+        *converged = true;
+        return None;
+    }
+    let mut vA1 = horner(&mut pb, degree - 2, vri);
+    for (_j, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
+        // vA1 -= delta(&vA, vrj, &(*vri - vrj));
+        suppress_old(&mut vA, &mut vA1, vri, vrj);
+        let vrjn = Vector2::<f64>::new(-vrj.x_, 1.0) / vrj.y_;
+        // vA1 -= delta(&vA, &vrjn, &(*vri - vrjn));
+        suppress_old(&mut vA, &mut vA1, vri, &vrjn);
+    }
+    let vrin = Vector2::<f64>::new(-vri.x_, 1.0) / vri.y_;
+    // vA1 -= delta(&vA, &vrin, &(*vri - vrin));
+    suppress_old(&mut vA, &mut vA1, vri, &vrin);
+    let dt = delta(&vA, vri, &vA1); // Gauss-Seidel fashion
+    *vri -= dt;
+    Some(tol_i)
+}
+
 /// The `extract_autocorr` function extracts the quadratic function where its roots are within a unit
 /// circle.
-/// 
+///
 /// x^2 - r*x - t or x^2 + (r/t) * x + (-1/t)
 /// (x - a1)(x - a2) = x^2 - (a1 + a2) x + a1 * a2
 ///
 /// Arguments:
-/// 
+///
 /// * `vr`: A vector containing two values, representing the coefficients of a quadratic function. The
 /// first value represents the coefficient of x^2, and the second value represents the coefficient of x.
-/// 
+///
 /// Returns:
-/// 
+///
 /// The function `extract_autocorr` returns a `Vec2` struct, which contains two elements `x_` and `y_`.
 ///
 /// # Examples:
