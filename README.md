@@ -5,5 +5,5 @@ Parallel Bairstow's Root-finding Method in Rust
 
 ## 👀 See also
 
-[bairstow](https://github.com/luk036/bairstow)
-[bairstow-cpp](https://github.com/luk036/bairstow-cpp)
+* [bairstow](https://github.com/luk036/bairstow)
+* [bairstow-cpp](https://github.com/luk036/bairstow-cpp)
