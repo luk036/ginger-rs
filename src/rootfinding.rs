@@ -331,14 +331,12 @@ pub fn initial_guess(coeffs: &[f64]) -> Vec<Vec2> {
     degree *= 2; // make even
     let k = PI / (degree as f64);
     let m = center * center + re * re;
-    let mut vr0s = Vec::<Vec2>::new();
-    for i in (1..degree).step_by(2) {
+    (1..degree).step_by(2).map(|i| {
         let temp = re * (k * i as f64).cos();
         let r0 = 2.0 * (center + temp);
         let t0 = m + 2.0 * center * temp;
-        vr0s.push(Vector2::<f64>::new(r0, -t0));
-    }
-    vr0s
+        Vector2::<f64>::new(r0, -t0)
+    }).collect()
 }
 
 /// Parallel Bairstow's method (even degree only)
