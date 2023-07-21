@@ -1,3 +1,4 @@
+use super::horner::{horner, horner_eval};
 use super::{Matrix2, Vector2};
 
 type Vec2 = Vector2<f64>;
@@ -223,81 +224,6 @@ pub fn suppress(vA: &Vec2, vA1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
     vc.y_ -= va.x_ * vp.x_;
     let va1 = m_inverse.mdot(&vc);
     (va, va1)
-}
-
-/// The `horner_eval` function in Rust implements the Horner's method for polynomial evaluation.
-///
-/// Arguments:
-///
-/// * `coeffs`: A mutable slice of f64 values representing the coefficients of a polynomial. The
-/// coefficients are ordered from highest degree to lowest degree.
-/// * `degree`: The `degree` parameter represents the degree of the polynomial. In the given example,
-/// the polynomial has a degree of 8.
-/// * `zval`: The `zval` parameter in the `horner_eval` function represents the value at which the
-/// polynomial is evaluated. It is the value of the independent variable in the polynomial expression.
-///
-/// Returns:
-///
-/// The function `horner_eval` returns a `f64` value, which is the result of evaluating the polynomial
-/// with the given coefficients at the specified value `zval`.
-///
-/// # Examples:
-///
-/// ```
-/// use bairstow::rootfinding::horner_eval;
-/// use approx_eq::assert_approx_eq;
-///
-/// let mut coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let px = horner_eval(&mut coeffs, 8, 2.0);
-///
-/// assert_approx_eq!(px, 18250.0);
-/// assert_approx_eq!(coeffs[3], 460.0);
-/// ```
-#[inline]
-pub fn horner_eval(coeffs: &mut [f64], degree: usize, zval: f64) -> f64 {
-    for idx in 0..degree {
-        coeffs[idx + 1] += coeffs[idx] * zval;
-    }
-    coeffs[degree]
-}
-
-/// The `horner` function implements Horner's evaluation for Bairstow's method in Rust.
-///
-/// Arguments:
-///
-/// * `coeffs`: A mutable slice of f64 values representing the coefficients of the polynomial. The
-/// coefficients are in descending order of degree.
-/// * `degree`: The `degree` parameter represents the degree of the polynomial. It is used to determine
-/// the number of coefficients in the `coeffs` array.
-/// * `vr`: The parameter `vr` is a `Vec2` struct that contains two values, `x_` and `y_`. In the
-/// example, `vr` is initialized with the values `-1.0` and `-2.0`.
-///
-/// Returns:
-///
-/// The function `horner` returns a `Vec2` struct, which contains two `f64` values representing the
-/// results of the Horner evaluation.
-///
-/// # Examples:
-///
-/// ```
-/// use bairstow::rootfinding::horner;
-/// use bairstow::vector2::Vector2;
-/// use approx_eq::assert_approx_eq;
-///
-/// let mut coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let px = horner(&mut coeffs, 8, &Vector2::new(-1.0, -2.0));
-///
-/// assert_approx_eq!(px.x_, 114.0);
-/// assert_approx_eq!(px.y_, 134.0);
-/// assert_approx_eq!(coeffs[3], 15.0);           
-/// ```
-pub fn horner(coeffs: &mut [f64], degree: usize, vr: &Vec2) -> Vec2 {
-    let Vec2 { x_: r, y_: q } = vr;
-    for idx in 0..(degree - 1) {
-        coeffs[idx + 1] += coeffs[idx] * r;
-        coeffs[idx + 2] += coeffs[idx] * q;
-    }
-    Vector2::<f64>::new(coeffs[degree - 1], coeffs[degree])
 }
 
 /// The `initial_guess` function in Rust calculates the initial guesses for the roots of a polynomial

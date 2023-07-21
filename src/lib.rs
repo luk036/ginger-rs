@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
 pub mod aberth;
+pub mod horner;
 pub mod matrix2;
 pub mod rootfinding;
 pub mod vector2;
@@ -9,7 +10,7 @@ pub mod vector2;
 pub use crate::aberth::{aberth, aberth_mt, initial_aberth};
 pub use crate::matrix2::Matrix2;
 pub use crate::rootfinding::{
-    horner_eval, initial_autocorr, initial_guess, pbairstow_autocorr, pbairstow_autocorr_mt,
+    initial_autocorr, initial_guess, pbairstow_autocorr, pbairstow_autocorr_mt,
     pbairstow_even, pbairstow_even_mt, Options,
 };
 pub use crate::vector2::Vector2;
