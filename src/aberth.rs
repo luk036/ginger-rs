@@ -172,40 +172,25 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 pub fn aberth(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
     let m_rs = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
+    let pb: Vec<_> = (0..degree)
+        .map(|i| coeffs[i] * (degree - i) as f64)
+        .collect();
     let mut converged = vec![false; m_rs];
-    let mut pb = vec![0.0; degree];
-    for i in 0..degree {
-        pb[i] = coeffs[i] * (degree - i) as f64;
-    }
+
     for niter in 0..options.max_iters {
         let mut tol = 0.0;
-        let mut rx = vec![];
 
         for i in 0..m_rs {
             if converged[i] {
                 continue;
             }
-            let mut job = || {
-                let zi = &zs[i];
-                let pp = horner_eval_c(coeffs, zi);
-                let tol_i = pp.l1_norm(); // ???
-                if tol_i < 1e-15 {
-                    converged[i] = true;
-                    rx.push(tol_i);
+            let mut zi = zs[i];
+            if let Some(tol_i) = aberth_job(coeffs, i, &mut zi, &mut converged[i], &zs, &pb) {
+                if tol < tol_i {
+                    tol = tol_i;
                 }
-                let mut pp1 = horner_eval_c(&pb, zi);
-                for (_, zj) in zs.iter().enumerate().filter(|t| t.0 != i) {
-                    pp1 -= pp / (zi - zj);
-                }
-                zs[i] -= pp / pp1; // Gauss-Seidel fashion
-                rx.push(tol_i);
-            };
-            job();
-        }
-        for result in rx.iter() {
-            if tol < *result {
-                tol = *result;
             }
+            zs[i] = zi;
         }
         if tol < options.tol {
             return (niter, true);
@@ -244,10 +229,9 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
 
     let m_rs = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
-    let mut pb = vec![0.0; degree];
-    for i in 0..degree {
-        pb[i] = coeffs[i] * (degree - i) as f64;
-    }
+    let pb: Vec<_> = (0..degree)
+        .map(|i| coeffs[i] * (degree - i) as f64)
+        .collect();
     let mut zsc = vec![Complex::default(); m_rs];
     let mut converged = vec![false; m_rs];
 
@@ -260,26 +244,7 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
             .zip(converged.par_iter_mut())
             .enumerate()
             .filter(|(_, (_, converged))| !**converged)
-            .filter_map(|(i, (zi, converged))| {
-                let pp = horner_eval_c(coeffs, zi);
-                let tol_i = pp.l1_norm(); // ???
-                if tol_i < 1e-15 {
-                    *converged = true;
-                    None
-                } else {
-                    let mut pp1 = horner_eval_c(&pb, zi);
-                    for (j, zj) in zsc.iter().enumerate() {
-                        // exclude i
-                        if j == i {
-                            continue;
-                        }
-                        pp1 -= pp / (*zi - zj);
-                    }
-                    let dt = pp / pp1; // Gauss-Seidel fashion
-                    *zi -= dt;
-                    Some(tol_i)
-                }
-            })
+            .filter_map(|(i, (zi, converged))| aberth_job(coeffs, i, zi, converged, &zsc, &pb))
             .reduce(|| tol, |x, y| x.max(y));
         if tol < tol_i {
             tol = tol_i;
@@ -289,4 +254,26 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
         }
     }
     (options.max_iters, false)
+}
+
+fn aberth_job(
+    coeffs: &[f64],
+    i: usize,
+    zi: &mut Complex<f64>,
+    converged: &mut bool,
+    zsc: &[Complex<f64>],
+    pb: &[f64],
+) -> Option<f64> {
+    let pp = horner_eval_c(coeffs, zi);
+    let tol_i = pp.l1_norm(); // ???
+    if tol_i < 1e-15 {
+        *converged = true;
+        return None;
+    }
+    let mut pp1 = horner_eval_c(pb, zi);
+    for (_, zj) in zsc.iter().enumerate().filter(|t| t.0 != i) {
+        pp1 -= pp / (*zi - zj);
+    }
+    *zi -= pp / pp1; // Gauss-Seidel fashion
+    Some(tol_i)
 }
