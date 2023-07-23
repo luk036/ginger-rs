@@ -1,4 +1,4 @@
-use super::horner::{horner, horner_eval_f};
+use super::horner::{horner_eval_f, horner_duble_with_cheese};
 use super::{Matrix2, Vector2};
 
 type Vec2 = Vector2<f64>;
@@ -378,16 +378,12 @@ fn pbairstow_even_job(
     converged: &mut bool,
     vrsc: &[Vec2],
 ) -> Option<f64> {
-    let mut pb = coeffs.to_owned();
-    // let mut pb = coeffs.to_owned();
-    let degree = pb.len() - 1; // degree, assume even
-    let mut vA = horner(&mut pb, degree, vri);
+    let (mut vA, mut vA1) = horner_duble_with_cheese(coeffs, *vri);
     let tol_i = vA.norm_inf();
     if tol_i < 1e-15 {
         *converged = true;
         return None;
     }
-    let mut vA1 = horner(&mut pb, degree - 2, vri);
     for (_, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
         // vA1 -= delta(&vA, vrj, &(*vri - vrj));
         suppress_old(&mut vA, &mut vA1, vri, vrj);
@@ -467,7 +463,7 @@ pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options
                 continue;
             }
             let mut vri = vrs[i];
-            let tol_i = pbairstow_autocorr_mt_job(coeffs, i, &mut vri, &mut converged[i], &vrs);
+            let tol_i = pbairstow_autocorr_job(coeffs, i, &mut vri, &mut converged[i], &vrs);
             if let Some(tol_i) = tol_i {
                 if tol < tol_i {
                     tol = tol_i;
@@ -527,7 +523,7 @@ pub fn pbairstow_autocorr_mt(
             .enumerate()
             .filter(|(_, (_, converged))| !**converged)
             .filter_map(|(i, (vri, converged))| {
-                pbairstow_autocorr_mt_job(coeffs, i, vri, converged, &vrsc)
+                pbairstow_autocorr_job(coeffs, i, vri, converged, &vrsc)
             })
             .reduce(|| tol, |x, y| x.max(y));
         if tol < tol_i {
@@ -540,23 +536,19 @@ pub fn pbairstow_autocorr_mt(
     (options.max_iters, false)
 }
 
-fn pbairstow_autocorr_mt_job(
+fn pbairstow_autocorr_job(
     coeffs: &[f64],
     i: usize,
     vri: &mut Vec2,
     converged: &mut bool,
     vrsc: &[Vec2],
 ) -> Option<f64> {
-    let mut pb = coeffs.to_owned();
-    // let mut pb = coeffs.to_owned();
-    let degree = pb.len() - 1; // assumed divided by 4
-    let mut vA = horner(&mut pb, degree, vri);
+    let (mut vA, mut vA1) = horner_duble_with_cheese(coeffs, *vri);
     let tol_i = vA.norm_inf();
     if tol_i < 1e-15 {
         *converged = true;
         return None;
     }
-    let mut vA1 = horner(&mut pb, degree - 2, vri);
     for (_j, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
         // vA1 -= delta(&vA, vrj, &(*vri - vrj));
         suppress_old(&mut vA, &mut vA1, vri, vrj);

@@ -150,3 +150,45 @@ pub fn horner(coeffs: &mut [f64], degree: usize, vr: &Vector2<f64>) -> Vector2<f
     }
     Vector2::<f64>::new(coeffs[degree - 1], coeffs[degree])
 }
+
+/// The result of:
+/// ```
+/// use bairstow::horner::horner;
+/// use bairstow::vector2::Vector2;
+/// let mut coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let vr = Vector2::new(-1.0, -2.0);
+/// let mut pb = coeffs.to_owned();
+/// let degree = coeffs.len() - 1;
+/// let vA = horner(&mut pb, degree, &vr);
+/// let vA1 = horner(&mut pb, degree - 2, &vr);
+/// drop(pb);
+/// ```
+/// usefull for `pbairstow_even_job` and `pbairstow_autocorr_job` to avoid a
+/// clone
+pub fn horner_duble_with_cheese(coeffs: &[f64], vr: Vector2<f64>) -> (Vector2<f64>, Vector2<f64>) {
+    assert!(coeffs.len() > 2);
+    let Vector2 { x_: r, y_: q } = vr;
+    let mut r1 = [0.0, coeffs[0], coeffs[1]];
+    let mut r2 = [0.0f64; 3];
+    fn rotate_rs(r: &mut [f64; 3], new: f64) -> f64 {
+        let old = r[0];
+        r[0] = r[1];
+        r[1] = r[2];
+        r[2] = new;
+        old
+    }
+    for (idx, v) in coeffs.iter().skip(2).enumerate() {
+        let old = rotate_rs(&mut r1, *v);
+        rotate_rs(&mut r2, old);
+        r1[1] += r1[0] * r;
+        r1[2] += r1[0] * q;
+        if idx > 2 {
+            r2[1] += r2[0] * r;
+            r2[2] += r2[0] * q;
+        }
+    }
+    rotate_rs(&mut r2, r1[0]);
+    r2[1] += r2[0] * r;
+    r2[2] += r2[0] * q;
+    (Vector2::new(r1[1], r1[2]), Vector2::new(r2[1], r2[2]))
+}
