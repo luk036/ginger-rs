@@ -115,13 +115,12 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
     let Pc = horner_eval_f(coeffs, center);
     let re = Complex::<f64>::new(-Pc, 0.0).powf(1.0 / degree as f64);
     let k = TWO_PI / (degree as f64);
-    let mut z0s = vec![];
-    for idx in 0..degree {
-        let theta = k * (0.25 + idx as f64);
-        let z0 = center + re * Complex::<f64>::new(theta.cos(), theta.sin());
-        z0s.push(z0);
-    }
-    z0s
+    (0..degree)
+        .map(|idx| {
+            let theta = k * (0.25 + idx as f64);
+            center + re * Complex::<f64>::new(theta.cos(), theta.sin())
+        })
+        .collect()
 }
 
 /// Aberth's method
