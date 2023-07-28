@@ -184,7 +184,7 @@ pub fn aberth(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> 
                 continue;
             }
             let mut zi = zs[i];
-            if let Some(tol_i) = aberth_job(coeffs, i, &mut zi, &mut converged[i], &zs, &pb) {
+            if let Some(tol_i) = aberth_job(coeffs, i, &mut zi, &mut converged[i], zs, &pb) {
                 if tol < tol_i {
                     tol = tol_i;
                 }

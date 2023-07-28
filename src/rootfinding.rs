@@ -378,7 +378,7 @@ pub fn pbairstow_even(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options) ->
                 continue;
             }
             let mut vri = vrs[i];
-            if let Some(tol_i) = pbairstow_even_job(coeffs, i, &mut vri, &mut converged[i], &vrs) {
+            if let Some(tol_i) = pbairstow_even_job(coeffs, i, &mut vri, &mut converged[i], vrs) {
                 if tol < tol_i {
                     tol = tol_i;
                 }
@@ -542,7 +542,7 @@ pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options
                 continue;
             }
             let mut vri = vrs[i];
-            let tol_i = pbairstow_autocorr_mt_job(coeffs, i, &mut vri, &mut converged[i], &vrs);
+            let tol_i = pbairstow_autocorr_mt_job(coeffs, i, &mut vri, &mut converged[i], vrs);
             if let Some(tol_i) = tol_i {
                 if tol < tol_i {
                     tol = tol_i;
