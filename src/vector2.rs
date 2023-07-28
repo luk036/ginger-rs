@@ -10,6 +10,14 @@ use num_traits::{Num, Signed, Zero};
 /// which means it can be any type that is specified when creating an instance of `Vector2`.
 /// * `y_`: The `y_` property is the second element of the `Vector2` object. It represents the
 /// y-coordinate of a 2D vector.
+///
+/// # Examples:
+///
+/// ```
+/// use bairstow::vector2::Vector2;
+///
+/// assert_eq!(Vector2::new(3, 4), Vector2 { x_: 3, y_: 4});
+/// ```
 #[derive(PartialEq, Eq, Copy, Clone, Hash, Debug, Default)]
 pub struct Vector2<T> {
     /// The first element of the vector2 object
@@ -67,6 +75,7 @@ impl<T: Clone + Num> Vector2<T> {
     /// let vector2 = &Vector2::new(3, 4);
     /// let other = &Vector2::new(5, 6);
     /// assert_eq!(vector2.dot(other), 15 + 24);
+    /// assert_eq!(vector2.dot(&vector2), 9 + 16);
     /// ```
     #[inline]
     pub fn dot(&self, other: &Self) -> T {
@@ -92,6 +101,7 @@ impl<T: Clone + Num> Vector2<T> {
     /// let vector2 = &Vector2::new(3, 4);
     /// let other = &Vector2::new(5, 6);
     /// assert_eq!(vector2.cross(other), 18 - 20);
+    /// assert_eq!(vector2.cross(&vector2), 0);
     /// ```
     #[inline]
     pub fn cross(&self, other: &Self) -> T {
@@ -135,8 +145,9 @@ impl<T: Clone + Num> Vector2<T> {
     /// ```
     /// use bairstow::vector2::Vector2;
     ///
-    /// let vector2 = &Vector2::new(3, 4);
-    /// assert_eq!(vector2.scale(10), Vector2::new(30, 40));
+    /// let vector2 = &Vector2::new(3.0, 4.0);
+    /// assert_eq!(vector2.scale(10.0), Vector2::new(30.0, 40.0));
+    /// assert_eq!(vector2.scale(0.5), Vector2::new(1.5, 2.0));
     /// ```
     #[inline]
     pub fn scale(&self, alpha: T) -> Self {

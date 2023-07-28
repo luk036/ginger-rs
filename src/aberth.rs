@@ -7,20 +7,20 @@ use num::Complex;
 const TWO_PI: f64 = std::f64::consts::TAU;
 
 /// Horner evalution (float)
-/// 
+///
 /// The `horner_eval_f` function in Rust implements the Horner's method for evaluating a polynomial with
 /// given coefficients at a specific value.
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `coeffs`: A vector of floating-point coefficients representing a polynomial. The coefficients are
 /// ordered from highest degree to lowest degree. For example, the polynomial 10x^8 + 34x^7 + 75x^6 +
 /// 94x^5 + 150x^4 + 94x^
 /// * `zval`: The `zval` parameter in the `horner_eval_f` function represents the value at which the
 /// polynomial is evaluated. It is of type `f64`, which means it is a floating-point number.
-/// 
+///
 /// Returns:
-/// 
+///
 /// The function `horner_eval_f` returns a `f64` value, which is the result of evaluating the polynomial
 /// with the given coefficients at the specified value `zval`.
 ///
@@ -44,19 +44,19 @@ pub fn horner_eval_f(coeffs: &[f64], zval: f64) -> f64 {
 }
 
 /// Horner evalution (complex)
-/// 
+///
 /// The `horner_eval_c` function in Rust implements the Horner evaluation method for complex
 /// polynomials.
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `coeffs`: A vector of coefficients representing a polynomial. The coefficients are in descending
 /// order of degree. For example, the polynomial 10x^8 + 34x^7 + 75x^6 + 94x^5 + 150x^4 + 94x^3 + 75
 /// * `zval`: The `zval` parameter is a complex number that represents the value at which the polynomial
 /// is evaluated.
-/// 
+///
 /// Returns:
-/// 
+///
 /// The function `horner_eval_c` returns a complex number of type `Complex<f64>`.
 ///
 /// # Examples:
@@ -81,18 +81,18 @@ pub fn horner_eval_c(coeffs: &[f64], zval: &Complex<f64>) -> Complex<f64> {
 }
 
 /// Initial guess for Aberth's method
-/// 
+///
 /// The `initial_aberth` function calculates the initial guesses for Aberth's method given a
 /// polynomial's coefficients.
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
 /// polynomial. The coefficients are ordered from highest degree to lowest degree. For example, if the
 /// polynomial is `3x^2 + 2x + 1`, the `coeffs` slice would
-/// 
+///
 /// Returns:
-/// 
+///
 /// The function `initial_aberth` returns a vector of `Complex<f64>` values, which represent the initial
 /// guesses for the roots of a polynomial.
 ///
@@ -124,9 +124,9 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 }
 
 /// Aberth's method
-/// 
+///
 /// The `aberth` function implements Aberth's method for finding roots of a polynomial.
-/// 
+///
 /// <pre>
 ///                 P ⎛z ⎞
 ///      new          ⎝ i⎠
@@ -147,7 +147,7 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 /// </pre>
 ///
 /// Arguments:
-/// 
+///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
 /// polynomial. The coefficients are ordered from highest degree to lowest degree. For example, if the
 /// polynomial is `3x^2 + 2x + 1`, the `coeffs` slice would
@@ -199,11 +199,11 @@ pub fn aberth(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> 
 }
 
 /// Multi-threading Aberth's method
-/// 
+///
 /// The `aberth_mt` function in Rust implements the multi-threaded Aberth's method for root finding.
-/// 
+///
 /// Arguments:
-/// 
+///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
 /// polynomial. The polynomial is defined by the equation:
 /// * `zs`: A mutable reference to a vector of Complex numbers. These numbers represent the initial
@@ -275,4 +275,31 @@ fn aberth_job(
     }
     *zi -= pp / pp1; // Gauss-Seidel fashion
     Some(tol_i)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_horner_eval() {
+        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let z = Complex::new(0.0, 0.0);
+        let pp = horner_eval_c(&coeffs, &z);
+        assert_eq!(pp.re, 10.0);
+        assert_eq!(pp.im, 0.0);
+        let z = Complex::new(1.0, 0.0);
+        let pp = horner_eval_c(&coeffs, &z);
+        assert_eq!(pp.re, 576.0);
+        assert_eq!(pp.im, 0.0);
+    }
+
+    #[test]
+    fn test_aberth() {
+        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let mut zrs = initial_aberth(&coeffs);
+        let (niter, found) = aberth(&coeffs, &mut zrs, &Options::default());
+        assert_eq!(niter, 5);
+        assert!(found);
+    }
 }
