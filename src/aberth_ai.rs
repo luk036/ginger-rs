@@ -19,9 +19,9 @@ type FoC = Complex<f64>;
 /// The function `initial_aberth_orig` returns a vector of complex numbers (`Vec<Complex<f64>>`).
 fn initial_aberth_orig(coeffs: &Vec<FoC>) -> Vec<Complex<f64>> {
     let degree: usize = coeffs.len() - 1;
-    let centerenter: FoC = -coeffs[1] / (degree.try_into().unwrap() * coeffs[0]);
+    let center: FoC = -coeffs[1] / (degree.try_into().unwrap() * coeffs[0]);
     let mut pa_copy = coeffs.clone();
-    let Pc: FoC = horner_eval(&mut pa_copy, degree, centerenter);
+    let Pc: FoC = horner_eval(&mut pa_copy, degree, center);
     let re: f64 = (-Pc).sqrt().re;
 
     let mut z0s: Vec<Complex<f64>> = Vec::new();
@@ -29,7 +29,7 @@ fn initial_aberth_orig(coeffs: &Vec<FoC>) -> Vec<Complex<f64>> {
     vgen.reseed(1);
     for _ in 0..degree {
         let vdc = 2.0 * PI * vgen.pop();
-        z0s.push(centerenter + Complex::new(re, 0.0) * Complex::from_polar(&1.0, &vdc));
+        z0s.push(center + Complex::new(re, 0.0) * Complex::from_polar(&1.0, &vdc));
     }
     z0s
 }
