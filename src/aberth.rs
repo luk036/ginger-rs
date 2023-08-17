@@ -171,7 +171,7 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 pub fn aberth(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
     let m_rs = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
-    let pb: Vec<_> = (0..degree)
+    let coeffs1: Vec<_> = (0..degree)
         .map(|i| coeffs[i] * (degree - i) as f64)
         .collect();
     let mut converged = vec![false; m_rs];
@@ -184,7 +184,7 @@ pub fn aberth(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> 
                 continue;
             }
             let mut zi = zs[i];
-            if let Some(tol_i) = aberth_job(coeffs, i, &mut zi, &mut converged[i], zs, &pb) {
+            if let Some(tol_i) = aberth_job(coeffs, i, &mut zi, &mut converged[i], zs, &coeffs1) {
                 if tol < tol_i {
                     tol = tol_i;
                 }
@@ -228,7 +228,7 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
 
     let m_rs = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
-    let pb: Vec<_> = (0..degree)
+    let coeffs1: Vec<_> = (0..degree)
         .map(|i| coeffs[i] * (degree - i) as f64)
         .collect();
     let mut zsc = vec![Complex::default(); m_rs];
@@ -243,7 +243,7 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
             .zip(converged.par_iter_mut())
             .enumerate()
             .filter(|(_, (_, converged))| !**converged)
-            .filter_map(|(i, (zi, converged))| aberth_job(coeffs, i, zi, converged, &zsc, &pb))
+            .filter_map(|(i, (zi, converged))| aberth_job(coeffs, i, zi, converged, &zsc, &coeffs1))
             .reduce(|| tol, |x, y| x.max(y));
         if tol < tol_i {
             tol = tol_i;
@@ -261,7 +261,7 @@ fn aberth_job(
     zi: &mut Complex<f64>,
     converged: &mut bool,
     zsc: &[Complex<f64>],
-    pb: &[f64],
+    coeffs1: &[f64],
 ) -> Option<f64> {
     let pp = horner_eval_c(coeffs, zi);
     let tol_i = pp.l1_norm(); // ???
@@ -269,7 +269,7 @@ fn aberth_job(
         *converged = true;
         return None;
     }
-    let mut pp1 = horner_eval_c(pb, zi);
+    let mut pp1 = horner_eval_c(coeffs1, zi);
     for (_, zj) in zsc.iter().enumerate().filter(|t| t.0 != i) {
         pp1 -= pp / (*zi - zj);
     }

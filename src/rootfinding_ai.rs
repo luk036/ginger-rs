@@ -103,21 +103,21 @@ fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vector2]) -> (Vec<Vector2>, i32, bo
         let mut tol = 0.0;
 
         for i in (0..m_rs).filter(|&i| !converged[i]) {
-            let mut pb = coeffs.to_vec();
-            let vA = horner(&pb, degree, vrs[i]);
+            let mut coeffs1 = coeffs.to_vec();
+            let vA = horner(&coeffs1, degree, vrs[i]);
             let tol_i = vA.x.abs().max(vA.y.abs());
             if tol_i < TOL_IND {
                 converged[i] = true;
                 continue;
             }
-            let mut vA1 = horner(&pb, degree - 2, vrs[i]);
+            let mut vA1 = horner(&coeffs1, degree - 2, vrs[i]);
             tol = tol.max(tol_i);
 
             for j in robin.exclude(i) {
                 let (va, va1) = suppress(vA, vA1, vrs[i], vrs[j]);
                 vA1 = va1;
-                pb[0] = va._x;
-                pb[1] = va._y;
+                coeffs1[0] = va._x;
+                coeffs1[1] = va._y;
             }
             vrs[i] -= delta(vA, vrs[i], vA1);
         }

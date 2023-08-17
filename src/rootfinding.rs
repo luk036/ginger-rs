@@ -324,8 +324,8 @@ pub fn horner(coeffs: &mut [f64], degree: usize, vr: &Vec2) -> Vec2 {
 pub fn initial_guess(coeffs: &[f64]) -> Vec<Vec2> {
     let mut degree = coeffs.len() - 1;
     let center = -coeffs[1] / (coeffs[0] * degree as f64);
-    let mut pb = coeffs.to_owned();
-    let centroid = horner_eval(&mut pb, degree, center); // ???
+    let mut coeffs1 = coeffs.to_owned();
+    let centroid = horner_eval(&mut coeffs1, degree, center); // ???
     let re = centroid.abs().powf(1.0 / (degree as f64));
     degree /= 2;
     degree *= 2; // make even
@@ -454,16 +454,16 @@ fn pbairstow_even_job(
     converged: &mut bool,
     vrsc: &[Vec2],
 ) -> Option<f64> {
-    let mut pb = coeffs.to_owned();
-    // let mut pb = coeffs.to_owned();
-    let degree = pb.len() - 1; // degree, assume even
-    let mut vA = horner(&mut pb, degree, vri);
+    let mut coeffs1 = coeffs.to_owned();
+    // let mut coeffs1 = coeffs.to_owned();
+    let degree = coeffs1.len() - 1; // degree, assume even
+    let mut vA = horner(&mut coeffs1, degree, vri);
     let tol_i = vA.norm_inf();
     if tol_i < 1e-15 {
         *converged = true;
         return None;
     }
-    let mut vA1 = horner(&mut pb, degree - 2, vri);
+    let mut vA1 = horner(&mut coeffs1, degree - 2, vri);
     for (_, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
         // vA1 -= delta(&vA, vrj, &(*vri - vrj));
         suppress_old(&mut vA, &mut vA1, vri, vrj);
@@ -622,16 +622,16 @@ fn pbairstow_autocorr_mt_job(
     converged: &mut bool,
     vrsc: &[Vec2],
 ) -> Option<f64> {
-    let mut pb = coeffs.to_owned();
-    // let mut pb = coeffs.to_owned();
-    let degree = pb.len() - 1; // assumed divided by 4
-    let mut vA = horner(&mut pb, degree, vri);
+    let mut coeffs1 = coeffs.to_owned();
+    // let mut coeffs1 = coeffs.to_owned();
+    let degree = coeffs1.len() - 1; // assumed divided by 4
+    let mut vA = horner(&mut coeffs1, degree, vri);
     let tol_i = vA.norm_inf();
     if tol_i < 1e-15 {
         *converged = true;
         return None;
     }
-    let mut vA1 = horner(&mut pb, degree - 2, vri);
+    let mut vA1 = horner(&mut coeffs1, degree - 2, vri);
     for (_j, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
         // vA1 -= delta(&vA, vrj, &(*vri - vrj));
         suppress_old(&mut vA, &mut vA1, vri, vrj);

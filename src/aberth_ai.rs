@@ -54,14 +54,14 @@ fn aberth(
     for niter in 0..options.max_iters {
         let mut tol = 0.0;
         for i in (0..M).filter(|&i| !converged[i]) {
-            let mut pb = coeffs.clone();
-            let P = horner_eval(&mut pb, degree, zs[i]);
+            let mut coeffs1 = coeffs.clone();
+            let P = horner_eval(&mut coeffs1, degree, zs[i]);
             let tol_i = P.norm();
             if tol_i < options.tol_ind {
                 converged[i] = true;
                 continue;
             }
-            let mut P1 = horner_eval(&mut pb, degree - 1, zs[i]);
+            let mut P1 = horner_eval(&mut coeffs1, degree - 1, zs[i]);
             tol = tol.max(tol_i);
             for j in robin.exclude(i) {
                 P1 -= P / (zs[i] - zs[j]);
