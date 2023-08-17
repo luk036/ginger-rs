@@ -95,10 +95,10 @@ fn initial_guess(coeffs: &[f64]) -> Vec<Vector2> {
 }
 
 fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vector2]) -> (Vec<Vector2>, i32, bool) {
-    let m_rs_rs = vrs.len();
+    let m_rs = vrs.len();
     let degree = coeffs.len() - 1;
     let mut converged = vec![false; m_rs];
-    let mut robin = Robin::new(m_rs_rs);
+    let mut robin = Robin::new(m_rs);
     for niter in 0..MAX_ITERS {
         let mut tol = 0.0;
 

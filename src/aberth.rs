@@ -169,17 +169,17 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 /// assert_eq!(niter, 5);
 /// ```
 pub fn aberth(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
-    let m_rs = zs.len();
+    let m_zs = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
     let coeffs1: Vec<_> = (0..degree)
         .map(|i| coeffs[i] * (degree - i) as f64)
         .collect();
-    let mut converged = vec![false; m_rs];
+    let mut converged = vec![false; m_zs];
 
     for niter in 0..options.max_iters {
         let mut tol = 0.0;
 
-        for i in 0..m_rs {
+        for i in 0..m_zs {
             if converged[i] {
                 continue;
             }
@@ -226,13 +226,13 @@ pub fn aberth(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> 
 pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
     use rayon::prelude::*;
 
-    let m_rs = zs.len();
+    let m_zs = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
     let coeffs1: Vec<_> = (0..degree)
         .map(|i| coeffs[i] * (degree - i) as f64)
         .collect();
-    let mut zsc = vec![Complex::default(); m_rs];
-    let mut converged = vec![false; m_rs];
+    let mut zsc = vec![Complex::default(); m_zs];
+    let mut converged = vec![false; m_zs];
 
     for niter in 0..options.max_iters {
         let mut tol = 0.0;
