@@ -1,5 +1,5 @@
-use num_traits::ops::mul_add::MulAddAssign;
 use num::Complex;
+use num_traits::ops::mul_add::MulAddAssign;
 
 /// Evaluate a polynomial of arbitrary rank using Horner's method.
 ///
@@ -46,8 +46,7 @@ use num::Complex;
 /// ```
 ///
 /// See also: [const_horner_eval_g]
-pub fn horner_eval_g<T: MulAddAssign + Copy> (x: T, coefficients: &[T]) -> T
-{
+pub fn horner_eval_g<T: MulAddAssign + Copy>(x: T, coefficients: &[T]) -> T {
     let (&k, coefficients) = coefficients.split_first().unwrap();
     let mut val = k;
     for &k in coefficients {
@@ -71,11 +70,12 @@ pub fn horner_eval_g<T: MulAddAssign + Copy> (x: T, coefficients: &[T]) -> T
 /// ```
 ///
 /// See also: [horner_eval_g]
-pub fn const_horner_eval_g<T: MulAddAssign + Copy, const N: usize> (x: T, coefficients: &[T; N]) -> T
-{
+pub fn const_horner_eval_g<T: MulAddAssign + Copy, const N: usize>(
+    x: T,
+    coefficients: &[T; N],
+) -> T {
     horner_eval_g(x, coefficients)
 }
-
 
 /// Evaluate a polynomial of arbitrary rank using Horner's method.
 ///
@@ -104,8 +104,7 @@ pub fn const_horner_eval_g<T: MulAddAssign + Copy, const N: usize> (x: T, coeffi
 /// ```
 ///
 /// See also: [const_horner_eval_c]
-pub fn horner_eval_c(x: &Complex<f64>, coefficients: &[f64]) -> Complex<f64>
-{
+pub fn horner_eval_c(x: &Complex<f64>, coefficients: &[f64]) -> Complex<f64> {
     let (&k, coefficients) = coefficients.split_first().unwrap();
     let mut val = Complex::<f64>::new(k, 0.0);
     for &k in coefficients {
@@ -134,7 +133,9 @@ pub fn horner_eval_c(x: &Complex<f64>, coefficients: &[f64]) -> Complex<f64>
 /// ```
 ///
 /// See also: [horner_eval_c]
-pub fn const_horner_eval_c<const N: usize> (x: &Complex<f64>, coefficients: &[f64; N]) -> Complex<f64>
-{
+pub fn const_horner_eval_c<const N: usize>(
+    x: &Complex<f64>,
+    coefficients: &[f64; N],
+) -> Complex<f64> {
     horner_eval_c(x, coefficients)
 }

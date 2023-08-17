@@ -1,10 +1,10 @@
 #![allow(non_snake_case)]
 
 pub mod aberth;
+pub mod horner;
 pub mod matrix2;
 pub mod rootfinding;
 pub mod vector2;
-pub mod horner;
 // pub mod robin;
 
 pub use crate::aberth::{aberth, aberth_mt, initial_aberth};
