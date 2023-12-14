@@ -15,8 +15,8 @@
 
 ## 👀 See also
 
-* [bairstow](https://github.com/luk036/bairstow)
-* [bairstow-cpp](https://github.com/luk036/bairstow-cpp)
+* [bairstow](https://luk036.github.io/bairstow)
+* [bairstow-cpp](https://luk036.github.io/bairstow-cpp)
 
 ## License
 
