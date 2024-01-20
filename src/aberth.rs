@@ -36,11 +36,7 @@ const TWO_PI: f64 = std::f64::consts::TAU;
 /// assert_approx_eq!(px, 18250.0);
 /// ```
 pub fn horner_eval_f(coeffs: &[f64], zval: f64) -> f64 {
-    coeffs
-        .iter()
-        .copied()
-        .reduce(|res, coeff| res * zval + coeff)
-        .unwrap()
+    coeffs.iter().fold(0.0, |acc, coeff| acc * zval + coeff)
 }
 
 /// Horner evalution (complex)
@@ -73,11 +69,12 @@ pub fn horner_eval_f(coeffs: &[f64], zval: f64) -> f64 {
 /// assert_approx_eq!(px.im, 9120.0);
 /// ```
 pub fn horner_eval_c(coeffs: &[f64], zval: &Complex<f64>) -> Complex<f64> {
-    coeffs
-        .iter()
-        .map(|coeff| Complex::<f64>::new(*coeff, 0.0))
-        .reduce(|res, coeff| res * zval + coeff)
-        .unwrap()
+    coeffs.iter().fold(Complex::<f64>::new(0.0, 0.0), |acc, coeff| acc * zval + coeff)
+    // coeffs
+    //     .iter()
+    //     .map(|coeff| Complex::<f64>::new(*coeff, 0.0))
+    //     .reduce(|res, coeff| res * zval + coeff)
+    //     .unwrap()
 }
 
 /// Initial guess for Aberth's method

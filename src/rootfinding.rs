@@ -247,18 +247,19 @@ pub fn suppress(vA: &Vec2, vA1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
 /// use bairstow::rootfinding::horner_eval;
 /// use approx_eq::assert_approx_eq;
 ///
-/// let mut coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let px = horner_eval(&mut coeffs, 8, 2.0);
+/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let px = horner_eval(&coeffs, 2.0);
 ///
 /// assert_approx_eq!(px, 18250.0);
-/// assert_approx_eq!(coeffs[3], 460.0);
+/// assert_approx_eq!(coeffs[3], 94.0);
 /// ```
 #[inline]
-pub fn horner_eval(coeffs: &mut [f64], degree: usize, zval: f64) -> f64 {
-    for idx in 0..degree {
-        coeffs[idx + 1] += coeffs[idx] * zval;
-    }
-    coeffs[degree]
+pub fn horner_eval(coeffs: &[f64], zval: f64) -> f64 {
+    coeffs.iter().fold(0.0, |acc, coeff| acc * zval + coeff)
+    // for idx in 0..degree {
+    //     coeffs[idx + 1] += coeffs[idx] * zval;
+    // }
+    // coeffs[degree]
 }
 
 /// The `horner` function implements Horner's evaluation for Bairstow's method in Rust.
@@ -324,8 +325,8 @@ pub fn horner(coeffs: &mut [f64], degree: usize, vr: &Vec2) -> Vec2 {
 pub fn initial_guess(coeffs: &[f64]) -> Vec<Vec2> {
     let mut degree = coeffs.len() - 1;
     let center = -coeffs[1] / (coeffs[0] * degree as f64);
-    let mut coeffs1 = coeffs.to_owned();
-    let centroid = horner_eval(&mut coeffs1, degree, center); // ???
+    // let mut coeffs1 = coeffs.to_owned();
+    let centroid = horner_eval(coeffs, center); // ???
     let re = centroid.abs().powf(1.0 / (degree as f64));
     degree /= 2;
     degree *= 2; // make even
@@ -455,7 +456,6 @@ fn pbairstow_even_job(
     vrsc: &[Vec2],
 ) -> Option<f64> {
     let mut coeffs1 = coeffs.to_owned();
-    // let mut coeffs1 = coeffs.to_owned();
     let degree = coeffs1.len() - 1; // degree, assume even
     let mut vA = horner(&mut coeffs1, degree, vri);
     let tol_i = vA.norm_inf();
@@ -465,7 +465,6 @@ fn pbairstow_even_job(
     }
     let mut vA1 = horner(&mut coeffs1, degree - 2, vri);
     for (_, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
-        // vA1 -= delta(&vA, vrj, &(*vri - vrj));
         suppress_old(&mut vA, &mut vA1, vri, vrj);
     }
     let dt = delta(&vA, vri, &vA1); // Gauss-Seidel fashion
