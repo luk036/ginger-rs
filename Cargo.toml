@@ -15,7 +15,7 @@ path = "src/lib.rs"
 [dependencies]
 num = "0.4.1"
 num-traits = "0.2.17"
-rayon = "1.8.0"
+rayon = "1.8.1"
 
 [dev-dependencies]
 approx_eq = "0.1.8"
