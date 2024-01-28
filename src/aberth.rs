@@ -168,8 +168,11 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 pub fn aberth(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
     let m_zs = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
-    let coeffs1: Vec<_> = (0..degree)
-        .map(|i| coeffs[i] * (degree - i) as f64)
+    // let coeffs1: Vec<_> = (0..degree)
+    //     .map(|i| coeffs[i] * (degree - i) as f64)
+    //     .collect();
+    let coeffs1: Vec<_> = coeffs[0..degree].iter().enumerate()
+        .map(|(i, ci)| ci * (degree - i) as f64)
         .collect();
     let mut converged = vec![false; m_zs];
 
