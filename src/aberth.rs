@@ -69,7 +69,11 @@ pub fn horner_eval_f(coeffs: &[f64], zval: f64) -> f64 {
 /// assert_approx_eq!(px.im, 9120.0);
 /// ```
 pub fn horner_eval_c(coeffs: &[f64], zval: &Complex<f64>) -> Complex<f64> {
-    coeffs.iter().fold(Complex::<f64>::new(0.0, 0.0), |acc, coeff| acc * zval + coeff)
+    coeffs
+        .iter()
+        .fold(Complex::<f64>::new(0.0, 0.0), |acc, coeff| {
+            acc * zval + coeff
+        })
     // coeffs
     //     .iter()
     //     .map(|coeff| Complex::<f64>::new(*coeff, 0.0))
@@ -168,10 +172,12 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 pub fn aberth(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
     let m_zs = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
-    // let coeffs1: Vec<_> = (0..degree)
-    //     .map(|i| coeffs[i] * (degree - i) as f64)
-    //     .collect();
-    let coeffs1: Vec<_> = coeffs[0..degree].iter().enumerate()
+                                   // let coeffs1: Vec<_> = (0..degree)
+                                   //     .map(|i| coeffs[i] * (degree - i) as f64)
+                                   //     .collect();
+    let coeffs1: Vec<_> = coeffs[0..degree]
+        .iter()
+        .enumerate()
         .map(|(i, ci)| ci * (degree - i) as f64)
         .collect();
     let mut converged = vec![false; m_zs];
