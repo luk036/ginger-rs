@@ -368,7 +368,7 @@ pub fn initial_guess(coeffs: &[f64]) -> Vec<Vec2> {
 ///
 /// assert_eq!(niter, 5);
 /// ```
-pub fn pbairstow_even(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
+pub fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (usize, bool) {
     let m_rs = vrs.len();
     let mut converged = vec![false; m_rs];
 
@@ -529,7 +529,7 @@ pub fn initial_autocorr(coeffs: &[f64]) -> Vec<Vec2> {
 ///
 /// assert_eq!(niter, 1);
 /// ```
-pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
+pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (usize, bool) {
     let m_rs = vrs.len();
     let mut converged = vec![false; m_rs];
 
