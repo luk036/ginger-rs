@@ -8,7 +8,7 @@ fn bench(c: &mut Criterion) {
     let coeffs = black_box([10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0]);
     let options = black_box(Options {
         max_iters: 2000,
-        tol: 1e-14,
+        tol: 1e-12,
         tol_ind: 1e-15,
     });
 
@@ -50,11 +50,11 @@ fn bench(c: &mut Criterion) {
         )
     });
 
-    let options = black_box(Options {
-        max_iters: 2000,
-        tol: 1e-12,
-        tol_ind: 1e-15,
-    });
+    // let options = black_box(Options {
+    //     max_iters: 2000,
+    //     tol: 1e-12,
+    //     tol_ind: 1e-15,
+    // });
     let zs = initial_aberth(&coeffs);
     c.bench_function("initial_aberth", |b| {
         b.iter_with_large_drop(|| initial_aberth(&coeffs));
