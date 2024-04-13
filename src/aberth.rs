@@ -169,7 +169,7 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 ///
 /// assert_eq!(niter, 5);
 /// ```
-pub fn aberth(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
+pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (usize, bool) {
     let m_zs = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
                                    // let coeffs1: Vec<_> = (0..degree)
