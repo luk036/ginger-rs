@@ -256,10 +256,6 @@ pub fn suppress(vA: &Vec2, vA1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
 #[inline]
 pub fn horner_eval(coeffs: &[f64], zval: f64) -> f64 {
     coeffs.iter().fold(0.0, |acc, coeff| acc * zval + coeff)
-    // for idx in 0..degree {
-    //     coeffs[idx + 1] += coeffs[idx] * zval;
-    // }
-    // coeffs[degree]
 }
 
 /// The `horner` function implements Horner's evaluation for Bairstow's method in Rust.

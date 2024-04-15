@@ -5,6 +5,7 @@ pub mod horner;
 pub mod matrix2;
 pub mod rootfinding;
 pub mod vector2;
+pub mod vector2_ref;
 // pub mod robin;
 
 pub use crate::aberth::{aberth, aberth_mt, initial_aberth};
