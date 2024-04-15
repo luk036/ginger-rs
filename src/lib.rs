@@ -53,7 +53,7 @@ mod tests {
 
         let options = Options {
             max_iters: 2000,
-            tol: 1e-14,
+            tolerance: 1e-14,
             tol_ind: 1e-15,
         };
 
@@ -77,7 +77,7 @@ mod tests {
 
         let options = Options {
             max_iters: 2000,
-            tol: 1e-12,
+            tolerance: 1e-12,
             tol_ind: 1e-15,
         };
 

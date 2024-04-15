@@ -5,14 +5,14 @@ type Mat2 = Matrix2<f64>;
 
 const PI: f64 = std::f64::consts::PI;
 
-/// The below code defines a struct named Options with three fields: max_iters, tol, and tol_ind.
+/// The below code defines a struct named Options with three fields: max_iters, tolerance, and tol_ind.
 ///
 /// Properties:
 ///
 /// * `max_iters`: The `max_iters` property represents the maximum number of iterations allowed for a
 /// certain algorithm or process. It is of type `usize`, which means it can only hold non-negative
 /// integer values.
-/// * `tol`: The `tol` property is a floating-point number that represents the tolerance for convergence
+/// * `tolerance`: The `tolerance` property is a floating-point number that represents the tolerance for convergence
 /// in an algorithm. It is used to determine when the algorithm has reached a satisfactory solution.
 /// * `tol_ind`: The `tol_ind` property in the `Options` struct represents the tolerance for individual
 /// values. It is a floating-point number (`f64`) that determines the acceptable difference between the
@@ -20,19 +20,19 @@ const PI: f64 = std::f64::consts::PI;
 #[derive(Debug)]
 pub struct Options {
     pub max_iters: usize,
-    pub tol: f64,
+    pub tolerance: f64,
     pub tol_ind: f64,
 }
 
 /// The below code is implementing the `Default` trait for the `Options` struct in Rust. The `Default`
 /// trait provides a default value for a type, which can be used when creating an instance of the type
 /// without specifying any values. In this case, the `default` function is defined to return an instance
-/// of the `Options` struct with default values for the `max_iters`, `tol`, and `tol_ind` fields.
+/// of the `Options` struct with default values for the `max_iters`, `tolerance`, and `tol_ind` fields.
 impl Default for Options {
     fn default() -> Self {
         Options {
             max_iters: 2000,
-            tol: 1e-12,
+            tolerance: 1e-12,
             tol_ind: 1e-15,
         }
     }
@@ -369,20 +369,20 @@ pub fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (u
     let mut converged = vec![false; m_rs];
 
     for niter in 1..options.max_iters {
-        let mut tol = 0.0;
+        let mut tolerance = 0.0;
         for i in 0..m_rs {
             if converged[i] {
                 continue;
             }
             let mut vri = vrs[i];
             if let Some(tol_i) = pbairstow_even_job(coeffs, i, &mut vri, &mut converged[i], vrs) {
-                if tol < tol_i {
-                    tol = tol_i;
+                if tolerance < tol_i {
+                    tolerance = tol_i;
                 }
             }
             vrs[i] = vri;
         }
-        if tol < options.tol {
+        if tolerance < options.tolerance {
             return (niter, true);
         }
     }
@@ -422,7 +422,7 @@ pub fn pbairstow_even_mt(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
     let mut converged = vec![false; m_rs];
 
     for niter in 1..options.max_iters {
-        let mut tol = 0.0;
+        let mut tolerance = 0.0;
         vrsc.copy_from_slice(vrs);
 
         let tol_i = vrs
@@ -433,11 +433,11 @@ pub fn pbairstow_even_mt(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
             .filter_map(|(i, (vri, converged))| {
                 pbairstow_even_job(coeffs, i, vri, converged, &vrsc)
             })
-            .reduce(|| tol, |x, y| x.max(y));
-        if tol < tol_i {
-            tol = tol_i;
+            .reduce(|| tolerance, |x, y| x.max(y));
+        if tolerance < tol_i {
+            tolerance = tol_i;
         }
-        if tol < options.tol {
+        if tolerance < options.tolerance {
             return (niter, true);
         }
     }
@@ -530,7 +530,7 @@ pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -
     let mut converged = vec![false; m_rs];
 
     for niter in 0..options.max_iters {
-        let mut tol = 0.0;
+        let mut tolerance = 0.0;
 
         for i in 0..m_rs {
             if converged[i] {
@@ -539,13 +539,13 @@ pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -
             let mut vri = vrs[i];
             let tol_i = pbairstow_autocorr_mt_job(coeffs, i, &mut vri, &mut converged[i], vrs);
             if let Some(tol_i) = tol_i {
-                if tol < tol_i {
-                    tol = tol_i;
+                if tolerance < tol_i {
+                    tolerance = tol_i;
                 }
             }
             vrs[i] = vri;
         }
-        if tol < options.tol {
+        if tolerance < options.tolerance {
             return (niter, true);
         }
     }
@@ -588,7 +588,7 @@ pub fn pbairstow_autocorr_mt(
     let mut converged = vec![false; m_rs];
 
     for niter in 1..options.max_iters {
-        let mut tol = 0.0;
+        let mut tolerance = 0.0;
         vrsc.copy_from_slice(vrs);
 
         let tol_i = vrs
@@ -599,11 +599,11 @@ pub fn pbairstow_autocorr_mt(
             .filter_map(|(i, (vri, converged))| {
                 pbairstow_autocorr_mt_job(coeffs, i, vri, converged, &vrsc)
             })
-            .reduce(|| tol, |x, y| x.max(y));
-        if tol < tol_i {
-            tol = tol_i;
+            .reduce(|| tolerance, |x, y| x.max(y));
+        if tolerance < tol_i {
+            tolerance = tol_i;
         }
-        if tol < options.tol {
+        if tolerance < options.tolerance {
             return (niter, true);
         }
     }

@@ -52,7 +52,7 @@ fn aberth(
     let mut converged = vec![false; M];
     let mut robin = Robin::new(M);
     for niter in 0..options.max_iters {
-        let mut tol = 0.0;
+        let mut tolerance = 0.0;
         for i in (0..M).filter(|&i| !converged[i]) {
             let mut coeffs1 = coeffs.clone();
             let P = horner_eval(&mut coeffs1, degree, zs[i]);
@@ -62,13 +62,13 @@ fn aberth(
                 continue;
             }
             let mut P1 = horner_eval(&mut coeffs1, degree - 1, zs[i]);
-            tol = tol.max(tol_i);
+            tolerance = tolerance.max(tol_i);
             for j in robin.exclude(i) {
                 P1 -= P / (zs[i] - zs[j]);
             }
             zs[i] -= P / P1;
         }
-        if tol < options.tol {
+        if tolerance < options.tolerance {
             return (zs.clone(), niter.try_into().unwrap(), true);
         }
     }

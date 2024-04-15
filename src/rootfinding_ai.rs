@@ -100,7 +100,7 @@ fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vector2]) -> (Vec<Vector2>, i32, bo
     let mut converged = vec![false; m_rs];
     let mut robin = Robin::new(m_rs);
     for niter in 0..MAX_ITERS {
-        let mut tol = 0.0;
+        let mut tolerance = 0.0;
 
         for i in (0..m_rs).filter(|&i| !converged[i]) {
             let mut coeffs1 = coeffs.to_vec();
@@ -111,7 +111,7 @@ fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vector2]) -> (Vec<Vector2>, i32, bo
                 continue;
             }
             let mut vA1 = horner(&coeffs1, degree - 2, vrs[i]);
-            tol = tol.max(tol_i);
+            tolerance = tolerance.max(tol_i);
 
             for j in robin.exclude(i) {
                 let (va, va1) = suppress(vA, vA1, vrs[i], vrs[j]);
@@ -121,7 +121,7 @@ fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vector2]) -> (Vec<Vector2>, i32, bo
             }
             vrs[i] -= delta(vA, vrs[i], vA1);
         }
-        if tol < TOL {
+        if tolerance < TOL {
             return (vrs.to_vec(), niter, true);
         }
     }

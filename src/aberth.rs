@@ -183,7 +183,7 @@ pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (us
     let mut converged = vec![false; m_zs];
 
     for niter in 0..options.max_iters {
-        let mut tol = 0.0;
+        let mut tolerance = 0.0;
 
         for i in 0..m_zs {
             if converged[i] {
@@ -191,13 +191,13 @@ pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (us
             }
             let mut zi = zs[i];
             if let Some(tol_i) = aberth_job(coeffs, i, &mut zi, &mut converged[i], zs, &coeffs1) {
-                if tol < tol_i {
-                    tol = tol_i;
+                if tolerance < tol_i {
+                    tolerance = tol_i;
                 }
             }
             zs[i] = zi;
         }
-        if tol < options.tol {
+        if tolerance < options.tolerance {
             return (niter, true);
         }
     }
@@ -241,7 +241,7 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
     let mut converged = vec![false; m_zs];
 
     for niter in 0..options.max_iters {
-        let mut tol = 0.0;
+        let mut tolerance = 0.0;
         zsc.copy_from_slice(zs);
 
         let tol_i = zs
@@ -250,11 +250,11 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
             .enumerate()
             .filter(|(_, (_, converged))| !**converged)
             .filter_map(|(i, (zi, converged))| aberth_job(coeffs, i, zi, converged, &zsc, &coeffs1))
-            .reduce(|| tol, |x, y| x.max(y));
-        if tol < tol_i {
-            tol = tol_i;
+            .reduce(|| tolerance, |x, y| x.max(y));
+        if tolerance < tol_i {
+            tolerance = tol_i;
         }
-        if tol < options.tol {
+        if tolerance < options.tolerance {
             return (niter, true);
         }
     }
