@@ -41,8 +41,8 @@ impl<T> Matrix2<T> {
     /// # Examples
     ///
     /// ```
-    /// use bairstow::matrix2::Matrix2;
-    /// use bairstow::vector2::Vector2;
+    /// use ginger::matrix2::Matrix2;
+    /// use ginger::vector2::Vector2;
     ///
     /// let x = Vector2::new(3, 4);
     /// let y = Vector2::new(5, 6);
@@ -66,8 +66,8 @@ impl<T: Clone + Num> Matrix2<T> {
     /// # Examples
     ///
     /// ```
-    /// use bairstow::matrix2::Matrix2;
-    /// use bairstow::vector2::Vector2;
+    /// use ginger::matrix2::Matrix2;
+    /// use ginger::vector2::Vector2;
     ///
     /// let x = Vector2::new(3, 4);
     /// let y = Vector2::new(5, 6);
@@ -95,8 +95,8 @@ impl<T: Clone + Num> Matrix2<T> {
     /// # Examples
     ///
     /// ```
-    /// use bairstow::matrix2::Matrix2;
-    /// use bairstow::vector2::Vector2;
+    /// use ginger::matrix2::Matrix2;
+    /// use ginger::vector2::Vector2;
     ///
     /// let x = Vector2::new(3, 4);
     /// let y = Vector2::new(5, 6);
@@ -122,8 +122,8 @@ impl<T: Clone + Num> Matrix2<T> {
     /// # Examples
     ///
     /// ```
-    /// use bairstow::matrix2::Matrix2;
-    /// use bairstow::vector2::Vector2;
+    /// use ginger::matrix2::Matrix2;
+    /// use ginger::vector2::Vector2;
     ///
     /// let x = Vector2::new(3, 4);
     /// let y = Vector2::new(5, 6);
@@ -150,8 +150,8 @@ impl<T: Clone + Num> Matrix2<T> {
     /// # Examples
     ///
     /// ```
-    /// use bairstow::matrix2::Matrix2;
-    /// use bairstow::vector2::Vector2;
+    /// use ginger::matrix2::Matrix2;
+    /// use ginger::vector2::Vector2;
     ///
     /// let x = Vector2::new(30, 40);
     /// let y = Vector2::new(50, 60);

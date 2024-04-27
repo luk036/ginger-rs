@@ -1,9 +1,9 @@
-# bairstow-rs
+# 🫚 ginger-rs
 
-[![Crates.io](https://img.shields.io/crates/v/bairstow-rs.svg)](https://crates.io/crates/bairstow-rs)
-[![Docs.rs](https://docs.rs/bairstow-rs/badge.svg)](https://docs.rs/bairstow-rs)
-[![CI](https://github.com/luk036/bairstow-rs/workflows/CI/badge.svg)](https://github.com/luk036/bairstow-rs/actions)
-[![codecov](https://codecov.io/gh/luk036/bairstow-rs/branch/master/graph/badge.svg?token=1qz6WD6Rs5)](https://codecov.io/gh/luk036/bairstow-rs)
+[![Crates.io](https://img.shields.io/crates/v/ginger-rs.svg)](https://crates.io/crates/ginger-rs)
+[![Docs.rs](https://docs.rs/ginger-rs/badge.svg)](https://docs.rs/ginger-rs)
+[![CI](https://github.com/luk036/ginger-rs/workflows/CI/badge.svg)](https://github.com/luk036/ginger-rs/actions)
+[![codecov](https://codecov.io/gh/luk036/ginger-rs/branch/master/graph/badge.svg?token=1qz6WD6Rs5)](https://codecov.io/gh/luk036/ginger-rs)
 
 ## 🛠️ Installation
 
@@ -11,12 +11,12 @@
 
 - Install the rust toolchain in order to have cargo installed by following
   [this](https://www.rust-lang.org/tools/install) guide.
-- run `cargo install bairstow-rs`
+- run `cargo install ginger-rs`
 
 ## 👀 See also
 
-- [bairstow](https://luk036.github.io/bairstow)
-- [bairstow-cpp](https://luk036.github.io/bairstow-cpp)
+- [ginger](https://luk036.github.io/ginger)
+- [ginger-cpp](https://luk036.github.io/ginger-cpp)
 
 ## 📜 License
 

@@ -27,7 +27,7 @@ const TWO_PI: f64 = std::f64::consts::TAU;
 /// # Examples:
 ///
 /// ```
-/// use bairstow::aberth::horner_eval_f;
+/// use ginger::aberth::horner_eval_f;
 /// use approx_eq::assert_approx_eq;
 ///
 /// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
@@ -58,7 +58,7 @@ pub fn horner_eval_f(coeffs: &[f64], zval: f64) -> f64 {
 /// # Examples:
 ///
 /// ```
-/// use bairstow::aberth::horner_eval_c;
+/// use ginger::aberth::horner_eval_c;
 /// use approx_eq::assert_approx_eq;
 /// use num::Complex;
 ///
@@ -100,7 +100,7 @@ pub fn horner_eval_c(coeffs: &[f64], zval: &Complex<f64>) -> Complex<f64> {
 /// # Examples:
 ///
 /// ```
-/// use bairstow::aberth::initial_aberth;
+/// use ginger::aberth::initial_aberth;
 /// use num::Complex;
 /// use approx_eq::assert_approx_eq;
 ///
@@ -160,8 +160,8 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::Options;
-/// use bairstow::aberth::{initial_aberth, aberth};
+/// use ginger::rootfinding::Options;
+/// use ginger::aberth::{initial_aberth, aberth};
 ///
 /// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let mut zrs = initial_aberth(&coeffs);
@@ -220,8 +220,8 @@ pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (us
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::Options;
-/// use bairstow::aberth::{initial_aberth, aberth_mt};
+/// use ginger::rootfinding::Options;
+/// use ginger::aberth::{initial_aberth, aberth_mt};
 ///
 /// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let mut zrs = initial_aberth(&coeffs);

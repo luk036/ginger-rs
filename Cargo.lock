@@ -36,17 +36,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
-name = "bairstow-rs"
-version = "0.1.0"
-dependencies = [
- "approx_eq",
- "criterion",
- "num",
- "num-traits",
- "rayon",
-]
-
-[[package]]
 name = "bitflags"
 version = "2.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -225,6 +214,17 @@ checksum = "aa68f1b12764fab894d2755d2518754e71b4fd80ecfb822714a1206c2aab39bf"
 dependencies = [
  "cc",
  "libc",
+]
+
+[[package]]
+name = "ginger-rs"
+version = "0.1.1"
+dependencies = [
+ "approx_eq",
+ "criterion",
+ "num",
+ "num-traits",
+ "rayon",
 ]
 
 [[package]]

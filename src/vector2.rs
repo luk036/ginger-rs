@@ -14,7 +14,7 @@ use num_traits::{Num, Signed, Zero};
 /// # Examples:
 ///
 /// ```
-/// use bairstow::vector2::Vector2;
+/// use ginger::vector2::Vector2;
 ///
 /// assert_eq!(Vector2::new(3, 4), Vector2 { x_: 3, y_: 4});
 /// ```
@@ -45,7 +45,7 @@ impl<T> Vector2<T> {
     /// # Examples
     ///
     /// ```
-    /// use bairstow::vector2::Vector2;
+    /// use ginger::vector2::Vector2;
     ///
     /// assert_eq!(Vector2::new(3, 4), Vector2 { x_: 3, y_: 4});
     /// ```
@@ -70,7 +70,7 @@ impl<T: Clone + Num> Vector2<T> {
     /// # Examples
     ///
     /// ```
-    /// use bairstow::vector2::Vector2;
+    /// use ginger::vector2::Vector2;
     ///
     /// let vector2 = &Vector2::new(3, 4);
     /// let other = &Vector2::new(5, 6);
@@ -96,7 +96,7 @@ impl<T: Clone + Num> Vector2<T> {
     /// # Examples
     ///
     /// ```
-    /// use bairstow::vector2::Vector2;
+    /// use ginger::vector2::Vector2;
     ///
     /// let vector2 = &Vector2::new(3, 4);
     /// let other = &Vector2::new(5, 6);
@@ -119,7 +119,7 @@ impl<T: Clone + Num> Vector2<T> {
     /// # Examples
     ///
     /// ```
-    /// use bairstow::vector2::Vector2;
+    /// use ginger::vector2::Vector2;
     ///
     /// let vector2 = &Vector2::new(3, 4);
     /// assert_eq!(vector2.norm_sqr(), 9 + 16);
@@ -143,7 +143,7 @@ impl<T: Clone + Num> Vector2<T> {
     /// # Examples
     ///
     /// ```
-    /// use bairstow::vector2::Vector2;
+    /// use ginger::vector2::Vector2;
     ///
     /// let vector2 = &Vector2::new(3.0, 4.0);
     /// assert_eq!(vector2.scale(10.0), Vector2::new(30.0, 40.0));
@@ -168,7 +168,7 @@ impl<T: Clone + Num> Vector2<T> {
     /// # Examples
     ///
     /// ```
-    /// use bairstow::vector2::Vector2;
+    /// use ginger::vector2::Vector2;
     ///
     /// let vector2 = &Vector2::new(30, 40);
     /// assert_eq!(vector2.unscale(10), Vector2::new(3, 4));
@@ -192,7 +192,7 @@ impl<T: Clone + Signed> Vector2<T> {
     /// # Examples
     ///
     /// ```
-    /// use bairstow::vector2::Vector2;
+    /// use ginger::vector2::Vector2;
     ///
     /// let vector2 = &Vector2::new(3, -4);
     /// assert_eq!(vector2.l1_norm(), 7);
@@ -214,7 +214,7 @@ impl<T: Clone + PartialOrd> Vector2<T> {
     /// # Examples
     ///
     /// ```
-    /// use bairstow::vector2::Vector2;
+    /// use ginger::vector2::Vector2;
     ///
     /// let vector2 = &Vector2::new(3, -4);
     /// assert_eq!(vector2.norm_inf(), 3);

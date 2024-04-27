@@ -16,7 +16,7 @@ use num_traits::ops::mul_add::MulAddAssign;
 /// Here are some examples demonstrating use of eval_polynomial:
 ///
 /// ```
-/// use bairstow::horner::horner_eval_g;
+/// use ginger::horner::horner_eval_g;
 ///
 /// // Evaluating the polynomial 72𝑥²+81𝑥+99 with 𝑥 = 5
 /// let val = horner_eval_g(5, &[72, 81, 99]);
@@ -28,13 +28,13 @@ use num_traits::ops::mul_add::MulAddAssign;
 /// ```
 ///
 /// ```
-/// use bairstow::horner::horner_eval_g;
+/// use ginger::horner::horner_eval_g;
 /// // Here we have the "polynomial" 42, which is to say, 42𝑥⁰. Evaluated with 𝑥 = 9000
 /// assert_eq!(42, horner_eval_g(9000, &[42]));
 /// ```
 ///
 /// ```
-/// use bairstow::horner::horner_eval_g;
+/// use ginger::horner::horner_eval_g;
 /// // 23𝑥⁹+0𝑥⁸+27𝑥⁷+0𝑥⁶-5𝑥⁵+0𝑥⁴+0𝑥³+0𝑥²+0𝑥ⁱ+0𝑥⁰
 /// // Written simply: 23𝑥⁹+27𝑥⁷-5𝑥⁵
 /// // Evaluated with 𝑥 = 99
@@ -64,7 +64,7 @@ pub fn horner_eval_g<T: MulAddAssign + Copy>(x: T, coefficients: &[T]) -> T {
 /// Example usage:
 ///
 /// ```
-/// use bairstow::horner::const_horner_eval_g;
+/// use ginger::horner::const_horner_eval_g;
 ///
 /// assert_eq!(0, const_horner_eval_g(-4, &[1, 4]));
 /// ```
@@ -92,7 +92,7 @@ pub fn const_horner_eval_g<T: MulAddAssign + Copy, const N: usize>(
 /// Here are some examples demonstrating use of eval_polynomial:
 ///
 /// ```
-/// use bairstow::horner::horner_eval_c;
+/// use ginger::horner::horner_eval_c;
 /// use approx_eq::assert_approx_eq;
 /// use num::Complex;
 ///
@@ -122,7 +122,7 @@ pub fn horner_eval_c(x: &Complex<f64>, coefficients: &[f64]) -> Complex<f64> {
 /// Example usage:
 ///
 /// ```
-/// use bairstow::horner::const_horner_eval_c;
+/// use ginger::horner::const_horner_eval_c;
 /// use num::Complex;
 ///
 /// let coeffs = [10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];

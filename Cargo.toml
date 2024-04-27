@@ -1,15 +1,15 @@
 [package]
-name = "bairstow-rs"
-version = "0.1.0"
+name = "ginger-rs"
+version = "0.1.1"
 edition = "2021"
 description = "Parallel Bairstow Root-finding Method in Rust"
-repository = "https://github.com/luk036/bairstow-rs"
+repository = "https://github.com/luk036/ginger-rs"
 license = "MIT OR Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "bairstow"
+name = "ginger"
 path = "src/lib.rs"
 
 [dependencies]

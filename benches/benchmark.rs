@@ -1,4 +1,4 @@
-use bairstow::{
+use ginger::{
     aberth, aberth_mt, initial_aberth, initial_autocorr, initial_guess, pbairstow_autocorr,
     pbairstow_autocorr_mt, pbairstow_even, pbairstow_even_mt, Options,
 };

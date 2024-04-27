@@ -99,8 +99,8 @@ pub fn make_inverse(vr: &Vec2, vp: &Vec2) -> Mat2 {
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::delta;
-/// use bairstow::vector2::Vector2;
+/// use ginger::rootfinding::delta;
+/// use ginger::vector2::Vector2;
 ///
 /// let mut vA1 = Vector2::new(1.0, 2.0);
 /// let vri = Vector2::new(-2.0, 0.0);
@@ -119,8 +119,8 @@ pub fn delta(vA: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::delta1;
-/// use bairstow::vector2::Vector2;
+/// use ginger::rootfinding::delta1;
+/// use ginger::vector2::Vector2;
 ///
 /// let mut vA1 = Vector2::new(1.0, 2.0);
 /// let vri = Vector2::new(-2.0, -0.0);
@@ -150,9 +150,9 @@ pub fn delta1(vA: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::delta;
-/// use bairstow::rootfinding::suppress_old;
-/// use bairstow::vector2::Vector2;
+/// use ginger::rootfinding::delta;
+/// use ginger::rootfinding::suppress_old;
+/// use ginger::vector2::Vector2;
 /// use approx_eq::assert_approx_eq;
 ///
 /// let mut vA = Vector2::new(3.0, 3.0);
@@ -200,9 +200,9 @@ pub fn suppress_old(vA: &mut Vec2, vA1: &mut Vec2, vri: &Vec2, vrj: &Vec2) {
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::delta;
-/// use bairstow::rootfinding::suppress;
-/// use bairstow::vector2::Vector2;
+/// use ginger::rootfinding::delta;
+/// use ginger::rootfinding::suppress;
+/// use ginger::vector2::Vector2;
 /// use approx_eq::assert_approx_eq;
 ///
 /// let mut vA = Vector2::new(3.0, 3.0);
@@ -244,7 +244,7 @@ pub fn suppress(vA: &Vec2, vA1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::horner_eval;
+/// use ginger::rootfinding::horner_eval;
 /// use approx_eq::assert_approx_eq;
 ///
 /// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
@@ -277,8 +277,8 @@ pub fn horner_eval(coeffs: &[f64], zval: f64) -> f64 {
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::horner;
-/// use bairstow::vector2::Vector2;
+/// use ginger::rootfinding::horner;
+/// use ginger::vector2::Vector2;
 /// use approx_eq::assert_approx_eq;
 ///
 /// let mut coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
@@ -312,8 +312,8 @@ pub fn horner(coeffs: &mut [f64], degree: usize, vr: &Vec2) -> Vec2 {
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::initial_guess;
-/// use bairstow::vector2::Vector2;
+/// use ginger::rootfinding::initial_guess;
+/// use ginger::vector2::Vector2;
 ///
 /// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let vr0s = initial_guess(&coeffs);
@@ -356,7 +356,7 @@ pub fn initial_guess(coeffs: &[f64]) -> Vec<Vec2> {
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::{initial_guess, pbairstow_even, Options};
+/// use ginger::rootfinding::{initial_guess, pbairstow_even, Options};
 ///
 /// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let mut vrs = initial_guess(&coeffs);
@@ -406,7 +406,7 @@ pub fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (u
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::{initial_guess, pbairstow_even_mt, Options};
+/// use ginger::rootfinding::{initial_guess, pbairstow_even_mt, Options};
 ///
 /// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let mut vrs = initial_guess(&coeffs);
@@ -483,8 +483,8 @@ fn pbairstow_even_job(
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::initial_autocorr;
-/// use bairstow::vector2::Vector2;
+/// use ginger::rootfinding::initial_autocorr;
+/// use ginger::vector2::Vector2;
 ///
 /// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let vr0s = initial_autocorr(&coeffs);
@@ -517,7 +517,7 @@ pub fn initial_autocorr(coeffs: &[f64]) -> Vec<Vec2> {
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::{initial_autocorr, pbairstow_autocorr, Options};
+/// use ginger::rootfinding::{initial_autocorr, pbairstow_autocorr, Options};
 ///
 /// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let mut vrs = initial_autocorr(&coeffs);
@@ -568,7 +568,7 @@ pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::{initial_autocorr, pbairstow_autocorr_mt, Options};
+/// use ginger::rootfinding::{initial_autocorr, pbairstow_autocorr_mt, Options};
 ///
 /// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let mut vrs = initial_autocorr(&coeffs);
@@ -660,8 +660,8 @@ fn pbairstow_autocorr_mt_job(
 /// # Examples:
 ///
 /// ```
-/// use bairstow::rootfinding::extract_autocorr;
-/// use bairstow::vector2::Vector2;
+/// use ginger::rootfinding::extract_autocorr;
+/// use ginger::vector2::Vector2;
 /// use approx_eq::assert_approx_eq;
 ///
 /// let vr = extract_autocorr(Vector2::new(1.0, -4.0));
