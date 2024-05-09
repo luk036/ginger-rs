@@ -1,9 +1,11 @@
-# 🫚 ginger-rs
-
 [![Crates.io](https://img.shields.io/crates/v/ginger-rs.svg)](https://crates.io/crates/ginger-rs)
 [![Docs.rs](https://docs.rs/ginger-rs/badge.svg)](https://docs.rs/ginger-rs)
 [![CI](https://github.com/luk036/ginger-rs/workflows/CI/badge.svg)](https://github.com/luk036/ginger-rs/actions)
 [![codecov](https://codecov.io/gh/luk036/ginger-rs/graph/badge.svg?token=1qz6WD6Rs5)](https://codecov.io/gh/luk036/ginger-rs)
+
+# 🫚 ginger-rs
+
+Polynomial root-finding algorithm (parallelizable)
 
 ## 🛠️ Installation
 
