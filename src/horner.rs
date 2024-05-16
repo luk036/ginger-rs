@@ -1,6 +1,6 @@
 use num::Complex;
-use std::ops::Mul;
 use std::ops::Add;
+use std::ops::Mul;
 
 /// Evaluate a polynomial of arbitrary rank using Horner's method.
 ///
@@ -103,7 +103,9 @@ pub fn const_horner_eval_g<T: Mul<Output = T> + Add<Output = T> + Copy, const N:
 /// See also: [const_horner_eval_c]
 pub fn horner_eval_c(x: &Complex<f64>, coefficients: &[f64]) -> Complex<f64> {
     let (&k, coefficients) = coefficients.split_first().unwrap();
-    coefficients.iter().fold(Complex::<f64>::new(k, 0.0), |res, &coeff| res * x + coeff)
+    coefficients
+        .iter()
+        .fold(Complex::<f64>::new(k, 0.0), |res, &coeff| res * x + coeff)
 }
 
 /// Evaluate a polynomial of rank known at compile-time using Horner's method.

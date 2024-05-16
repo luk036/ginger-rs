@@ -1,8 +1,8 @@
+use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion};
 use ginger::{
     aberth, aberth_mt, initial_aberth, initial_autocorr, initial_guess, pbairstow_autocorr,
     pbairstow_autocorr_mt, pbairstow_even, pbairstow_even_mt, Options,
 };
-use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion};
 
 fn bench(c: &mut Criterion) {
     let coeffs = black_box([10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0]);
