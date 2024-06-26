@@ -13,6 +13,7 @@ name = "ginger"
 path = "src/lib.rs"
 
 [dependencies]
+lds-rs = "0.1.2"
 num = "0.4.2"
 num-traits = "0.2.18"
 rayon = "1.10.0"

@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 
 use super::Options;
+use lds_rs::lds::Circle;
 use num::Complex;
-// use lds_rs::lds::Circle;
 
 const TWO_PI: f64 = std::f64::consts::TAU;
 
@@ -81,6 +81,21 @@ pub fn horner_eval_c(coeffs: &[f64], zval: &Complex<f64>) -> Complex<f64> {
     //     .unwrap()
 }
 
+pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
+    let degree = coeffs.len() - 1;
+    let center = -coeffs[1] / (coeffs[0] * degree as f64);
+    let p_center = horner_eval_f(coeffs, center);
+    let re = Complex::<f64>::new(-p_center, 0.0).powf(1.0 / degree as f64);
+    let mut c_gen = Circle::new(2);
+    // c_gen.reseed(10);
+    (0..degree)
+        .map(|_idx| {
+            let [y, x] = c_gen.pop();
+            center + re * Complex::<f64>::new(x, y)
+        })
+        .collect()
+}
+
 /// Initial guess for Aberth's method
 ///
 /// The `initial_aberth` function calculates the initial guesses for Aberth's method given a
@@ -100,17 +115,17 @@ pub fn horner_eval_c(coeffs: &[f64], zval: &Complex<f64>) -> Complex<f64> {
 /// # Examples:
 ///
 /// ```
-/// use ginger::aberth::initial_aberth;
+/// use ginger::aberth::initial_aberth_orig;
 /// use num::Complex;
 /// use approx_eq::assert_approx_eq;
 ///
 /// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let z0s = initial_aberth(&coeffs);
+/// let z0s = initial_aberth_orig(&coeffs);
 ///
 /// assert_approx_eq!(z0s[0].re, 0.6116610247366323);
 /// assert_approx_eq!(z0s[0].im, 0.6926747514925476);
 /// ```
-pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
+pub fn initial_aberth_orig(coeffs: &[f64]) -> Vec<Complex<f64>> {
     let degree = coeffs.len() - 1;
     let center = -coeffs[1] / (coeffs[0] * degree as f64);
     let Pc = horner_eval_f(coeffs, center);
@@ -227,7 +242,7 @@ pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (us
 /// let mut zrs = initial_aberth(&coeffs);
 /// let (niter, _found) = aberth_mt(&coeffs, &mut zrs, &Options::default());
 ///
-/// assert_eq!(niter, 7);
+/// assert_eq!(niter, 6);
 /// ```
 pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
     use rayon::prelude::*;

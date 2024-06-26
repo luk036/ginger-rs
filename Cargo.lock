@@ -222,6 +222,7 @@ version = "0.1.1"
 dependencies = [
  "approx_eq",
  "criterion",
+ "lds-rs",
  "num",
  "num-traits",
  "rayon",
@@ -273,6 +274,12 @@ checksum = "c5f195fe497f702db0f318b07fdd68edb16955aed830df8363d837542f8f935a"
 dependencies = [
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "lds-rs"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e90f6e7af63f1158f647d81a5e814b375b8468de6640fb5e70db43cc39bc0e27"
 
 [[package]]
 name = "libc"
