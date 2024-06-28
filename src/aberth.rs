@@ -2,7 +2,7 @@
 
 use super::Options;
 use lds_rs::lds::Circle;
-use num::Complex;
+use num_complex::Complex;
 
 const TWO_PI: f64 = std::f64::consts::TAU;
 
@@ -60,7 +60,7 @@ pub fn horner_eval_f(coeffs: &[f64], zval: f64) -> f64 {
 /// ```
 /// use ginger::aberth::horner_eval_c;
 /// use approx_eq::assert_approx_eq;
-/// use num::Complex;
+/// use num_complex::Complex;
 ///
 /// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let px = horner_eval_c(&coeffs, &Complex::new(1.0, 2.0));
@@ -116,7 +116,7 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 ///
 /// ```
 /// use ginger::aberth::initial_aberth_orig;
-/// use num::Complex;
+/// use num_complex::Complex;
 /// use approx_eq::assert_approx_eq;
 ///
 /// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];

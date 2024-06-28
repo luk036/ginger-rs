@@ -1,4 +1,4 @@
-use num::Complex;
+use num_complex::Complex;
 use std::ops::Add;
 use std::ops::Mul;
 
@@ -91,7 +91,7 @@ pub fn const_horner_eval_g<T: Mul<Output = T> + Add<Output = T> + Copy, const N:
 /// ```
 /// use ginger::horner::horner_eval_c;
 /// use approx_eq::assert_approx_eq;
-/// use num::Complex;
+/// use num_complex::Complex;
 ///
 /// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let px = horner_eval_c(&Complex::new(1.0, 2.0), &coeffs);
@@ -118,7 +118,7 @@ pub fn horner_eval_c(x: &Complex<f64>, coefficients: &[f64]) -> Complex<f64> {
 ///
 /// ```
 /// use ginger::horner::const_horner_eval_c;
-/// use num::Complex;
+/// use num_complex::Complex;
 ///
 /// let coeffs = [10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
 /// let px = const_horner_eval_c(&Complex::new(1.0, 2.0), &coeffs);

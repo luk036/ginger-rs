@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use super::Options;
-use num::Complex;
+use num_complex::Complex;
 
 const TWO_PI: f64 = std::f64::consts::TAU;
 

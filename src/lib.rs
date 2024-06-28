@@ -7,6 +7,7 @@ pub mod rootfinding;
 // pub mod spectral_fact;
 pub mod vector2;
 pub mod vector2_ref;
+pub mod leja_order;
 // pub mod robin;
 
 pub use crate::aberth::{aberth, aberth_mt, initial_aberth};
