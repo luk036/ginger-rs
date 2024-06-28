@@ -17,6 +17,9 @@ lds-rs = "0.1.2"
 num = "0.4.2"
 num-traits = "0.2.18"
 rayon = "1.10.0"
+# ndarray = { version = "0.15.6"}
+# num-complex = "0.4"
+# ndarray-conv = "0.3.3"
 
 [dev-dependencies]
 approx_eq = "0.1.8"

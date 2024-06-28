@@ -4,6 +4,7 @@ pub mod aberth;
 pub mod horner;
 pub mod matrix2;
 pub mod rootfinding;
+// pub mod spectral_fact;
 pub mod vector2;
 pub mod vector2_ref;
 // pub mod robin;
