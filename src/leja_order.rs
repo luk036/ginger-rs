@@ -1,5 +1,5 @@
-use std::cmp::Ordering;
 use num_complex::Complex;
+use std::cmp::Ordering;
 
 pub fn leja_order(mut points: Vec<Complex<f64>>) -> Vec<Complex<f64>> {
     // Check if input is empty and return an error if so
@@ -9,11 +9,12 @@ pub fn leja_order(mut points: Vec<Complex<f64>>) -> Vec<Complex<f64>> {
 
     // Start with the point having the smallest magnitude
     let mut leja_ordered_points = vec![points.remove(
-        points.iter()
-              .enumerate()
-              .min_by(|(_, a), (_, b)| a.norm().partial_cmp(&b.norm()).unwrap_or(Ordering::Equal))
-              .map(|(idx, _)| idx)
-              .unwrap(),
+        points
+            .iter()
+            .enumerate()
+            .min_by(|(_, a), (_, b)| a.norm().partial_cmp(&b.norm()).unwrap_or(Ordering::Equal))
+            .map(|(idx, _)| idx)
+            .unwrap(),
     )];
 
     while !points.is_empty() {
@@ -22,10 +23,11 @@ pub fn leja_order(mut points: Vec<Complex<f64>>) -> Vec<Complex<f64>> {
         let distances = points.iter().map(|&p| (p - *last_point).norm());
 
         // Find the index of the point with the maximum minimum distance
-        let next_idx = distances.enumerate()
-                                .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(Ordering::Equal))
-                                .map(|(idx, _)| idx)
-                                .unwrap();
+        let next_idx = distances
+            .enumerate()
+            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(Ordering::Equal))
+            .map(|(idx, _)| idx)
+            .unwrap();
 
         // Append this point to the leja_ordered_points
         leja_ordered_points.push(points.remove(next_idx));
