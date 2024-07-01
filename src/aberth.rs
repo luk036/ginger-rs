@@ -74,11 +74,6 @@ pub fn horner_eval_c(coeffs: &[f64], zval: &Complex<f64>) -> Complex<f64> {
         .fold(Complex::<f64>::new(0.0, 0.0), |acc, coeff| {
             acc * zval + coeff
         })
-    // coeffs
-    //     .iter()
-    //     .map(|coeff| Complex::<f64>::new(*coeff, 0.0))
-    //     .reduce(|res, coeff| res * zval + coeff)
-    //     .unwrap()
 }
 
 pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
@@ -87,7 +82,6 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
     let p_center = horner_eval_f(coeffs, center);
     let re = Complex::<f64>::new(-p_center, 0.0).powf(1.0 / degree as f64);
     let mut c_gen = Circle::new(2);
-    // c_gen.reseed(10);
     (0..degree)
         .map(|_idx| {
             let [y, x] = c_gen.pop();
@@ -139,6 +133,23 @@ pub fn initial_aberth_orig(coeffs: &[f64]) -> Vec<Complex<f64>> {
         .collect()
 }
 
+fn aberth_job(
+    coeffs: &[f64],
+    i: usize,
+    zi: &mut Complex<f64>,
+    zsc: &[Complex<f64>],
+    coeffs1: &[f64],
+) -> Option<f64> {
+    let pp = horner_eval_c(coeffs, zi);
+    let tol_i = pp.l1_norm(); // ???
+    let mut pp1 = horner_eval_c(coeffs1, zi);
+    for (_, zj) in zsc.iter().enumerate().filter(|t| t.0 != i) {
+        pp1 -= pp / (*zi - zj);
+    }
+    *zi -= pp / pp1; // Gauss-Seidel fashion
+    Some(tol_i)
+}
+
 /// Aberth's method
 ///
 /// The `aberth` function implements Aberth's method for finding roots of a polynomial.
@@ -187,25 +198,18 @@ pub fn initial_aberth_orig(coeffs: &[f64]) -> Vec<Complex<f64>> {
 pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (usize, bool) {
     let m_zs = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
-                                   // let coeffs1: Vec<_> = (0..degree)
-                                   //     .map(|i| coeffs[i] * (degree - i) as f64)
-                                   //     .collect();
     let coeffs1: Vec<_> = coeffs[0..degree]
         .iter()
         .enumerate()
         .map(|(i, ci)| ci * (degree - i) as f64)
         .collect();
-    let mut converged = vec![false; m_zs];
 
     for niter in 0..options.max_iters {
         let mut tolerance = 0.0;
 
         for i in 0..m_zs {
-            if converged[i] {
-                continue;
-            }
             let mut zi = zs[i];
-            if let Some(tol_i) = aberth_job(coeffs, i, &mut zi, &mut converged[i], zs, &coeffs1) {
+            if let Some(tol_i) = aberth_job(coeffs, i, &mut zi, zs, &coeffs1) {
                 if tolerance < tol_i {
                     tolerance = tol_i;
                 }
@@ -253,7 +257,6 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
         .map(|i| coeffs[i] * (degree - i) as f64)
         .collect();
     let mut zsc = vec![Complex::default(); m_zs];
-    let mut converged = vec![false; m_zs];
 
     for niter in 0..options.max_iters {
         let mut tolerance = 0.0;
@@ -261,10 +264,8 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
 
         let tol_i = zs
             .par_iter_mut()
-            .zip(converged.par_iter_mut())
             .enumerate()
-            .filter(|(_, (_, converged))| !**converged)
-            .filter_map(|(i, (zi, converged))| aberth_job(coeffs, i, zi, converged, &zsc, &coeffs1))
+            .filter_map(|(i, zi)| aberth_job(coeffs, i, zi, &zsc, &coeffs1))
             .reduce(|| tolerance, |x, y| x.max(y));
         if tolerance < tol_i {
             tolerance = tol_i;
@@ -274,28 +275,6 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
         }
     }
     (options.max_iters, false)
-}
-
-fn aberth_job(
-    coeffs: &[f64],
-    i: usize,
-    zi: &mut Complex<f64>,
-    converged: &mut bool,
-    zsc: &[Complex<f64>],
-    coeffs1: &[f64],
-) -> Option<f64> {
-    let pp = horner_eval_c(coeffs, zi);
-    let tol_i = pp.l1_norm(); // ???
-    if tol_i < 1e-15 {
-        *converged = true;
-        return None;
-    }
-    let mut pp1 = horner_eval_c(coeffs1, zi);
-    for (_, zj) in zsc.iter().enumerate().filter(|t| t.0 != i) {
-        pp1 -= pp / (*zi - zj);
-    }
-    *zi -= pp / pp1; // Gauss-Seidel fashion
-    Some(tol_i)
 }
 
 #[cfg(test)]
