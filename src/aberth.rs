@@ -79,8 +79,8 @@ pub fn horner_eval_c(coeffs: &[f64], zval: &Complex<f64>) -> Complex<f64> {
 pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
     let degree = coeffs.len() - 1;
     let center = -coeffs[1] / (coeffs[0] * degree as f64);
-    let p_center = horner_eval_f(coeffs, center);
-    let re = Complex::<f64>::new(-p_center, 0.0).powf(1.0 / degree as f64);
+    let poly_c = horner_eval_f(coeffs, center);
+    let re = Complex::<f64>::new(-poly_c, 0.0).powf(1.0 / degree as f64);
     let mut c_gen = Circle::new(2);
     (0..degree)
         .map(|_idx| {
@@ -279,8 +279,8 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
 pub fn initial_aberth_autocorr(coeffs: &[f64]) -> Vec<Complex<f64>> {
     let degree = coeffs.len() - 1; // assume even
     let center = -coeffs[1] / (coeffs[0] * degree as f64);
-    let p_center = horner_eval_f(coeffs, center);
-    let mut re = p_center.abs().powf(1.0 / degree as f64);
+    let poly_c = horner_eval_f(coeffs, center);
+    let mut re = poly_c.abs().powf(1.0 / degree as f64);
     if re > 1.0 {
         re = 1.0 / re;
     }
@@ -305,8 +305,7 @@ fn aberth_autocorr_job(
     let mut p1_eval = horner_eval_c(coeffs1, zi);
     for (_, zj) in zsc.iter().enumerate().filter(|t| t.0 != i) {
         p1_eval -= p_eval / (*zi - zj);
-        let zsn = 1.0 / zj;
-        p1_eval -= p_eval / (*zi - zsn);
+        p1_eval -= p_eval / (*zi - 1.0 / zj);
     }
     *zi -= p_eval / p1_eval; // Gauss-Seidel fashion
     tol_i
