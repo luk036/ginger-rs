@@ -139,7 +139,7 @@ fn aberth_job(
     zi: &mut Complex<f64>,
     zsc: &[Complex<f64>],
     coeffs1: &[f64],
-) -> Option<f64> {
+) -> f64 {
     let pp = horner_eval_c(coeffs, zi);
     let tol_i = pp.l1_norm(); // ???
     let mut pp1 = horner_eval_c(coeffs1, zi);
@@ -147,7 +147,7 @@ fn aberth_job(
         pp1 -= pp / (*zi - zj);
     }
     *zi -= pp / pp1; // Gauss-Seidel fashion
-    Some(tol_i)
+    tol_i
 }
 
 /// Aberth's method
@@ -209,10 +209,9 @@ pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (us
 
         for i in 0..m_zs {
             let mut zi = zs[i];
-            if let Some(tol_i) = aberth_job(coeffs, i, &mut zi, zs, &coeffs1) {
-                if tolerance < tol_i {
-                    tolerance = tol_i;
-                }
+            let tol_i = aberth_job(coeffs, i, &mut zi, zs, &coeffs1);
+            if tolerance < tol_i {
+                tolerance = tol_i;
             }
             zs[i] = zi;
         }
@@ -265,10 +264,77 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
         let tol_i = zs
             .par_iter_mut()
             .enumerate()
-            .filter_map(|(i, zi)| aberth_job(coeffs, i, zi, &zsc, &coeffs1))
+            .map(|(i, zi)| aberth_job(coeffs, i, zi, &zsc, &coeffs1))
             .reduce(|| tolerance, |x, y| x.max(y));
         if tolerance < tol_i {
             tolerance = tol_i;
+        }
+        if tolerance < options.tolerance {
+            return (niter, true);
+        }
+    }
+    (options.max_iters, false)
+}
+
+pub fn initial_aberth_autocorr(coeffs: &[f64]) -> Vec<Complex<f64>> {
+    let degree = coeffs.len() - 1; // assume even
+    let center = -coeffs[1] / (coeffs[0] * degree as f64);
+    let p_center = horner_eval_f(coeffs, center);
+    let mut re = p_center.abs().powf(1.0 / degree as f64);
+    if re > 1.0 {
+        re = 1.0 / re;
+    }
+    let mut c_gen = Circle::new(2);
+    (0..degree / 2)
+        .map(|_idx| {
+            let [y, x] = c_gen.pop();
+            center + re * Complex::<f64>::new(x, y)
+        })
+        .collect()
+}
+
+fn aberth_autocorr_job(
+    coeffs: &[f64],
+    i: usize,
+    zi: &mut Complex<f64>,
+    zsc: &[Complex<f64>],
+    coeffs1: &[f64],
+) -> f64 {
+    let p_eval = horner_eval_c(coeffs, zi);
+    let tol_i = p_eval.l1_norm(); // ???
+    let mut p1_eval = horner_eval_c(coeffs1, zi);
+    for (_, zj) in zsc.iter().enumerate().filter(|t| t.0 != i) {
+        p1_eval -= p_eval / (*zi - zj);
+        let zsn = 1.0 / zj;
+        p1_eval -= p_eval / (*zi - zsn);
+    }
+    *zi -= p_eval / p1_eval; // Gauss-Seidel fashion
+    tol_i
+}
+
+pub fn aberth_autocorr(
+    coeffs: &[f64],
+    zs: &mut [Complex<f64>],
+    options: &Options,
+) -> (usize, bool) {
+    let m_zs = zs.len();
+    let degree = coeffs.len() - 1; // degree, assume even
+    let coeffs1: Vec<_> = coeffs[0..degree]
+        .iter()
+        .enumerate()
+        .map(|(i, ci)| ci * (degree - i) as f64)
+        .collect();
+
+    for niter in 0..options.max_iters {
+        let mut tolerance = 0.0;
+
+        for i in 0..m_zs {
+            let mut zi = zs[i];
+            let tol_i = aberth_autocorr_job(coeffs, i, &mut zi, zs, &coeffs1);
+            if tolerance < tol_i {
+                tolerance = tol_i;
+            }
+            zs[i] = zi;
         }
         if tolerance < options.tolerance {
             return (niter, true);
@@ -300,6 +366,15 @@ mod tests {
         let mut zrs = initial_aberth(&coeffs);
         let (niter, found) = aberth(&coeffs, &mut zrs, &Options::default());
         assert_eq!(niter, 5);
+        assert!(found);
+    }
+
+    #[test]
+    fn test_aberth_autocorr() {
+        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let mut zrs = initial_aberth_autocorr(&coeffs);
+        let (niter, found) = aberth_autocorr(&coeffs, &mut zrs, &Options::default());
+        assert!(niter <= 7);
         assert!(found);
     }
 }
