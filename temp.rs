@@ -20,13 +20,13 @@ pub fn horner_eval_c(coeffs: &[f64], zval: &Complex<f64>) -> Complex<f64> {
 pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
     let degree = coeffs.len() - 1;
     let center = -coeffs[1] / (coeffs[0] * degree as f64);
-    let Pc = horner_eval_f(coeffs, center);
-    let re = Complex::<f64>::new(-Pc, 0.0).powf(1.0 / degree as f64);
+    let poly_c = horner_eval_f(coeffs, center);
+    let radius = Complex::<f64>::new(-poly_c, 0.0).powf(1.0 / degree as f64);
     let k = TWO_PI / (degree as f64);
     (0..degree)
         .map(|idx| {
             let theta = k * (0.25 + idx as f64);
-            center + re * Complex::<f64>::new(theta.cos(), theta.sin())
+            center + radius * Complex::<f64>::new(theta.cos(), theta.sin())
         })
         .collect()
 }
@@ -108,17 +108,17 @@ fn aberth_job(
     zsc: &[Complex<f64>],
     coeffs1: &[f64],
 ) -> Option<f64> {
-    let pp = horner_eval_c(coeffs, zi);
-    let tol_i = pp.l1_norm(); // ???
+    let p_eval = horner_eval_c(coeffs, zi);
+    let tol_i = p_eval.l1_norm(); // ???
     if tol_i < 1e-15 {
         *converged = true;
         return None;
     }
-    let mut pp1 = horner_eval_c(coeffs1, zi);
+    let mut p1_eval = horner_eval_c(coeffs1, zi);
     for (_, zj) in zsc.iter().enumerate().filter(|t| t.0 != i) {
-        pp1 -= pp / (*zi - zj);
+        p1_eval -= p_eval / (*zi - zj);
     }
-    *zi -= pp / pp1; // Gauss-Seidel fashion
+    *zi -= p_eval / p1_eval; // Gauss-Seidel fashion
     Some(tol_i)
 }
 
@@ -130,13 +130,13 @@ mod tests {
     fn test_horner_eval() {
         let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
         let z = Complex::new(0.0, 0.0);
-        let pp = horner_eval_c(&coeffs, &z);
-        assert_eq!(pp.re, 10.0);
-        assert_eq!(pp.im, 0.0);
+        let p_eval = horner_eval_c(&coeffs, &z);
+        assert_eq!(p_eval.re, 10.0);
+        assert_eq!(p_eval.im, 0.0);
         let z = Complex::new(1.0, 0.0);
-        let pp = horner_eval_c(&coeffs, &z);
-        assert_eq!(pp.re, 576.0);
-        assert_eq!(pp.im, 0.0);
+        let p_eval = horner_eval_c(&coeffs, &z);
+        assert_eq!(p_eval.re, 576.0);
+        assert_eq!(p_eval.im, 0.0);
     }
 
     #[test]

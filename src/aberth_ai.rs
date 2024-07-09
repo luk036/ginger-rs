@@ -21,8 +21,8 @@ fn initial_aberth_orig(coeffs: &Vec<FoC>) -> Vec<Complex<f64>> {
     let degree: usize = coeffs.len() - 1;
     let center: FoC = -coeffs[1] / (degree.try_into().unwrap() * coeffs[0]);
     let mut pa_copy = coeffs.clone();
-    let Pc: FoC = horner_eval(&mut pa_copy, degree, center);
-    let re: f64 = (-Pc).sqrt().re;
+    let poly_c: FoC = horner_eval(&mut pa_copy, degree, center);
+    let re: f64 = (-poly_c).sqrt().re;
 
     let mut z0s: Vec<Complex<f64>> = Vec::new();
     let mut vgen = Vdcorput::new(2);

@@ -323,15 +323,15 @@ pub fn initial_guess(coeffs: &[f64]) -> Vec<Vec2> {
     let center = -coeffs[1] / (coeffs[0] * degree as f64);
     // let mut coeffs1 = coeffs.to_owned();
     let centroid = horner_eval(coeffs, center); // ???
-    let re = centroid.abs().powf(1.0 / (degree as f64));
+    let radius = centroid.abs().powf(1.0 / (degree as f64));
     degree /= 2;
     degree *= 2; // make even
     let k = PI / (degree as f64);
-    let m = center * center + re * re;
+    let m = center * center + radius * radius;
     (1..degree)
         .step_by(2)
         .map(|i| {
-            let temp = re * (k * i as f64).cos();
+            let temp = radius * (k * i as f64).cos();
             let r0 = 2.0 * (center + temp);
             let t0 = m + 2.0 * center * temp;
             Vector2::<f64>::new(r0, -t0)
@@ -490,14 +490,14 @@ fn pbairstow_even_job(
 /// let vr0s = initial_autocorr(&coeffs);
 /// ```
 pub fn initial_autocorr(coeffs: &[f64]) -> Vec<Vec2> {
-    let mut degree = coeffs.len() - 1;
-    let re = coeffs[degree].abs().powf(1.0 / (degree as f64));
-    degree /= 2;
+    let degree = coeffs.len() - 1;
+    let radius = coeffs[degree].abs().powf(1.0 / (degree as f64));
+    let degree = degree / 2;
     let k = PI / (degree as f64);
-    let m = re * re;
+    let m = radius * radius;
     (1..degree)
         .step_by(2)
-        .map(|i| Vector2::<f64>::new(2.0 * re * (k * i as f64).cos(), -m))
+        .map(|i| Vector2::<f64>::new(2.0 * radius * (k * i as f64).cos(), -m))
         .collect()
 }
 
