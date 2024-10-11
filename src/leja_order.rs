@@ -1,6 +1,20 @@
 use num_complex::Complex;
 use std::cmp::Ordering;
 
+/// Computes the Leja order of a set of complex points.
+///
+/// The Leja order is a sequence of points that maximizes the minimum distance between
+/// consecutive points. This is useful for numerical methods that require a well-conditioned
+/// set of points, such as polynomial interpolation.
+///
+/// # Arguments
+/// * `points` - A vector of complex points to be ordered.
+///
+/// # Returns
+/// A vector of complex points in Leja order.
+///
+/// # Panics
+/// Panics if the input vector is empty.
 pub fn leja_order(mut points: Vec<Complex<f64>>) -> Vec<Complex<f64>> {
     // Check if input is empty and return an error if so
     if points.is_empty() {

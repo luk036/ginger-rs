@@ -5,6 +5,18 @@ use ndarray::{arr1, Array1, Axis};
 use num_complex::Complex;
 use std::f64::consts::PI;
 
+/// Computes the spectral factorization of a given autocorrelation sequence.
+///
+/// The spectral factorization is a decomposition of the power spectral density
+/// of a signal into a minimum-phase filter. This function takes the
+/// autocorrelation sequence `r` and computes the corresponding minimum-phase
+/// filter `h`.
+///
+/// # Arguments
+/// * `r` - The input autocorrelation sequence as an `Array1<f64>`.
+///
+/// # Returns
+/// An `Array1<f64>` representing the minimum-phase filter `h`.
 pub fn spectral_fact(r: &Array1<f64>) -> Array1<f64> {
     let n = r.len();
     let mult_factor = 100; 
@@ -40,6 +52,18 @@ pub fn spectral_fact(r: &Array1<f64>) -> Array1<f64> {
     h
 }
 
+/// Computes the inverse spectral factorization of a given minimum-phase filter.
+///
+/// This function takes the minimum-phase filter `h` and computes the corresponding
+/// autocorrelation sequence `r`. The inverse spectral factorization is the inverse
+/// operation of the spectral factorization, which decomposes the power spectral
+/// density of a signal into a minimum-phase filter.
+///
+/// # Arguments
+/// * `h` - The input minimum-phase filter as an `Array1<f64>`.
+///
+/// # Returns
+/// An `Array1<f64>` representing the autocorrelation sequence `r`.
 pub fn inverse_spectral_fact(h: &Array1<f64>) -> Array1<f64> {
     let mut r = Array1::zeros(h.len());
     for t in 0..h.len() {
