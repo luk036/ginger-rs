@@ -84,7 +84,7 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
     let mut c_gen = Circle::new(2);
     (0..degree)
         .map(|_idx| {
-            let [ycoord, xcoord] = c_gen.pop();
+            let [ycoord, xcoord] = c_gen.pop(); // Note: y, x
             center + radius * Complex::<f64>::new(xcoord, ycoord)
         })
         .collect()
@@ -248,8 +248,24 @@ pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (us
 /// assert_eq!(niter, 6);
 /// ```
 pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
-    use rayon::prelude::*;
+    fn aberth_job2(
+        coeffs: &[f64],
+        i: usize,
+        zi: &mut Complex<f64>,
+        zsc: &[Complex<f64>],
+        coeffs1: &[f64],
+    ) -> f64 {
+        let p_eval = horner_eval_c(coeffs, zi);
+        let tol_i = p_eval.l1_norm(); // ???
+        let mut p1_eval = horner_eval_c(coeffs1, zi);
+        for (_, zj) in zsc.iter().enumerate().filter(|t| t.0 != i) {
+            p1_eval -= p_eval / (*zi - zj);
+        }
+        *zi -= p_eval / p1_eval; // Gauss-Seidel fashion
+        tol_i
+    }
 
+    use rayon::prelude::*;
     let m_zs = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
     let coeffs1: Vec<_> = (0..degree)
@@ -264,7 +280,7 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
         let tol_i = zs
             .par_iter_mut()
             .enumerate()
-            .map(|(i, zi)| aberth_job(coeffs, i, zi, &zsc, &coeffs1))
+            .map(|(i, zi)| aberth_job2(coeffs, i, zi, &zsc, &coeffs1))
             .reduce(|| tolerance, |x, y| x.max(y));
         if tolerance < tol_i {
             tolerance = tol_i;
@@ -368,6 +384,16 @@ mod tests {
         assert!(found);
     }
 
+
+    #[test]
+    fn test_aberth_mt() {
+        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let mut zrs = initial_aberth(&coeffs);
+        let (niter, found) = aberth_mt(&coeffs, &mut zrs, &Options::default());
+        assert_eq!(niter, 6);
+        assert!(found);
+    }
+
     #[test]
     fn test_aberth_autocorr() {
         let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
@@ -377,3 +403,4 @@ mod tests {
         assert!(found);
     }
 }
+
