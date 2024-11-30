@@ -14,10 +14,10 @@ const TWO_PI: f64 = std::f64::consts::TAU;
 /// Arguments:
 ///
 /// * `coeffs`: A vector of floating-point coefficients representing a polynomial. The coefficients are
-/// ordered from highest degree to lowest degree. For example, the polynomial 10x^8 + 34x^7 + 75x^6 +
-/// 94x^5 + 150x^4 + 94x^
+///             ordered from highest degree to lowest degree. For example, the polynomial 10x^8 + 34x^7 + 75x^6 +
+///             94x^5 + 150x^4 + 94x^
 /// * `zval`: The `zval` parameter in the `horner_eval_f` function represents the value at which the
-/// polynomial is evaluated. It is of type `f64`, which means it is a floating-point number.
+///             polynomial is evaluated. It is of type `f64`, which means it is a floating-point number.
 ///
 /// Returns:
 ///
@@ -47,9 +47,8 @@ pub fn horner_eval_f(coeffs: &[f64], zval: f64) -> f64 {
 /// Arguments:
 ///
 /// * `coeffs`: A vector of coefficients representing a polynomial. The coefficients are in descending
-/// order of degree. For example, the polynomial 10x^8 + 34x^7 + 75x^6 + 94x^5 + 150x^4 + 94x^3 + 75
-/// * `zval`: The `zval` parameter is a complex number that represents the value at which the polynomial
-/// is evaluated.
+///             order of degree. For example, the polynomial 10x^8 + 34x^7 + 75x^6 + 94x^5 + 150x^4 + 94x^3 + 75
+/// * `zval`: The `zval` parameter is a complex number that represents the value at which the polynomial is evaluated.
 ///
 /// Returns:
 ///
@@ -98,8 +97,8 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 /// Arguments:
 ///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
-/// polynomial. The coefficients are ordered from highest degree to lowest degree. For example, if the
-/// polynomial is `3x^2 + 2x + 1`, the `coeffs` slice would
+///             polynomial. The coefficients are ordered from highest degree to lowest degree. For example, if the
+///             polynomial is `3x^2 + 2x + 1`, the `coeffs` slice would
 ///
 /// Returns:
 ///
@@ -176,12 +175,11 @@ fn aberth_job(
 /// Arguments:
 ///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
-/// polynomial. The coefficients are ordered from highest degree to lowest degree. For example, if the
-/// polynomial is `3x^2 + 2x + 1`, the `coeffs` slice would
-/// * `zs`: A vector of complex numbers representing the initial guesses for the roots of the
-/// polynomial.
+///             polynomial. The coefficients are ordered from highest degree to lowest degree. For example, if the
+///             polynomial is `3x^2 + 2x + 1`, the `coeffs` slice would
+/// * `zs`: A vector of complex numbers representing the initial guesses for the roots of the polynomial.
 /// * `options`: The `options` parameter is an instance of the `Options` struct, which contains the
-/// following fields:
+///             following fields:
 ///
 /// # Examples:
 ///
@@ -229,11 +227,11 @@ pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (us
 /// Arguments:
 ///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
-/// polynomial. The polynomial is defined by the equation:
+///             polynomial. The polynomial is defined by the equation:
 /// * `zs`: A mutable reference to a vector of Complex numbers. These numbers represent the initial
-/// guesses for the roots of the polynomial equation.
+///             guesses for the roots of the polynomial equation.
 /// * `options`: The `options` parameter is an instance of the `Options` struct, which contains the
-/// following fields:
+///             following fields:
 ///
 /// # Examples:
 ///
@@ -384,7 +382,6 @@ mod tests {
         assert!(found);
     }
 
-
     #[test]
     fn test_aberth_mt() {
         let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
@@ -403,4 +400,3 @@ mod tests {
         assert!(found);
     }
 }
-

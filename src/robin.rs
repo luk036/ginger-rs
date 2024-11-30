@@ -3,10 +3,10 @@
 /// Properties:
 /// 
 /// * `next`: The `next` property is an `Option` that holds a `Box` containing another `SlNode`. This
-/// allows us to create a linked list structure where each node points to the next node in the list. The
-/// `Option` type is used to handle the case where there is no next node
+///             allows us to create a linked list structure where each node points to the next node in the list. The
+///             `Option` type is used to handle the case where there is no next node
 /// * `data`: The `data` property is of type `usize`, which represents an unsigned integer. It is used
-/// to store the actual data value associated with the `SlNode`.
+///             to store the actual data value associated with the `SlNode`.
 #[derive(PartialEq, Eq, Clone, Debug, Default)]
 pub struct SlNode {
     next: Option<Box<SlNode>>,
@@ -82,8 +82,7 @@ impl Robin {
     /// 
     /// Arguments:
     /// 
-    /// * `from_part`: The `from_part` parameter is the index of the cycle from which you want to exclude
-    /// elements.
+    /// * `from_part`: The `from_part` parameter is the index of the cycle from which you want to exclude elements.
     /// 
     /// Returns:
     /// 
