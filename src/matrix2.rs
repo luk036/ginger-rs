@@ -310,7 +310,7 @@ impl<T: Clone + Num + Neg<Output = T>> Neg for Matrix2<T> {
     }
 }
 
-impl<'a, T: Clone + Num + Neg<Output = T>> Neg for &'a Matrix2<T> {
+impl<T: Clone + Num + Neg<Output = T>> Neg for &Matrix2<T> {
     type Output = Matrix2<T>;
 
     #[inline]

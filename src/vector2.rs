@@ -375,7 +375,7 @@ impl<T: Clone + Num + Neg<Output = T>> Neg for Vector2<T> {
     }
 }
 
-impl<'a, T: Clone + Num + Neg<Output = T>> Neg for &'a Vector2<T> {
+impl<T: Clone + Num + Neg<Output = T>> Neg for &Vector2<T> {
     type Output = Vector2<T>;
 
     #[inline]
