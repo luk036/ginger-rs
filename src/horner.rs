@@ -134,3 +134,108 @@ pub fn const_horner_eval_c<const N: usize>(
 ) -> Complex<f64> {
     horner_eval_c(x, coefficients)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use num_complex::Complex;
+
+    // #[test]
+    // fn test_horner_eval_g_empty_coefficients() {
+    //     // Empty coefficients should be treated as zero
+    //     assert_eq!(horner_eval_g(5, &[]), 0);
+    //     assert_eq!(horner_eval_g(10.5, &[]), 0.0);
+    // }
+
+    #[test]
+    fn test_horner_eval_g_constant_polynomial() {
+        // Constant polynomial (degree 0)
+        assert_eq!(horner_eval_g(42, &[5]), 5);
+        assert_eq!(horner_eval_g(3.14, &[2.71]), 2.71);
+    }
+
+    #[test]
+    fn test_horner_eval_g_linear_polynomial() {
+        // Linear polynomial (degree 1)
+        assert_eq!(horner_eval_g(3, &[2, 1]), 2 * 3 + 1);
+        assert_eq!(horner_eval_g(2.5, &[1.5, 3.0]), 1.5 * 2.5 + 3.0);
+    }
+
+    #[test]
+    fn test_horner_eval_g_quadratic_polynomial() {
+        // Quadratic polynomial (degree 2)
+        assert_eq!(horner_eval_g(4, &[3, 2, 1]), 3 * 4 * 4 + 2 * 4 + 1);
+        assert_eq!(horner_eval_g(1.5, &[2.0, 3.0, 4.0]), 2.0 * 1.5 * 1.5 + 3.0 * 1.5 + 4.0);
+    }
+
+    #[test]
+    fn test_horner_eval_g_with_zero_coefficients() {
+        // Polynomial with some zero coefficients
+        assert_eq!(horner_eval_g(2, &[1, 0, 0, 0, 5]), 1 * 2_i32.pow(4) + 5);
+        assert_eq!(horner_eval_g(3, &[0, 0, 0, 0, 0, 0, 7]), 7);
+    }
+
+    #[test]
+    fn test_horner_eval_g_large_numbers() {
+        // Test with large numbers
+        assert_eq!(
+            horner_eval_g(10_i128, &[1, 2, 3, 4, 5]),
+            1 * 10_i128.pow(4) + 2 * 10_i128.pow(3) + 3 * 100 + 4 * 10 + 5
+        );
+    }
+
+    #[test]
+    fn test_const_horner_eval_g() {
+        // Test the const version with array input
+        assert_eq!(const_horner_eval_g(2, &[1, 2, 3]), 1 * 4 + 2 * 2 + 3);
+        assert_eq!(const_horner_eval_g(3.0, &[2.0, 1.0]), 2.0 * 3.0 + 1.0);
+    }
+
+    #[test]
+    fn test_horner_eval_c_real_polynomial() {
+        // Test with real coefficients (imaginary part should be zero)
+        let x = Complex::new(2.0, 0.0);
+        let coeffs = [1.0, 2.0, 3.0];
+        let result = horner_eval_c(&x, &coeffs);
+        assert_eq!(result.re, 1.0 * 4.0 + 2.0 * 2.0 + 3.0);
+        assert_eq!(result.im, 0.0);
+    }
+
+    #[test]
+    fn test_horner_eval_c_complex_input() {
+        // Test with complex input
+        let x = Complex::new(1.0, 1.0);
+        let coeffs = [1.0, 2.0, 1.0];
+        let result = horner_eval_c(&x, &coeffs);
+        
+        // (1 + i)^2 + 2*(1 + i) + 1 = (2i) + (2 + 2i) + 1 = 3 + 4i
+        assert_eq!(result.re, 3.0);
+        assert_eq!(result.im, 4.0);
+    }
+
+    #[test]
+    fn test_const_horner_eval_c() {
+        // Test the const version with complex input
+        let x = Complex::new(1.0, -1.0);
+        let coeffs = [2.0, 3.0, 4.0];
+        let result = const_horner_eval_c(&x, &coeffs);
+        
+        // 2*(1 - i)^2 + 3*(1 - i) + 4 = 2*(-2i) + (3 - 3i) + 4 = (3 + 4) - (4i + 3i) = 7 - 7i
+        assert_eq!(result.re, 7.0);
+        assert_eq!(result.im, -7.0);
+    }
+
+    #[test]
+    fn test_edge_cases() {
+        // Zero polynomial
+        assert_eq!(horner_eval_g(42, &[0]), 0);
+        assert_eq!(horner_eval_g(42, &[0, 0, 0]), 0);
+        
+        // Zero input
+        assert_eq!(horner_eval_g(0, &[1, 2, 3]), 3); // Only the constant term remains
+        assert_eq!(horner_eval_g(0.0, &[1.0, 2.0, 3.0]), 3.0);
+        
+        // One coefficient
+        assert_eq!(horner_eval_g(5, &[7]), 7);
+    }
+}

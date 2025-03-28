@@ -532,4 +532,186 @@ mod test {
     //     assert!(hash(&b) != hash(&c));
     //     assert!(hash(&c) != hash(&a));
     // }
+
+    #[test]
+    fn test_new() {
+        let x = Vector2::new(1, 2);
+        let y = Vector2::new(3, 4);
+        let m = Matrix2::new(x, y);
+        assert_eq!(m.x_, x);
+        assert_eq!(m.y_, y);
+    }
+
+    #[test]
+    fn test_det() {
+        let m = Matrix2::new(Vector2::new(3, 4), Vector2::new(5, 6));
+        assert_eq!(m.det(), 3*6 - 4*5);
+        
+        let m2 = Matrix2::new(Vector2::new(1.0, 2.0), Vector2::new(3.0, 4.0));
+        assert_eq!(m2.det(), -2.0);
+    }
+
+    #[test]
+    fn test_mdot() {
+        let m = Matrix2::new(Vector2::new(3, 4), Vector2::new(5, 6));
+        let v = Vector2::new(1, 1);
+        assert_eq!(m.mdot(&v), Vector2::new(7, 11));
+        
+        let m2 = Matrix2::new(Vector2::new(1.0, 2.0), Vector2::new(3.0, 4.0));
+        let v2 = Vector2::new(2.0, 3.0);
+        assert_eq!(m2.mdot(&v2), Vector2::new(8.0, 18.0));
+    }
+
+    #[test]
+    fn test_scale() {
+        let m = Matrix2::new(Vector2::new(3, 4), Vector2::new(5, 6));
+        assert_eq!(m.scale(2), Matrix2::new(Vector2::new(6, 8), Vector2::new(10, 12)));
+        
+        let m2 = Matrix2::new(Vector2::new(1.5, 2.5), Vector2::new(3.5, 4.5));
+        assert_eq!(m2.scale(2.0), Matrix2::new(Vector2::new(3.0, 5.0), Vector2::new(7.0, 9.0)));
+    }
+
+    #[test]
+    fn test_unscale() {
+        let m = Matrix2::new(Vector2::new(30, 40), Vector2::new(50, 60));
+        assert_eq!(m.unscale(10), Matrix2::new(Vector2::new(3, 4), Vector2::new(5, 6)));
+        
+        let m2 = Matrix2::new(Vector2::new(3.0, 5.0), Vector2::new(7.0, 9.0));
+        assert_eq!(m2.unscale(2.0), Matrix2::new(Vector2::new(1.5, 2.5), Vector2::new(3.5, 4.5)));
+    }
+
+    #[test]
+    fn test_add() {
+        let m1 = Matrix2::new(Vector2::new(1, 2), Vector2::new(3, 4));
+        let m2 = Matrix2::new(Vector2::new(5, 6), Vector2::new(7, 8));
+        assert_eq!(m1 + m2, Matrix2::new(Vector2::new(6, 8), Vector2::new(10, 12)));
+        
+        let m3 = &m1 + &m2;
+        assert_eq!(m3, Matrix2::new(Vector2::new(6, 8), Vector2::new(10, 12)));
+        
+        let m4 = m1 + &m2;
+        assert_eq!(m4, Matrix2::new(Vector2::new(6, 8), Vector2::new(10, 12)));
+    }
+
+    #[test]
+    fn test_sub() {
+        let m1 = Matrix2::new(Vector2::new(5, 6), Vector2::new(7, 8));
+        let m2 = Matrix2::new(Vector2::new(1, 2), Vector2::new(3, 4));
+        assert_eq!(m1 - m2, Matrix2::new(Vector2::new(4, 4), Vector2::new(4, 4)));
+        
+        let m3 = &m1 - &m2;
+        assert_eq!(m3, Matrix2::new(Vector2::new(4, 4), Vector2::new(4, 4)));
+    }
+
+    #[test]
+    fn test_neg() {
+        let m = Matrix2::new(Vector2::new(1, -2), Vector2::new(-3, 4));
+        assert_eq!(-m, Matrix2::new(Vector2::new(-1, 2), Vector2::new(3, -4)));
+        assert_eq!(-&m, Matrix2::new(Vector2::new(-1, 2), Vector2::new(3, -4)));
+    }
+
+    #[test]
+    fn test_scalar_mul() {
+        let m = Matrix2::new(Vector2::new(2, 3), Vector2::new(4, 5));
+        assert_eq!(m * 4, Matrix2::new(Vector2::new(8, 12), Vector2::new(16, 20)));
+        assert_eq!(&m * 4, Matrix2::new(Vector2::new(8, 12), Vector2::new(16, 20)));
+        assert_eq!(4 * m, Matrix2::new(Vector2::new(8, 12), Vector2::new(16, 20)));
+        assert_eq!(4 * &m, Matrix2::new(Vector2::new(8, 12), Vector2::new(16, 20)));
+    }
+
+    #[test]
+    fn test_scalar_div() {
+        let m = Matrix2::new(Vector2::new(10, 20), Vector2::new(30, 40));
+        assert_eq!(m / 5, Matrix2::new(Vector2::new(2, 4), Vector2::new(6, 8)));
+    }
+
+    #[test]
+    fn test_scalar_rem() {
+        let m = Matrix2::new(Vector2::new(10, 21), Vector2::new(32, 43));
+        assert_eq!(m % 3, Matrix2::new(Vector2::new(1, 0), Vector2::new(2, 1)));
+    }
+
+    #[test]
+    fn test_zero() {
+        let zero = Matrix2::<i32>::zero();
+        assert_eq!(zero, Matrix2::new(Vector2::zero(), Vector2::zero()));
+        assert!(zero.is_zero());
+        
+        let mut m = Matrix2::new(Vector2::new(1, 2), Vector2::new(3, 4));
+        assert!(!m.is_zero());
+        m.set_zero();
+        assert!(m.is_zero());
+    }
+
+    #[test]
+    fn test_add_assign() {
+        let mut m1 = Matrix2::new(Vector2::new(1, 2), Vector2::new(3, 4));
+        let m2 = Matrix2::new(Vector2::new(5, 6), Vector2::new(7, 8));
+        m1 += m2;
+        assert_eq!(m1, Matrix2::new(Vector2::new(6, 8), Vector2::new(10, 12)));
+        
+        let mut m3 = Matrix2::new(Vector2::new(1, 2), Vector2::new(3, 4));
+        m3 += &m2;
+        assert_eq!(m3, Matrix2::new(Vector2::new(6, 8), Vector2::new(10, 12)));
+    }
+
+    #[test]
+    fn test_sub_assign() {
+        let mut m1 = Matrix2::new(Vector2::new(5, 6), Vector2::new(7, 8));
+        let m2 = Matrix2::new(Vector2::new(1, 2), Vector2::new(3, 4));
+        m1 -= m2;
+        assert_eq!(m1, Matrix2::new(Vector2::new(4, 4), Vector2::new(4, 4)));
+        
+        let mut m3 = Matrix2::new(Vector2::new(5, 6), Vector2::new(7, 8));
+        m3 -= &m2;
+        assert_eq!(m3, Matrix2::new(Vector2::new(4, 4), Vector2::new(4, 4)));
+    }
+
+    #[test]
+    fn test_mul_assign() {
+        let mut m = Matrix2::new(Vector2::new(1, 2), Vector2::new(3, 4));
+        m *= 3;
+        assert_eq!(m, Matrix2::new(Vector2::new(3, 6), Vector2::new(9, 12)));
+        
+        let mut m2 = Matrix2::new(Vector2::new(1, 2), Vector2::new(3, 4));
+        let scalar = 3;
+        m2 *= &scalar;
+        assert_eq!(m2, Matrix2::new(Vector2::new(3, 6), Vector2::new(9, 12)));
+    }
+
+    #[test]
+    fn test_div_assign() {
+        let mut m = Matrix2::new(Vector2::new(6, 9), Vector2::new(12, 15));
+        m /= 3;
+        assert_eq!(m, Matrix2::new(Vector2::new(2, 3), Vector2::new(4, 5)));
+        
+        let mut m2 = Matrix2::new(Vector2::new(6, 9), Vector2::new(12, 15));
+        let scalar = 3;
+        m2 /= &scalar;
+        assert_eq!(m2, Matrix2::new(Vector2::new(2, 3), Vector2::new(4, 5)));
+    }
+
+    #[test]
+    fn test_float_operations() {
+        let m = Matrix2::new(Vector2::new(1.5, 2.5), Vector2::new(3.5, 4.5));
+        assert_eq!(m.scale(2.0), Matrix2::new(Vector2::new(3.0, 5.0), Vector2::new(7.0, 9.0)));
+        assert_eq!(m.unscale(0.5), Matrix2::new(Vector2::new(3.0, 5.0), Vector2::new(7.0, 9.0)));
+        assert_eq!(m.det(), 1.5*4.5 - 2.5*3.5);
+    }
+
+    #[test]
+    fn test_clone_and_eq() {
+        let m1 = Matrix2::new(Vector2::new(1, 2), Vector2::new(3, 4));
+        let m2 = m1.clone();
+        assert_eq!(m1, m2);
+        
+        let m3 = Matrix2::new(Vector2::new(2, 1), Vector2::new(4, 3));
+        assert_ne!(m1, m3);
+    }
+
+    #[test]
+    fn test_debug() {
+        let m = Matrix2::new(Vector2::new(1, 2), Vector2::new(3, 4));
+        assert_eq!(format!("{:?}", m), "Matrix2 { x_: Vector2 { x_: 1, y_: 2 }, y_: Vector2 { x_: 3, y_: 4 } }");
+    }
 }
