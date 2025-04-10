@@ -716,7 +716,7 @@ mod tests {
     //     let vr = Vector2::new(1.0, 2.0);
     //     let vp = Vector2::new(3.0, 4.0);
     //     let adjoint = make_adjoint(&vr, &vp);
-        
+
     //     assert_eq!(adjoint.x_.x_, 4.0);
     //     assert_eq!(adjoint.x_.y_, -3.0);
     //     assert_eq!(adjoint.y_.x_, -6.0);
@@ -728,7 +728,7 @@ mod tests {
     //     let vr = Vector2::new(1.0, 2.0);
     //     let vp = Vector2::new(3.0, 4.0);
     //     let inverse = make_inverse(&vr, &vp);
-        
+
     //     // Verify inverse by multiplying with original matrix
     //     let original = Matrix2::new(vr, Vector2::new(vp.x_, 0.0));
     //     let product = original * inverse;
@@ -744,7 +744,7 @@ mod tests {
         let vr = Vector2::new(-2.0, 0.0);
         let vp = Vector2::new(4.0, 5.0);
         let delta = delta(&vA, &vr, &vp);
-        
+
         assert_approx_eq!(delta.x_, 0.2);
         assert_approx_eq!(delta.y_, 0.4);
     }
@@ -755,7 +755,7 @@ mod tests {
         let mut vA1 = Vector2::new(1.0, 2.0);
         let vri = Vector2::new(-2.0, 0.0);
         let vrj = Vector2::new(4.0, 5.0);
-        
+
         suppress_old(&mut vA, &mut vA1, &vri, &vrj);
         let dr = delta(&vA, &vri, &vA1);
         assert_approx_eq!(dr.x_, -16.780821917808325);
@@ -768,7 +768,7 @@ mod tests {
         let vA1 = Vector2::new(1.0, 2.0);
         let vri = Vector2::new(-2.0, 0.0);
         let vrj = Vector2::new(4.0, 5.0);
-        
+
         let (va, va1) = suppress(&vA, &vA1, &vri, &vrj);
         let dr = delta(&va, &vri, &va1);
         assert_approx_eq!(dr.x_, -16.780821917808325);
@@ -779,7 +779,7 @@ mod tests {
     fn test_horner_eval() {
         let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
         let result = horner_eval(&coeffs, 2.0);
-        
+
         assert_eq!(result, 18250.0);
     }
 
@@ -788,7 +788,7 @@ mod tests {
         let mut coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
         let vr = Vector2::new(-1.0, -2.0);
         let result = horner(&mut coeffs, 8, &vr);
-        
+
         assert_approx_eq!(result.x_, 114.0);
         assert_approx_eq!(result.y_, 134.0);
         assert_eq!(coeffs[3], 15.0);
@@ -798,7 +798,7 @@ mod tests {
     fn test_initial_guess() {
         let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
         let guesses = initial_guess(&coeffs);
-        
+
         assert_eq!(guesses.len(), 4);
         // Verify the first guess is reasonable
         assert!(guesses[0].x_.abs() > 0.0);
@@ -810,9 +810,9 @@ mod tests {
         let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
         let mut vrs = initial_guess(&coeffs);
         let options = Options::default();
-        
+
         let (niter, found) = pbairstow_even(&coeffs, &mut vrs, &options);
-        
+
         assert!(niter > 0);
         assert!(found);
         // Verify at least one root is close to actual root
@@ -831,7 +831,7 @@ mod tests {
     fn test_initial_autocorr() {
         let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
         let guesses = initial_autocorr(&coeffs);
-        
+
         assert_eq!(guesses.len(), 2);
         // Verify the first guess is reasonable
         assert!(guesses[0].x_.abs() > 0.0);
@@ -842,7 +842,7 @@ mod tests {
     fn test_extract_autocorr() {
         let vr = Vector2::new(1.0, -4.0);
         let result = extract_autocorr(vr);
-        
+
         assert_approx_eq!(result.x_, 0.25);
         assert_approx_eq!(result.y_, -0.25);
     }
@@ -852,9 +852,9 @@ mod tests {
         let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
         let mut vrs = initial_autocorr(&coeffs);
         let options = Options::default();
-        
+
         let (niter, found) = pbairstow_autocorr(&coeffs, &mut vrs, &options);
-        
+
         assert!(niter > 0);
         assert!(found);
         // Verify at least one root is close to actual root
@@ -875,7 +875,7 @@ mod tests {
         let vr = Vector2::new(-2.0, -0.0);
         let vp = Vector2::new(4.0, -5.0);
         let delta = delta1(&vA, &vr, &vp);
-        
+
         assert_approx_eq!(delta.x_, 0.2);
         assert_approx_eq!(delta.y_, 0.4);
     }

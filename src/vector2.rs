@@ -575,15 +575,15 @@ mod test {
     fn test_dot() {
         let v1 = Vector2::new(3, 4);
         let v2 = Vector2::new(5, 6);
-        assert_eq!(v1.dot(&v2), 3*5 + 4*6);
-        assert_eq!(v1.dot(&v1), 3*3 + 4*4);
+        assert_eq!(v1.dot(&v2), 3 * 5 + 4 * 6);
+        assert_eq!(v1.dot(&v1), 3 * 3 + 4 * 4);
     }
 
     #[test]
     fn test_cross() {
         let v1 = Vector2::new(3, 4);
         let v2 = Vector2::new(5, 6);
-        assert_eq!(v1.cross(&v2), 3*6 - 4*5);
+        assert_eq!(v1.cross(&v2), 3 * 6 - 4 * 5);
         assert_eq!(v1.cross(&v1), 0);
     }
 
@@ -616,7 +616,7 @@ mod test {
     fn test_norm_inf() {
         let v1 = Vector2::new(3, -4);
         assert_eq!(v1.norm_inf(), 3);
-        
+
         let v2 = Vector2::new(5, 2);
         assert_eq!(v2.norm_inf(), 5);
     }
@@ -626,10 +626,10 @@ mod test {
         let v1 = Vector2::new(1, 2);
         let v2 = Vector2::new(3, 4);
         assert_eq!(v1 + v2, Vector2::new(4, 6));
-        
-        let v3 = &v1 + &v2;
+
+        let v3 = v1 + v2;
         assert_eq!(v3, Vector2::new(4, 6));
-        
+
         let v4 = v1 + &v2;
         assert_eq!(v4, Vector2::new(4, 6));
     }
@@ -639,8 +639,8 @@ mod test {
         let v1 = Vector2::new(5, 6);
         let v2 = Vector2::new(3, 4);
         assert_eq!(v1 - v2, Vector2::new(2, 2));
-        
-        let v3 = &v1 - &v2;
+
+        let v3 = v1 - v2;
         assert_eq!(v3, Vector2::new(2, 2));
     }
 
@@ -677,7 +677,7 @@ mod test {
         let zero = Vector2::<i32>::zero();
         assert_eq!(zero, Vector2::new(0, 0));
         assert!(zero.is_zero());
-        
+
         let mut v = Vector2::new(1, 2);
         assert!(!v.is_zero());
         v.set_zero();
@@ -690,7 +690,7 @@ mod test {
         let v2 = Vector2::new(3, 4);
         v1 += v2;
         assert_eq!(v1, Vector2::new(4, 6));
-        
+
         let mut v3 = Vector2::new(1, 2);
         v3 += &v2;
         assert_eq!(v3, Vector2::new(4, 6));
@@ -702,7 +702,7 @@ mod test {
         let v2 = Vector2::new(3, 4);
         v1 -= v2;
         assert_eq!(v1, Vector2::new(2, 2));
-        
+
         let mut v3 = Vector2::new(5, 6);
         v3 -= &v2;
         assert_eq!(v3, Vector2::new(2, 2));
@@ -713,7 +713,7 @@ mod test {
         let mut v = Vector2::new(1, 2);
         v *= 3;
         assert_eq!(v, Vector2::new(3, 6));
-        
+
         let mut v2 = Vector2::new(1, 2);
         let scalar = 3;
         v2 *= &scalar;
@@ -725,7 +725,7 @@ mod test {
         let mut v = Vector2::new(6, 9);
         v /= 3;
         assert_eq!(v, Vector2::new(2, 3));
-        
+
         let mut v2 = Vector2::new(6, 9);
         let scalar = 3;
         v2 /= &scalar;
@@ -737,15 +737,15 @@ mod test {
         let v = Vector2::new(1.5, 2.5);
         assert_eq!(v.scale(2.0), Vector2::new(3.0, 5.0));
         assert_eq!(v.unscale(0.5), Vector2::new(3.0, 5.0));
-        assert_eq!(v.dot(&v), 1.5*1.5 + 2.5*2.5);
+        assert_eq!(v.dot(&v), 1.5 * 1.5 + 2.5 * 2.5);
     }
 
     #[test]
     fn test_clone_and_eq() {
         let v1 = Vector2::new(1, 2);
-        let v2 = v1.clone();
+        let v2 = v1;
         assert_eq!(v1, v2);
-        
+
         let v3 = Vector2::new(2, 1);
         assert_ne!(v1, v3);
     }
