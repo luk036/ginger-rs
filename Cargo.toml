@@ -16,7 +16,7 @@ path = "src/lib.rs"
 lds-rs = "0.1.4"
 num-complex = "0.4"
 num-traits = "0.2.18"
-rayon = "1.10.0"
+rayon = "1.11.0"
 # ndarray = { version = "0.15.6"}
 # ndarray-conv = "0.3.3"
 
