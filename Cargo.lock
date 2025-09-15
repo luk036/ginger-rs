@@ -221,9 +221,9 @@ dependencies = [
 
 [[package]]
 name = "lds-rs"
-version = "0.1.4"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "205187857dc12f2385e1462c23a975607604cdada2a9daf7ebe9e3537ff98032"
+checksum = "cf321488da834044f981811c261a0207d0b085d5441187b4c8e56ec8fc272785"
 
 [[package]]
 name = "log"
