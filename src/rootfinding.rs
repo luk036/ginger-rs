@@ -1,3 +1,4 @@
+use super::horner::horner_eval_f;
 use super::{Matrix2, Vector2};
 
 type Vec2 = Vector2<f64>;
@@ -224,39 +225,6 @@ pub fn suppress(vA: &Vec2, vA1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
     (va, va1)
 }
 
-/// The `horner_eval` function in Rust implements the Horner's method for polynomial evaluation.
-///
-/// Arguments:
-///
-/// * `coeffs`: A mutable slice of f64 values representing the coefficients of a polynomial. The
-///             coefficients are ordered from highest degree to lowest degree.
-/// * `degree`: The `degree` parameter represents the degree of the polynomial. In the given example,
-///             the polynomial has a degree of 8.
-/// * `zval`: The `zval` parameter in the `horner_eval` function represents the value at which the
-///             polynomial is evaluated. It is the value of the independent variable in the polynomial expression.
-///
-/// Returns:
-///
-/// The function `horner_eval` returns a `f64` value, which is the result of evaluating the polynomial
-/// with the given coefficients at the specified value `zval`.
-///
-/// # Examples:
-///
-/// ```
-/// use ginger::rootfinding::horner_eval;
-/// use approx_eq::assert_approx_eq;
-///
-/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let px = horner_eval(&coeffs, 2.0);
-///
-/// assert_approx_eq!(px, 18250.0);
-/// assert_approx_eq!(coeffs[3], 94.0);
-/// ```
-#[inline]
-pub fn horner_eval(coeffs: &[f64], zval: f64) -> f64 {
-    coeffs.iter().fold(0.0, |acc, coeff| acc * zval + coeff)
-}
-
 /// The `horner` function implements Horner's evaluation for Bairstow's method in Rust.
 ///
 /// Arguments:
@@ -321,7 +289,7 @@ pub fn initial_guess(coeffs: &[f64]) -> Vec<Vec2> {
     let mut degree = coeffs.len() - 1;
     let center = -coeffs[1] / (coeffs[0] * degree as f64);
     // let mut coeffs1 = coeffs.to_owned();
-    let centroid = horner_eval(coeffs, center); // ???
+    let centroid = horner_eval_f(coeffs, center); // ???
     let radius = centroid.abs().powf(1.0 / (degree as f64));
     degree /= 2;
     degree *= 2; // make even
@@ -778,7 +746,7 @@ mod tests {
     #[test]
     fn test_horner_eval() {
         let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-        let result = horner_eval(&coeffs, 2.0);
+        let result = horner_eval_f(&coeffs, 2.0);
 
         assert_eq!(result, 18250.0);
     }

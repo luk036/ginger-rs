@@ -13,10 +13,11 @@ name = "ginger"
 path = "src/lib.rs"
 
 [dependencies]
-lds-rs = "0.1.4"
+lds-rs = "0.1.6"
 num-complex = "0.4"
-num-traits = "0.2.18"
+num-traits = "0.2.19"
 rayon = "1.11.0"
+# crossbeam = "0.8.4"
 # ndarray = { version = "0.15.6"}
 # ndarray-conv = "0.3.3"
 

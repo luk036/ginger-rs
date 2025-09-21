@@ -1,20 +1,49 @@
 #![allow(non_snake_case)]
 
-pub mod aberth;
-pub mod horner;
-pub mod matrix2;
-pub mod rootfinding;
 // pub mod spectral_fact;
-pub mod leja_order;
-pub mod vector2;
-pub mod vector2_ref;
 // pub mod robin;
 
+/**
+ * This module implements the Aberth method for finding the roots of a polynomial.
+ */
+pub mod aberth;
+
+/**
+ * This module implements Horner's method for polynomial evaluation.
+ */
+pub mod horner;
+
+/**
+ * This module implements a simple 2x2 matrix.
+ */
+pub mod matrix2;
+
+/**
+ * This module implements the Bairstow's method for finding the roots of a polynomial.
+ */
+pub mod rootfinding;
+
+/**
+ * This module implements the Leja ordering.
+ */
+pub mod leja_order;
+
+/**
+ * This module implements a simple 2D vector.
+ */
+pub mod vector2;
+
+/**
+ * This module implements a simple 2D vector reference.
+ */
+pub mod vector2_ref;
+
 pub use crate::aberth::{aberth, aberth_mt, initial_aberth};
+pub use crate::horner::{horner_eval_c, horner_eval_f};
 pub use crate::matrix2::Matrix2;
 pub use crate::rootfinding::{
-    horner_eval, initial_autocorr, initial_guess, pbairstow_autocorr, pbairstow_autocorr_mt,
-    pbairstow_even, pbairstow_even_mt, Options,
+    initial_autocorr, initial_guess, pbairstow_autocorr, pbairstow_autocorr_mt, pbairstow_even,
+    pbairstow_even_mt, Options,
 };
 pub use crate::vector2::Vector2;
 
