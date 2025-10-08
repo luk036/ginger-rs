@@ -1,4 +1,5 @@
-use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion};
+use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
+use std::hint::black_box;
 use ginger::{
     aberth, aberth_mt, initial_aberth, initial_autocorr, initial_guess, pbairstow_autocorr,
     pbairstow_autocorr_mt, pbairstow_even, pbairstow_even_mt, Options,

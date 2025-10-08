@@ -630,7 +630,7 @@ mod test {
         let v3 = v1 + v2;
         assert_eq!(v3, Vector2::new(4, 6));
 
-        let v4 = v1 + &v2;
+        let v4 = v1 + v2;
         assert_eq!(v4, Vector2::new(4, 6));
     }
 

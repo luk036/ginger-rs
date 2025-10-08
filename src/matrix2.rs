@@ -604,7 +604,7 @@ mod test {
         let m3 = m1 + m2;
         assert_eq!(m3, Matrix2::new(Vector2::new(6, 8), Vector2::new(10, 12)));
 
-        let m4 = m1 + &m2;
+        let m4 = m1 + m2;
         assert_eq!(m4, Matrix2::new(Vector2::new(6, 8), Vector2::new(10, 12)));
     }
 
