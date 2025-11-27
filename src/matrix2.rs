@@ -11,10 +11,10 @@ use super::Vector2;
 /// Properties:
 ///
 /// * `x_`: The `x_` property represents the first row of the `Matrix2` object. It is of type
-///         `Vector2<T>`, where `T` is a generic type parameter. This means that the elements of the first row
-///         are stored in a `Vector2` object.
+///   `Vector2<T>`, where `T` is a generic type parameter. This means that the elements of the first row
+///   are stored in a `Vector2` object.
 /// * `y_`: The `y_` property is a public field of type `Vector2<T>`. It represents the second row of
-///         the `Matrix2` object.
+///   the `Matrix2` object.
 #[derive(PartialEq, Eq, Copy, Clone, Hash, Debug, Default)]
 // #[repr(C)]
 pub struct Matrix2<T> {
@@ -86,7 +86,7 @@ impl<T: Clone + Num> Matrix2<T> {
     /// Arguments:
     ///
     /// * `v`: The parameter `v` is a reference to a `Vector2<T>` object, where `T` is the type of the
-    ///         elements in the vector.
+    ///   elements in the vector.
     ///
     /// Returns:
     ///
@@ -140,7 +140,7 @@ impl<T: Clone + Num> Matrix2<T> {
     /// Arguments:
     ///
     /// * `alpha`: The parameter `alpha` is a scalar value that is used to divide each element of the matrix
-    ///             by. It is used to scale down the matrix by dividing each element by `alpha`.
+    ///   by. It is used to scale down the matrix by dividing each element by `alpha`.
     ///
     /// Returns:
     ///

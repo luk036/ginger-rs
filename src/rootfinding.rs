@@ -11,13 +11,13 @@ const PI: f64 = std::f64::consts::PI;
 /// Properties:
 ///
 /// * `max_iters`: The `max_iters` property represents the maximum number of iterations allowed for a
-///             certain algorithm or process. It is of type `usize`, which means it can only hold non-negative
-///             integer values.
+///   certain algorithm or process. It is of type `usize`, which means it can only hold non-negative
+///   integer values.
 /// * `tolerance`: The `tolerance` property is a floating-point number that represents the tolerance for convergence
-///             in an algorithm. It is used to determine when the algorithm has reached a satisfactory solution.
+///   in an algorithm. It is used to determine when the algorithm has reached a satisfactory solution.
 /// * `tol_ind`: The `tol_ind` property in the `Options` struct represents the tolerance for individual
-///             values. It is a floating-point number (`f64`) that determines the acceptable difference between the
-///             expected value and the actual value for each element in a calculation or comparison.
+///   values. It is a floating-point number (`f64`) that determines the acceptable difference between the
+///   expected value and the actual value for each element in a calculation or comparison.
 #[derive(Debug)]
 pub struct Options {
     pub max_iters: usize,
@@ -45,7 +45,7 @@ impl Default for Options {
 ///
 /// * `vr`: A vector representing the direction of the reference frame's x-axis.
 /// * `vp`: The parameter `vp` represents a vector `vp = (p, s)`, where `p` and `s` are the components
-///         of the vector.
+///   of the vector.
 ///
 /// Returns:
 ///
@@ -141,10 +141,10 @@ pub fn delta1(vA: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
 /// Arguments:
 ///
 /// * `vA`: A mutable reference to a Vector2 object representing the coefficients of a polynomial. The
-///         coefficients are stored in the x_ and y_ fields of the Vector2 object.
+///   coefficients are stored in the x_ and y_ fields of the Vector2 object.
 /// * `vA1`: vA1 is a mutable reference to a Vector2 object.
 /// * `vri`: The parameter `vri` represents a vector with components `r` and `i`. It is used in the
-///         `suppress_old` function to perform calculations.
+///   `suppress_old` function to perform calculations.
 /// * `vrj`: The parameter `vrj` represents a vector with components `x` and `y`.
 ///
 /// # Examples:
@@ -190,12 +190,12 @@ pub fn suppress_old(vA: &mut Vec2, vA1: &mut Vec2, vri: &Vec2, vrj: &Vec2) {
 ///
 /// * `vA`: A vector representing the coefficients of a polynomial function.
 /// * `vA1`: The parameter `vA1` is a `Vector2` object representing a vector with two components. It is
-///         used as an input parameter in the `suppress` function.
+///   used as an input parameter in the `suppress` function.
 /// * `vri`: The parameter `vri` represents the vector `ri`, and `vrj` represents the vector `rj`. These
-///         vectors are used in the calculation of the suppression step in the Bairstow's method for root
-///         finding.
+///   vectors are used in the calculation of the suppression step in the Bairstow's method for root
+///   finding.
 /// * `vrj`: The parameter `vrj` represents a vector with coordinates (4.0, 5.0).
-///         Zero suppression
+///   Zero suppression
 ///
 /// # Examples:
 ///
@@ -230,11 +230,11 @@ pub fn suppress(vA: &Vec2, vA1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
 /// Arguments:
 ///
 /// * `coeffs`: A mutable slice of f64 values representing the coefficients of the polynomial. The
-///             coefficients are in descending order of degree.
+///   coefficients are in descending order of degree.
 /// * `degree`: The `degree` parameter represents the degree of the polynomial. It is used to determine
-///             the number of coefficients in the `coeffs` array.
+///   the number of coefficients in the `coeffs` array.
 /// * `vr`: The parameter `vr` is a `Vec2` struct that contains two values, `x_` and `y_`. In the
-///             example, `vr` is initialized with the values `-1.0` and `-2.0`.
+///   example, `vr` is initialized with the values `-1.0` and `-2.0`.
 ///
 /// Returns:
 ///
@@ -314,11 +314,11 @@ pub fn initial_guess(coeffs: &[f64]) -> Vec<Vec2> {
 /// Arguments:
 ///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a polynomial.
-///             It is assumed that the polynomial has an even degree.
+///   It is assumed that the polynomial has an even degree.
 /// * `vrs`: A vector of initial guesses for the roots of the polynomial. Each element of the vector is
-///             a complex number representing a root guess.
+///   a complex number representing a root guess.
 /// * `options`: The `options` parameter is an instance of the `Options` struct, which contains the
-///             following fields:
+///   following fields:
 ///
 /// # Examples:
 ///
@@ -338,19 +338,19 @@ pub fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (u
     for niter in 1..options.max_iters {
         let mut tolerance = 0.0;
         for i in 0..m_rs {
-            if converged[i] {
-                continue;
-            }
-            let mut vri = vrs[i];
-            if let Some(tol_i) = pbairstow_even_job(coeffs, i, &mut vri, &mut converged[i], vrs) {
-                if tolerance < tol_i {
-                    tolerance = tol_i;
-                }
-            }
-            vrs[i] = vri;
+  if converged[i] {
+      continue;
+  }
+  let mut vri = vrs[i];
+  if let Some(tol_i) = pbairstow_even_job(coeffs, i, &mut vri, &mut converged[i], vrs) {
+      if tolerance < tol_i {
+          tolerance = tol_i;
+      }
+  }
+  vrs[i] = vri;
         }
         if tolerance < options.tolerance {
-            return (niter, true);
+  return (niter, true);
         }
     }
     (options.max_iters, false)
@@ -364,11 +364,11 @@ pub fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (u
 /// Arguments:
 ///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a polynomial.
-///             It is assumed that the polynomial has an even degree.
+///   It is assumed that the polynomial has an even degree.
 /// * `vrs`: A vector of initial guesses for the roots of the polynomial. Each element of the vector is
-///             a complex number representing a root guess.
+///   a complex number representing a root guess.
 /// * `options`: The `options` parameter is an instance of the `Options` struct, which contains the
-///             following fields:
+///   following fields:
 ///
 /// # Examples:
 ///
@@ -441,7 +441,7 @@ fn pbairstow_even_job(
 /// Arguments:
 ///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
-///             polynomial. The coefficients are ordered from highest degree to lowest degree.
+///   polynomial. The coefficients are ordered from highest degree to lowest degree.
 ///
 /// Returns:
 ///
@@ -474,12 +474,12 @@ pub fn initial_autocorr(coeffs: &[f64]) -> Vec<Vec2> {
 /// Arguments:
 ///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
-///             polynomial. These coefficients are used to calculate the auto-correlation function.
+///   polynomial. These coefficients are used to calculate the auto-correlation function.
 /// * `vrs`: `vrs` is a vector of complex numbers representing the initial guesses for the roots of the
-///             polynomial. Each element of `vrs` is a `Vec2` struct, which contains two fields: `x_` and `y_`.
-///             These fields represent the real and imaginary parts of the
+///   polynomial. Each element of `vrs` is a `Vec2` struct, which contains two fields: `x_` and `y_`.
+///   These fields represent the real and imaginary parts of the
 /// * `options`: The `Options` struct is used to specify the parameters for the Bairstow's method
-///             algorithm. It has the following fields:
+///   algorithm. It has the following fields:
 ///
 /// # Examples:
 ///
@@ -525,12 +525,12 @@ pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -
 /// Arguments:
 ///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
-///             polynomial. These coefficients are used as input for the Bairstow's method algorithm.
+///   polynomial. These coefficients are used as input for the Bairstow's method algorithm.
 /// * `vrs`: `vrs` is a vector of complex numbers representing the initial guesses for the roots of the
-///             polynomial. Each element of `vrs` is a `Vec2` struct, which contains the real and imaginary parts of
-///             the complex number.
+///   polynomial. Each element of `vrs` is a `Vec2` struct, which contains the real and imaginary parts of
+///   the complex number.
 /// * `options`: The `options` parameter is an instance of the `Options` struct, which contains the
-///             following fields:
+///   following fields:
 ///
 /// # Examples:
 ///
@@ -618,7 +618,7 @@ fn pbairstow_autocorr_mt_job(
 /// Arguments:
 ///
 /// * `vr`: A vector containing two values, representing the coefficients of a quadratic function. The
-///         first value represents the coefficient of x^2, and the second value represents the coefficient of x.
+///   first value represents the coefficient of x^2, and the second value represents the coefficient of x.
 ///
 /// Returns:
 ///

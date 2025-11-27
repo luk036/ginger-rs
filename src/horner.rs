@@ -8,9 +8,9 @@ use num_complex::Complex;
 /// Arguments:
 ///
 /// * `coeffs`: A vector of floating-point coefficients representing a polynomial. The coefficients are
-///             ordered from highest degree to lowest degree.
+///   ordered from highest degree to lowest degree.
 /// * `zval`: The `zval` parameter in the `horner_eval_f` function represents the value at which the
-///             polynomial is evaluated. It is of type `f64`, which means it is a floating-point number.
+///   polynomial is evaluated. It is of type `f64`, which means it is a floating-point number.
 ///
 /// Returns:
 ///
@@ -28,7 +28,7 @@ pub fn horner_eval_f(coeffs: &[f64], zval: f64) -> f64 {
 /// Arguments:
 ///
 /// * `coeffs`: A vector of coefficients representing a polynomial. The coefficients are in descending
-///             order of degree.
+///   order of degree.
 /// * `zval`: The `zval` parameter is a complex number that represents the value at which the polynomial is evaluated.
 ///
 /// Returns:

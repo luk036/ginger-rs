@@ -29,8 +29,8 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 /// Arguments:
 ///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
-///             polynomial. The coefficients are ordered from highest degree to lowest degree. For example, if the
-///             polynomial is `3x^2 + 2x + 1`, the `coeffs` slice would
+///   polynomial. The coefficients are ordered from highest degree to lowest degree. For example, if the
+///   polynomial is `3x^2 + 2x + 1`, the `coeffs` slice would
 ///
 /// Returns:
 ///
@@ -107,11 +107,11 @@ fn aberth_job(
 /// Arguments:
 ///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
-///             polynomial. The coefficients are ordered from highest degree to lowest degree. For example, if the
-///             polynomial is `3x^2 + 2x + 1`, the `coeffs` slice would
+///   polynomial. The coefficients are ordered from highest degree to lowest degree. For example, if the
+///   polynomial is `3x^2 + 2x + 1`, the `coeffs` slice would
 /// * `zs`: A vector of complex numbers representing the initial guesses for the roots of the polynomial.
 /// * `options`: The `options` parameter is an instance of the `Options` struct, which contains the
-///             following fields:
+///   following fields:
 ///
 /// # Examples:
 ///
@@ -159,11 +159,11 @@ pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (us
 /// Arguments:
 ///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
-///             polynomial. The polynomial is defined by the equation:
+///   polynomial. The polynomial is defined by the equation:
 /// * `zs`: A mutable reference to a vector of Complex numbers. These numbers represent the initial
-///             guesses for the roots of the polynomial equation.
+///   guesses for the roots of the polynomial equation.
 /// * `options`: The `options` parameter is an instance of the `Options` struct, which contains the
-///             following fields:
+///   following fields:
 ///
 /// # Examples:
 ///

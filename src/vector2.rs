@@ -7,9 +7,9 @@ use num_traits::{Num, Signed, Zero};
 /// Properties:
 ///
 /// * `x_`: The `x_` property represents the first element of the `Vector2` object. It is of type `T`,
-///         which means it can be any type that is specified when creating an instance of `Vector2`.
+///   which means it can be any type that is specified when creating an instance of `Vector2`.
 /// * `y_`: The `y_` property is the second element of the `Vector2` object. It represents the
-///         y-coordinate of a 2D vector.
+///   y-coordinate of a 2D vector.
 ///
 /// # Examples:
 ///
@@ -34,8 +34,8 @@ impl<T> Vector2<T> {
     /// Arguments:
     ///
     /// * `x_`: The parameter `x_` represents the x-coordinate of the vector. It is of type `T`, which means
-    ///         it can be any type that implements the necessary operations for vector calculations (e.g., addition,
-    ///         subtraction, multiplication).
+    ///   it can be any type that implements the necessary operations for vector calculations (e.g., addition,
+    ///   subtraction, multiplication).
     /// * `y_`: The `y_` parameter represents the y-coordinate of the vector.
     ///
     /// Returns:
@@ -61,7 +61,7 @@ impl<T: Clone + Num> Vector2<T> {
     /// Arguments:
     ///
     /// * `other`: The `other` parameter is a reference to another `Vector2` object that we want to
-    ///            calculate the dot product with.
+    ///   calculate the dot product with.
     ///
     /// Returns:
     ///
@@ -87,7 +87,7 @@ impl<T: Clone + Num> Vector2<T> {
     /// Arguments:
     ///
     /// * `other`: The `other` parameter is a reference to another `Vector2` object that we want to
-    ///            calculate the cross product with.
+    ///   calculate the cross product with.
     ///
     /// Returns:
     ///
@@ -159,7 +159,7 @@ impl<T: Clone + Num> Vector2<T> {
     /// Arguments:
     ///
     /// * `alpha`: The `alpha` parameter is a value of type `T` that is used to divide the `x_` and `y_`
-    ///            values of the `Vector2` object.
+    ///   values of the `Vector2` object.
     ///
     /// Returns:
     ///
