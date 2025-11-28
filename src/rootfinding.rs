@@ -338,19 +338,19 @@ pub fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (u
     for niter in 1..options.max_iters {
         let mut tolerance = 0.0;
         for i in 0..m_rs {
-  if converged[i] {
-      continue;
-  }
-  let mut vri = vrs[i];
-  if let Some(tol_i) = pbairstow_even_job(coeffs, i, &mut vri, &mut converged[i], vrs) {
-      if tolerance < tol_i {
-          tolerance = tol_i;
-      }
-  }
-  vrs[i] = vri;
+            if converged[i] {
+                continue;
+            }
+            let mut vri = vrs[i];
+            if let Some(tol_i) = pbairstow_even_job(coeffs, i, &mut vri, &mut converged[i], vrs) {
+                if tolerance < tol_i {
+                    tolerance = tol_i;
+                }
+            }
+            vrs[i] = vri;
         }
         if tolerance < options.tolerance {
-  return (niter, true);
+            return (niter, true);
         }
     }
     (options.max_iters, false)
