@@ -16,6 +16,16 @@ use num_complex::Complex;
 ///
 /// The function `horner_eval_f` returns a `f64` value, which is the result of evaluating the polynomial
 /// with the given coefficients at the specified value `zval`.
+///
+/// # Examples
+///
+/// ```
+/// use ginger::horner::horner_eval_f;
+///
+/// let coeffs = vec![1.0, 2.0, 3.0]; // represents 3 + 2x + 1x^2 (coeffs in reverse order)
+/// let result = horner_eval_f(&coeffs, 2.0); // evaluates at x = 2
+/// assert_eq!(result, 11.0); // 3 + 2*2 + 1*4 = 3 + 4 + 4 = 11
+/// ```
 pub fn horner_eval_f(coeffs: &[f64], zval: f64) -> f64 {
     coeffs.iter().fold(0.0, |acc, coeff| acc * zval + coeff)
 }
@@ -34,6 +44,20 @@ pub fn horner_eval_f(coeffs: &[f64], zval: f64) -> f64 {
 /// Returns:
 ///
 /// The function `horner_eval_c` returns a complex number of type `Complex<f64>`.
+///
+/// # Examples
+///
+/// ```
+/// use ginger::horner::horner_eval_c;
+/// use num_complex::Complex;
+///
+/// let coeffs = vec![1.0, 2.0, 3.0]; // represents 3 + 2x + 1x^2 (coeffs in reverse order)
+/// let zval = Complex::new(1.0, 1.0);
+/// let result = horner_eval_c(&coeffs, &zval);
+/// // evaluates at x = 1 + i: 3 + 2(1+i) + 1(1+i)^2 = 3 + 2+2i + 1(2i) = 5 + 4i
+/// assert_eq!(result.re, 5.0);
+/// assert_eq!(result.im, 4.0);
+/// ```
 pub fn horner_eval_c(coeffs: &[f64], zval: &Complex<f64>) -> Complex<f64> {
     coeffs
         .iter()

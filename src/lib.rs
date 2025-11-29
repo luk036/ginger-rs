@@ -3,39 +3,39 @@
 // pub mod spectral_fact;
 // pub mod robin;
 
-/**
- * This module implements the Aberth method for finding the roots of a polynomial.
- */
+//! # Ginger-rs
+//! 
+//! This crate provides implementations of polynomial root finding algorithms.
+//! 
+//! ## Modules
+//! 
+//! * `aberth` - Implements the Aberth method for finding the roots of a polynomial.
+//! * `horner` - Implements Horner's method for polynomial evaluation.
+//! * `matrix2` - Implements a simple 2x2 matrix.
+//! * `rootfinding` - Implements the Bairstow's method for finding the roots of a polynomial.
+//! * `leja_order` - Implements the Leja ordering.
+//! * `vector2` - Implements a simple 2D vector.
+//! * `vector2_ref` - Implements a simple 2D vector reference.
+
+/// This module implements the Aberth method for finding the roots of a polynomial.
 pub mod aberth;
 
-/**
- * This module implements Horner's method for polynomial evaluation.
- */
+/// This module implements Horner's method for polynomial evaluation.
 pub mod horner;
 
-/**
- * This module implements a simple 2x2 matrix.
- */
+/// This module implements a simple 2x2 matrix.
 pub mod matrix2;
 
-/**
- * This module implements the Bairstow's method for finding the roots of a polynomial.
- */
+/// This module implements the Bairstow's method for finding the roots of a polynomial.
 pub mod rootfinding;
 
-/**
- * This module implements the Leja ordering.
- */
+/// This module implements the Leja ordering.
 pub mod leja_order;
 
-/**
- * This module implements a simple 2D vector.
- */
+/// This module implements a simple 2D vector.
 pub mod vector2;
 
-/**
- * This module implements a simple 2D vector reference.
- */
+/// This module implements a simple 2D vector reference.
 pub mod vector2_ref;
 
 pub use crate::aberth::{aberth, aberth_mt, initial_aberth};

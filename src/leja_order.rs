@@ -15,6 +15,23 @@ use std::cmp::Ordering;
 ///
 /// # Panics
 /// Panics if the input vector is empty.
+///
+/// # Examples
+///
+/// ```
+/// use ginger::leja_order::leja_order;
+/// use num_complex::Complex;
+///
+/// let points = vec![
+///     Complex::new(1.0, 1.0),
+///     Complex::new(2.0, -2.0),
+///     Complex::new(0.5, 0.5),
+///     Complex::new(-1.0, 0.0),
+///     Complex::new(3.0, 3.0),
+/// ];
+/// let leja_ordered = leja_order(points);
+/// assert_eq!(leja_ordered.len(), 5);
+/// ```
 pub fn leja_order(mut points: Vec<Complex<f64>>) -> Vec<Complex<f64>> {
     // Check if input is empty and return an error if so
     if points.is_empty() {
