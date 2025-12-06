@@ -253,7 +253,7 @@ pub fn suppress(vA: &Vec2, vA1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
 ///
 /// assert_approx_eq!(px.x_, 114.0);
 /// assert_approx_eq!(px.y_, 134.0);
-/// assert_approx_eq!(coeffs[3], 15.0);           
+/// assert_approx_eq!(coeffs[3], 15.0);
 /// ```
 pub fn horner(coeffs: &mut [f64], degree: usize, vr: &Vec2) -> Vec2 {
     let Vec2 { x_: r, y_: q } = vr;

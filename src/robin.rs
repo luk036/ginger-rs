@@ -1,7 +1,7 @@
 /// The below code defines a struct called SlNode that represents a node in a singly linked list.
-/// 
+///
 /// Properties:
-/// 
+///
 /// * `next`: The `next` property is an `Option` that holds a `Box` containing another `SlNode`. This
 ///             allows us to create a linked list structure where each node points to the next node in the list. The
 ///             `Option` type is used to handle the case where there is no next node
@@ -14,9 +14,9 @@ pub struct SlNode {
 }
 
 /// The `RobinIterator` struct is a iterator over a singly linked list.
-/// 
+///
 /// Properties:
-/// 
+///
 /// * `cur`: A mutable reference to the current node in the iterator.
 /// * `stop`: The `stop` property is a reference to the node at which the iteration should stop.
 pub struct RobinIterator<'a> {
@@ -29,9 +29,9 @@ impl<'a> Iterator for RobinIterator<'a> {
 
     /// The `next` function returns the next item in a linked list if it exists, otherwise it returns
     /// `None`.
-    /// 
+    ///
     /// Returns:
-    /// 
+    ///
     /// The `next` method returns an `Option<Self::Item>`.
     fn next(&mut self) -> Option<Self::Item> {
         self.cur = self.cur.next.as_mut().unwrap();
@@ -44,9 +44,9 @@ impl<'a> Iterator for RobinIterator<'a> {
 }
 
 /// The `Robin` struct represents a round robin scheduling algorithm.
-/// 
+///
 /// Properties:
-/// 
+///
 /// * `cycle`: A vector of SlNode objects.
 pub struct Robin {
     cycle: Vec<SlNode>,
@@ -54,13 +54,13 @@ pub struct Robin {
 
 impl Robin {
     /// The `new` function creates a cycle of linked nodes with a specified number of parts.
-    /// 
+    ///
     /// Arguments:
-    /// 
+    ///
     /// * `num_parts`: The `num_parts` parameter is the number of parts or nodes in the cycle.
-    /// 
+    ///
     /// Returns:
-    /// 
+    ///
     /// The `new` function is returning an instance of the struct that it is defined in.
     pub fn new(num_parts: usize) -> Self {
         let mut cycle = (0..num_parts)
@@ -79,13 +79,13 @@ impl Robin {
     }
 
     /// The `exclude` function returns a `RobinIterator` that excludes a specified part of a cycle.
-    /// 
+    ///
     /// Arguments:
-    /// 
+    ///
     /// * `from_part`: The `from_part` parameter is the index of the cycle from which you want to exclude elements.
-    /// 
+    ///
     /// Returns:
-    /// 
+    ///
     /// The `exclude` method returns a `RobinIterator` object.
     pub fn exclude(&mut self, from_part: usize) -> RobinIterator {
         RobinIterator {

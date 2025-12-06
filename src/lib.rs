@@ -1,14 +1,13 @@
 #![allow(non_snake_case)]
-
 // pub mod spectral_fact;
 // pub mod robin;
 
 //! # Ginger-rs
-//! 
+//!
 //! This crate provides implementations of polynomial root finding algorithms.
-//! 
+//!
 //! ## Modules
-//! 
+//!
 //! * `aberth` - Implements the Aberth method for finding the roots of a polynomial.
 //! * `horner` - Implements Horner's method for polynomial evaluation.
 //! * `matrix2` - Implements a simple 2x2 matrix.

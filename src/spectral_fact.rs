@@ -19,7 +19,7 @@ use std::f64::consts::PI;
 /// An `Array1<f64>` representing the minimum-phase filter `h`.
 pub fn spectral_fact(r: &Array1<f64>) -> Array1<f64> {
     let n = r.len();
-    let mult_factor = 100; 
+    let mult_factor = 100;
     let m = mult_factor * n;
 
     let w = Array1::range(0., 2. * PI, (m as f64) / (m as f64 - 1.));
