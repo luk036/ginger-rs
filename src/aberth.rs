@@ -222,6 +222,20 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
     (options.max_iters, false)
 }
 
+/// Initial guess for Aberth's method using auto-correlation
+///
+/// The `initial_aberth_autocorr` function calculates initial guesses for Aberth's method
+/// specifically tailored for auto-correlation polynomials.
+///
+/// Arguments:
+///
+/// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients
+///   of a polynomial. The coefficients are ordered from highest degree to lowest degree.
+///
+/// Returns:
+///
+/// The function returns a vector of `Complex<f64>` values, representing the initial guesses
+/// for the roots of a polynomial.
 pub fn initial_aberth_autocorr(coeffs: &[f64]) -> Vec<Complex<f64>> {
     let degree = coeffs.len() - 1; // assume even
     let center = -coeffs[1] / (coeffs[0] * degree as f64);
@@ -239,6 +253,22 @@ pub fn initial_aberth_autocorr(coeffs: &[f64]) -> Vec<Complex<f64>> {
         .collect()
 }
 
+/// Aberth's method job for auto-correlation polynomials
+///
+/// This internal function performs a single iteration of Aberth's method for auto-correlation
+/// polynomials, considering both the root and its reciprocal.
+///
+/// Arguments:
+///
+/// * `coeffs`: Polynomial coefficients
+/// * `i`: Current root index
+/// * `zi`: Current root value (mutable)
+/// * `zsc`: Current approximations of all roots
+/// * `coeffs1`: Derivative coefficients
+///
+/// Returns:
+///
+/// The tolerance value for convergence checking.
 fn aberth_autocorr_job(
     coeffs: &[f64],
     i: usize,
@@ -257,6 +287,20 @@ fn aberth_autocorr_job(
     tol_i
 }
 
+/// Aberth's method for auto-correlation polynomials
+///
+/// The `aberth_autocorr` function implements Aberth's method specifically for
+/// auto-correlation polynomials, where roots come in reciprocal pairs.
+///
+/// Arguments:
+///
+/// * `coeffs`: The polynomial coefficients (highest to lowest degree)
+/// * `zs`: Mutable slice of complex root approximations
+/// * `options`: Iteration options (max iterations, tolerance)
+///
+/// Returns:
+///
+/// A tuple of (number of iterations, whether convergence was achieved)
 pub fn aberth_autocorr(
     coeffs: &[f64],
     zs: &mut [Complex<f64>],

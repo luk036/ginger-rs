@@ -50,6 +50,20 @@ impl Default for Options {
 /// Returns:
 ///
 /// The function `make_adjoint` returns a `Mat2` object.
+/// Calculates the adjoint matrix for a 2x2 matrix from two vectors.
+///
+/// The adjoint is computed as:
+/// |  s  -p |
+/// | -p*q  p*r+s |
+///
+/// Arguments:
+///
+/// * `vr`: A vector representing the row of a 2x2 matrix
+/// * `vp`: Another vector representing the row of a 2x2 matrix
+///
+/// Returns:
+///
+/// A 2x2 matrix representing the adjoint
 #[inline]
 pub fn make_adjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
     let (r, q) = (vr.x_, vr.y_);
@@ -70,6 +84,16 @@ pub fn make_adjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
 /// Returns:
 ///
 /// The function `make_inverse` returns a `Mat2` object.
+/// Calculates the inverse of a 2x2 matrix from two vectors.
+///
+/// Arguments:
+///
+/// * `vr`: A vector representing the row of a 2x2 matrix
+/// * `vp`: Another vector representing the row of a 2x2 matrix
+///
+/// Returns:
+///
+/// A 2x2 matrix representing the inverse
 #[inline]
 pub fn make_inverse(vr: &Vec2, vp: &Vec2) -> Mat2 {
     let (r, q) = (vr.x_, vr.y_);
@@ -411,6 +435,22 @@ pub fn pbairstow_even_mt(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
     (options.max_iters, false)
 }
 
+/// Internal job function for parallel Bairstow's method (even degree)
+///
+/// Performs a single iteration of Bairstow's method for one root approximation,
+/// suppressing the effect of other roots (Gauss-Seidel style).
+///
+/// Arguments:
+///
+/// * `coeffs`: Polynomial coefficients
+/// * `i`: Current root index
+/// * `vri`: Current root approximation (mutable)
+/// * `converged`: Convergence flag for this root
+/// * `vrsc`: Current approximations of all roots
+///
+/// Returns:
+///
+/// Option containing tolerance value if not yet converged
 fn pbairstow_even_job(
     coeffs: &[f64],
     i: usize,
@@ -577,6 +617,22 @@ pub fn pbairstow_autocorr_mt(
     (options.max_iters, false)
 }
 
+/// Internal job function for parallel Bairstow's method (auto-correlation)
+///
+/// Performs a single iteration of Bairstow's method for auto-correlation polynomials,
+/// considering both roots and their reciprocals.
+///
+/// Arguments:
+///
+/// * `coeffs`: Polynomial coefficients
+/// * `i`: Current root index
+/// * `vri`: Current root approximation (mutable)
+/// * `converged`: Convergence flag for this root
+/// * `vrsc`: Current approximations of all roots
+///
+/// Returns:
+///
+/// Option containing tolerance value if not yet converged
 fn pbairstow_autocorr_mt_job(
     coeffs: &[f64],
     i: usize,
