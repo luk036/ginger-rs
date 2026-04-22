@@ -1,0 +1,4 @@
+[lints.rust]
+unsafe_code = "deny"
+
+[lint.rust.dbg_runtime]
