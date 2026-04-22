@@ -692,7 +692,6 @@ fn pbairstow_autocorr_mt_job(
 /// assert_approx_eq!(vr.x_, 0.25);
 /// assert_approx_eq!(vr.y_, -0.25);
 /// ```
-#[allow(dead_code)]
 pub fn extract_autocorr(vr: Vec2) -> Vec2 {
     let Vec2 { x_: r, y_: q } = vr;
     let hr = r / 2.0;

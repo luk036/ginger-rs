@@ -756,3 +756,61 @@ mod test {
         assert_eq!(format!("{:?}", v), "Vector2 { x_: 1, y_: 2 }");
     }
 }
+
+#[cfg(test)]
+mod proptest {
+    use proptest::prelude::*;
+
+    use crate::Vector2;
+
+    const I32_BOUND: i32 = i32::MAX >> 8;
+
+    proptest! {
+        #[test]
+        fn test_add_commutative(a in -I32_BOUND..I32_BOUND, b in -I32_BOUND..I32_BOUND,
+                               c in -I32_BOUND..I32_BOUND, d in -I32_BOUND..I32_BOUND) {
+            let v1 = Vector2::new(a, b);
+            let v2 = Vector2::new(c, d);
+            prop_assert_eq!(v1 + v2, v2 + v1);
+        }
+
+        #[test]
+        fn test_sub_anti_commutative(a in -I32_BOUND..I32_BOUND, b in -I32_BOUND..I32_BOUND,
+                                     c in -I32_BOUND..I32_BOUND, d in -I32_BOUND..I32_BOUND) {
+            let v1 = Vector2::new(a, b);
+            let v2 = Vector2::new(c, d);
+            prop_assert_eq!(-(v2 - v1), v1 - v2);
+        }
+
+        #[test]
+        fn test_mul_scalar_distributive(a in -1000..1000, b in -1000..1000, s in -100..100) {
+            let v = Vector2::new(a, b);
+            prop_assert_eq!(v * s, Vector2::new(a * s, b * s));
+        }
+
+        #[test]
+        fn test_scale_unscale_roundtrip(a in -1e10f64..1e10f64, b in -1e10f64..1e10f64,
+                                        s in -1e5f64..1e5f64) {
+            let s = if s.abs() < 1e-10 { 1.0 } else { s };
+            let v = Vector2::new(a, b);
+            let scaled = v.scale(s);
+            let unscaled = scaled.unscale(s);
+            prop_assert!((unscaled.x_ - a).abs() / a.abs() < 1e-10 || a.abs() < 1e-10);
+            prop_assert!((unscaled.y_ - b).abs() / b.abs() < 1e-10 || b.abs() < 1e-10);
+        }
+
+        #[test]
+        fn test_dot_commutative(a in -1000..1000, b in -1000..1000,
+                                c in -1000..1000, d in -1000..1000) {
+            let v1 = Vector2::new(a, b);
+            let v2 = Vector2::new(c, d);
+            prop_assert_eq!(v1.dot(&v2), v2.dot(&v1));
+        }
+
+        #[test]
+        fn test_neg_involution(a in -I32_BOUND..I32_BOUND, b in -I32_BOUND..I32_BOUND) {
+            let v = Vector2::new(a, b);
+            prop_assert_eq!(-(-v), v);
+        }
+    }
+}
