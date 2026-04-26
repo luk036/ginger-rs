@@ -753,4 +753,71 @@ mod test {
             "Matrix2 { x_: Vector2 { x_: 1, y_: 2 }, y_: Vector2 { x_: 3, y_: 4 } }"
         );
     }
+
+    #[test]
+    fn test_forward_xf_val_binop() {
+        let m1 = Matrix2::new(Vector2::new(1, 2), Vector2::new(3, 4));
+        let m2 = Matrix2::new(Vector2::new(5, 6), Vector2::new(7, 8));
+        let result: Matrix2<i32> = m1 + m2;
+        assert_eq!(
+            result,
+            Matrix2::new(Vector2::new(6, 8), Vector2::new(10, 12))
+        );
+    }
+
+    #[test]
+    fn test_forward_val_xf_binop() {
+        let m1 = Matrix2::new(Vector2::new(1, 2), Vector2::new(3, 4));
+        let m2 = Matrix2::new(Vector2::new(5, 6), Vector2::new(7, 8));
+        let result: Matrix2<i32> = m1 + m2;
+        assert_eq!(
+            result,
+            Matrix2::new(Vector2::new(6, 8), Vector2::new(10, 12))
+        );
+    }
+
+    #[test]
+    fn test_scalar_arithmetic_forward() {
+        let m = Matrix2::new(Vector2::new(2, 3), Vector2::new(4, 5));
+        let scalar = 3;
+        let result: Matrix2<i32> = m * scalar;
+        assert_eq!(
+            result,
+            Matrix2::new(Vector2::new(6, 9), Vector2::new(12, 15))
+        );
+
+        let result2: Matrix2<i32> = m * scalar;
+        assert_eq!(
+            result2,
+            Matrix2::new(Vector2::new(6, 9), Vector2::new(12, 15))
+        );
+
+        let result3: Matrix2<i32> = 3 * &m;
+        assert_eq!(
+            result3,
+            Matrix2::new(Vector2::new(6, 9), Vector2::new(12, 15))
+        );
+    }
+
+    #[test]
+    fn test_scalar_left_mul() {
+        let m = Matrix2::new(Vector2::new(2, 3), Vector2::new(4, 5));
+        assert_eq!(
+            3 * m,
+            Matrix2::new(Vector2::new(6, 9), Vector2::new(12, 15))
+        );
+        assert_eq!(
+            3 * &m,
+            Matrix2::new(Vector2::new(6, 9), Vector2::new(12, 15))
+        );
+    }
+
+    #[test]
+    fn test_scalar_mul_by_ref_matrix() {
+        let m = Matrix2::new(Vector2::new(1, 2), Vector2::new(3, 4));
+        assert_eq!(
+            5 * &m,
+            Matrix2::new(Vector2::new(5, 10), Vector2::new(15, 20))
+        );
+    }
 }

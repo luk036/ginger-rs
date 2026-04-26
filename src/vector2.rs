@@ -755,6 +755,43 @@ mod test {
         let v = Vector2::new(1, 2);
         assert_eq!(format!("{:?}", v), "Vector2 { x_: 1, y_: 2 }");
     }
+
+    #[test]
+    fn test_forward_xf_val_binop() {
+        let v1 = Vector2::new(1, 2);
+        let v2 = Vector2::new(3, 4);
+        let result: Vector2<i32> = v1 + v2;
+        assert_eq!(result, Vector2::new(4, 6));
+    }
+
+    #[test]
+    fn test_forward_val_xf_binop() {
+        let v1 = Vector2::new(1, 2);
+        let v2 = Vector2::new(3, 4);
+        let result: Vector2<i32> = v1 + v2;
+        assert_eq!(result, Vector2::new(4, 6));
+    }
+
+    #[test]
+    fn test_scalar_arithmetic_forward() {
+        let v = Vector2::new(2, 3);
+        let scalar = 5;
+        let result: Vector2<i32> = v * scalar;
+        assert_eq!(result, Vector2::new(10, 15));
+
+        let result2: Vector2<i32> = v * scalar;
+        assert_eq!(result2, Vector2::new(10, 15));
+
+        let result3: Vector2<i32> = 5 * &v;
+        assert_eq!(result3, Vector2::new(10, 15));
+    }
+
+    #[test]
+    fn test_scalar_left_mul() {
+        let v = Vector2::new(2, 3);
+        assert_eq!(5 * v, Vector2::new(10, 15));
+        assert_eq!(5 * &v, Vector2::new(10, 15));
+    }
 }
 
 #[cfg(test)]

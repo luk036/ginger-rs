@@ -210,4 +210,67 @@ mod tests {
         v2.mul_assign(2.0);
         assert_eq!(*v2.y, 8.0);
     }
+
+    #[test]
+    fn test_dot() {
+        let mut x1 = 3.0;
+        let mut y1 = 4.0;
+        let mut x2 = 5.0;
+        let mut y2 = 6.0;
+
+        let v1 = Vector2Ref::new(&mut x1, &mut y1);
+        let v2 = Vector2Ref::new(&mut x2, &mut y2);
+        assert_eq!(v1.dot(&v2), 39.0);
+    }
+
+    #[test]
+    fn test_cross() {
+        let mut x1 = 3.0;
+        let mut y1 = 4.0;
+        let mut x2 = 5.0;
+        let mut y2 = 6.0;
+
+        let v1 = Vector2Ref::new(&mut x1, &mut y1);
+        let v2 = Vector2Ref::new(&mut x2, &mut y2);
+        assert_eq!(v1.cross(&v2), -2.0);
+    }
+
+    #[test]
+    fn test_add_assign() {
+        let mut x1 = 1.0;
+        let mut y1 = 2.0;
+        let mut x2 = 3.0;
+        let mut y2 = 4.0;
+
+        let mut v1 = Vector2Ref::new(&mut x1, &mut y1);
+        let v2 = Vector2Ref::new(&mut x2, &mut y2);
+        v1.add_assign(&v2);
+        assert_eq!(*v1.x, 4.0);
+        assert_eq!(*v1.y, 6.0);
+    }
+
+    #[test]
+    fn test_sub_assign() {
+        let mut x1 = 5.0;
+        let mut y1 = 6.0;
+        let mut x2 = 3.0;
+        let mut y2 = 4.0;
+
+        let mut v1 = Vector2Ref::new(&mut x1, &mut y1);
+        let v2 = Vector2Ref::new(&mut x2, &mut y2);
+        v1.sub_assign(&v2);
+        assert_eq!(*v1.x, 2.0);
+        assert_eq!(*v1.y, 2.0);
+    }
+
+    #[test]
+    fn test_div_assign() {
+        let mut x = 6.0;
+        let mut y = 8.0;
+
+        let mut v = Vector2Ref::new(&mut x, &mut y);
+        v.div_assign(2.0);
+        assert_eq!(*v.x, 3.0);
+        assert_eq!(*v.y, 4.0);
+    }
 }
