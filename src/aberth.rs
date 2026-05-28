@@ -2,7 +2,7 @@
 
 use super::horner::{horner_eval_c, horner_eval_f};
 use super::Options;
-use lds_rs::lds::Circle;
+use crate::leja_order::leja_order;
 use num_complex::Complex;
 
 const TWO_PI: f64 = std::f64::consts::TAU;
@@ -12,10 +12,11 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
     let center = -coeffs[1] / (coeffs[0] * degree as f64);
     let poly_c = horner_eval_f(coeffs, center);
     let radius = Complex::<f64>::new(-poly_c, 0.0).powf(1.0 / degree as f64);
-    let mut c_gen = Circle::new(2);
     (0..degree)
-        .map(|_idx| {
-            let [ycoord, xcoord] = c_gen.pop(); // Note: y, x
+        .map(|i| {
+            // note! swap x and y to match C++ Complex{circle2_table_y, circle2_table_x}
+            let xcoord = crate::tables::circle2_table_y(i);
+            let ycoord = crate::tables::circle2_table_x(i);
             center + radius * Complex::<f64>::new(xcoord, ycoord)
         })
         .collect()
@@ -244,11 +245,12 @@ pub fn initial_aberth_autocorr(coeffs: &[f64]) -> Vec<Complex<f64>> {
     if radius > 1.0 {
         radius = 1.0 / radius;
     }
-    let mut c_gen = Circle::new(2);
     (0..degree / 2)
-        .map(|_idx| {
-            let [y, x] = c_gen.pop();
-            center + radius * Complex::<f64>::new(x, y)
+        .map(|i| {
+            // note! swap x and y to match C++ Complex{circle2_table_y, circle2_table_x}
+            let xcoord = crate::tables::circle2_table_y(i);
+            let ycoord = crate::tables::circle2_table_x(i);
+            center + radius * Complex::<f64>::new(xcoord, ycoord)
         })
         .collect()
 }
@@ -332,6 +334,64 @@ pub fn aberth_autocorr(
     (options.max_iters, false)
 }
 
+/// Reconstruct a monic polynomial from its roots using Leja ordering
+///
+/// Given a set of complex roots, reconstruct the monic polynomial coefficients
+/// (highest degree first) by multiplying (x - root) factors. Leja ordering is
+/// applied for numerical accuracy.
+///
+/// Arguments:
+///
+/// * `zs` - Input vector of complex roots
+///
+/// Returns:
+///
+/// Monic polynomial coefficients (highest degree first)
+pub fn poly_from_roots(zs: &[Complex<f64>]) -> Vec<f64> {
+    if zs.is_empty() {
+        return vec![1.0];
+    }
+    let ordered = leja_order(zs.to_vec());
+    let mut coeffs = vec![Complex::new(1.0, 0.0)];
+    for z in &ordered {
+        let mut prev = coeffs[0];
+        for item in coeffs.iter_mut().skip(1) {
+            let old = *item;
+            *item -= z * prev;
+            prev = old;
+        }
+        coeffs.push(-z * prev);
+    }
+    coeffs.iter().map(|c| c.re).collect()
+}
+
+/// Reconstruct a monic polynomial from its autocorrelation roots
+///
+/// Auto-correlation (palindromic) polynomials have roots in reciprocal pairs.
+/// The aberth_autocorr functions find the degree/2 "independent" roots.
+/// This function adds the reciprocal of each root (1/z) to get the full set
+/// of degree roots, then reconstructs with Leja ordering.
+///
+/// Arguments:
+///
+/// * `zs` - Roots found by aberth_autocorr
+///
+/// Returns:
+///
+/// Monic polynomial coefficients (highest degree first)
+pub fn poly_from_autocorr_roots(zs: &[Complex<f64>]) -> Vec<f64> {
+    if zs.is_empty() {
+        return vec![1.0];
+    }
+    // Add reciprocals to account for the palindromic root-pair structure
+    let mut all_roots: Vec<Complex<f64>> = Vec::with_capacity(2 * zs.len());
+    for z in zs {
+        all_roots.push(*z);
+        all_roots.push(1.0 / z);
+    }
+    poly_from_roots(&all_roots)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -374,5 +434,33 @@ mod tests {
         let (niter, found) = aberth_autocorr(&coeffs, &mut zrs, &Options::default());
         assert!(niter <= 7);
         assert!(found);
+    }
+
+    #[test]
+    fn test_poly_from_roots() {
+        // Polynomial (x-1)(x-2) = x^2 - 3x + 2
+        let roots = vec![Complex::new(1.0, 0.0), Complex::new(2.0, 0.0)];
+        let coeffs = poly_from_roots(&roots);
+        assert_eq!(coeffs.len(), 3);
+        assert!((coeffs[0] - 1.0).abs() < 1e-12);
+        assert!((coeffs[1] + 3.0).abs() < 1e-12);
+        assert!((coeffs[2] - 2.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_poly_from_autocorr_roots() {
+        // Simple test: just check it doesn't panic and returns right length
+        let roots = vec![Complex::new(0.5, 0.5), Complex::new(0.5, -0.5)];
+        let coeffs = poly_from_autocorr_roots(&roots);
+        // Should have 2*roots.len() + 1 coefficients
+        assert_eq!(coeffs.len(), 5);
+        // Monic
+        assert!((coeffs[0] - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_poly_from_roots_empty() {
+        let coeffs = poly_from_roots(&[]);
+        assert_eq!(coeffs, vec![1.0]);
     }
 }

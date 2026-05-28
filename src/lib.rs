@@ -16,6 +16,9 @@
 //! * `vector2` - Implements a simple 2D vector.
 //! * `vector2_ref` - Implements a simple 2D vector reference.
 
+/// This module provides precomputed low-discrepancy sequence table lookups.
+pub mod tables;
+
 /// This module implements the Aberth method for finding the roots of a polynomial.
 pub mod aberth;
 
@@ -37,12 +40,16 @@ pub mod vector2;
 /// This module implements a simple 2D vector reference.
 pub mod vector2_ref;
 
-pub use crate::aberth::{aberth, aberth_mt, initial_aberth};
+pub use crate::aberth::{
+    aberth, aberth_autocorr, aberth_mt, initial_aberth, initial_aberth_autocorr,
+    poly_from_autocorr_roots, poly_from_roots,
+};
 pub use crate::horner::{horner_eval_c, horner_eval_f};
 pub use crate::matrix2::Matrix2;
 pub use crate::rootfinding::{
-    initial_autocorr, initial_guess, pbairstow_autocorr, pbairstow_autocorr_mt, pbairstow_even,
-    pbairstow_even_mt, Options,
+    extract_autocorr, initial_autocorr, initial_guess, pbairstow_autocorr, pbairstow_autocorr_mt,
+    pbairstow_even, pbairstow_even_mt, poly_from_autocorr_factors, poly_from_quadratic_factors,
+    Options,
 };
 pub use crate::vector2::Vector2;
 
