@@ -56,7 +56,7 @@ pub fn circle2_table_y(index: usize) -> f64 {
     get_tables().circle_y[index]
 }
 
-/// Access the precomputed cos(π * vdc2_table[i]) value at the given index
+/// Access the precomputed cos(π * vdc2_table\[i\]) value at the given index
 #[inline]
 pub fn cos_pi_vdc2(index: usize) -> f64 {
     get_tables().cos_pi_vdc2[index]
