@@ -58,6 +58,8 @@ impl<T> Vector2<T> {
 impl<T: Clone + Num> Vector2<T> {
     /// The `dot` function calculates the dot product of two vectors.
     ///
+    /// $$ \mathbf{v}_1 \cdot \mathbf{v}_2 = x_1 x_2 + y_1 y_2 $$
+    ///
     /// Arguments:
     ///
     /// * `other`: The `other` parameter is a reference to another `Vector2` object that we want to
@@ -84,6 +86,8 @@ impl<T: Clone + Num> Vector2<T> {
 
     /// The `cross` function calculates the cross product of two vectors.
     ///
+    /// $$ \mathbf{v}_1 \times \mathbf{v}_2 = x_1 y_2 - y_1 x_2 $$
+    ///
     /// Arguments:
     ///
     /// * `other`: The `other` parameter is a reference to another `Vector2` object that we want to
@@ -109,6 +113,8 @@ impl<T: Clone + Num> Vector2<T> {
     }
 
     /// Returns the norm sqr of this [`Vector2<T>`].
+    ///
+    /// $$ \|\mathbf{v}\|^2 = x^2 + y^2 $$
     ///
     /// The `norm_sqr` function calculates the squared norm of a `Vector2` object.
     ///
@@ -181,6 +187,8 @@ impl<T: Clone + Num> Vector2<T> {
 
 impl<T: Clone + Signed> Vector2<T> {
     /// The `l1_norm` function calculates the Manhattan distance from the origin for a 2D vector.
+    ///
+    /// $$ \|\mathbf{v}\|_1 = |x| + |y| $$
     ///
     /// [Manhattan distance]: https://en.wikipedia.org/wiki/Taxicab_geometry
     ///

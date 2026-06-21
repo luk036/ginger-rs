@@ -2,10 +2,12 @@ use num_complex::Complex;
 
 /// Computes the Leja order of a set of complex points.
 ///
-/// Reorders complex points using the greedy Leja algorithm: starts with the
-/// smallest-magnitude point, then iteratively selects the remaining point that
-/// maximizes the minimum Euclidean distance to all already-selected points.
-/// This ordering reduces numerical error when reconstructing polynomials from roots.
+/// Starts with $$ p_0 = \arg\min |p| $$, then iteratively selects:
+///
+/// $$ p_k = \arg\max_{p \in \text{remaining}} \min_{q \in \text{selected}} |p - q| $$
+///
+/// This greedy algorithm maximizes the minimum distance between successive points,
+/// reducing numerical error when reconstructing polynomials from roots.
 ///
 /// # Arguments
 /// * `points` - Input vector of complex numbers

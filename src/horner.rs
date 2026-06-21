@@ -2,6 +2,10 @@ use num_complex::Complex;
 
 /// Horner evalution (float)
 ///
+/// $$ P(x) = a_0 x^n + a_1 x^{n-1} + \cdots + a_n $$
+///
+/// Evaluated via Horner's method: $$ b_0 = a_0,\quad b_k = b_{k-1} \cdot x + a_k,\quad P(x) = b_n $$
+///
 /// The `horner_eval_f` function in Rust implements the Horner's method for evaluating a polynomial with
 /// given coefficients at a specific value.
 ///
@@ -31,6 +35,10 @@ pub fn horner_eval_f(coeffs: &[f64], zval: f64) -> f64 {
 }
 
 /// Horner evalution (complex)
+///
+/// $$ P(z) = a_0 z^n + a_1 z^{n-1} + \cdots + a_n $$
+///
+/// Evaluated via Horner's method: $$ b_0 = a_0,\quad b_k = b_{k-1} \cdot z + a_k $$
 ///
 /// The `horner_eval_c` function in Rust implements the Horner evaluation method for complex
 /// polynomials.

@@ -57,6 +57,8 @@ impl<T> Matrix2<T> {
 impl<T: Clone + Num> Matrix2<T> {
     /// Calculate the determinant of this [`Matrix2<T>`].
     ///
+    /// $$ \det(\mathbf{M}) = \mathbf{x} \times \mathbf{y} = x_1 y_2 - x_2 y_1 $$
+    ///
     /// The `det` function calculates the determinant of a 2x2 matrix.
     ///
     /// Returns:
@@ -80,6 +82,8 @@ impl<T: Clone + Num> Matrix2<T> {
     }
 
     /// Matrix-vector multiplication
+    ///
+    /// $$ \mathbf{M} \cdot \mathbf{v} = \begin{bmatrix} \mathbf{x} \cdot \mathbf{v} \\ \mathbf{y} \cdot \mathbf{v} \end{bmatrix} $$
     ///
     /// The `mdot` function performs matrix-vector multiplication.
     ///
