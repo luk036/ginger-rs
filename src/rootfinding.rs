@@ -40,6 +40,9 @@ impl Default for Options {
 
 /// The function `make_adjoint` calculates the adjoint matrix between two vectors.
 ///
+/// $$ \text{adj}\!\begin{bmatrix} r & q \\ p & s \end{bmatrix}
+///    = \begin{bmatrix} s & -p \\ -pq & pr+s \end{bmatrix} $$
+///
 /// Arguments:
 ///
 /// * `vr`: A vector representing the direction of the reference frame's x-axis.
@@ -49,15 +52,6 @@ impl Default for Options {
 /// Returns:
 ///
 /// The function `make_adjoint` returns a `Mat2` object.
-/// Calculates the adjoint matrix for a 2x2 matrix from two vectors.
-///
-/// The adjoint is computed as:
-/// |  s  -p |
-/// | -p*q  p*r+s |
-///
-/// Arguments:
-///
-/// * `vr`: A vector representing the row of a 2x2 matrix
 /// * `vp`: Another vector representing the row of a 2x2 matrix
 ///
 /// Returns:
@@ -75,6 +69,8 @@ pub fn make_adjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
 
 /// The function `make_inverse` calculates the inverse of a 2x2 matrix.
 ///
+/// $$ \mathbf{M}^{-1} = \frac{\text{adj}(\mathbf{M})}{\det(\mathbf{M})} $$
+///
 /// Arguments:
 ///
 /// * `vr`: A vector representing the row of a 2x2 matrix. The components of the vector are vr.x_ and vr.y_.
@@ -83,11 +79,6 @@ pub fn make_adjoint(vr: &Vec2, vp: &Vec2) -> Mat2 {
 /// Returns:
 ///
 /// The function `make_inverse` returns a `Mat2` object.
-/// Calculates the inverse of a 2x2 matrix from two vectors.
-///
-/// Arguments:
-///
-/// * `vr`: A vector representing the row of a 2x2 matrix
 /// * `vp`: Another vector representing the row of a 2x2 matrix
 ///
 /// Returns:
@@ -104,20 +95,23 @@ pub fn make_inverse(vr: &Vec2, vp: &Vec2) -> Mat2 {
     m_adjoint / m_adjoint.det()
 }
 
-/// The `delta` function calculates the delta value for the Bairstow's method
+/// The `delta` function calculates the adjustment vector for Bairstow's method.
+///
+/// Solves the 2x2 linear system for the optimal adjustment to current quadratic
+/// factor estimates $$ (r, q) $$:
+///
+/// $$ \begin{bmatrix} r p + s & p \\ q p & s \end{bmatrix}
+///    \begin{bmatrix} \Delta r \\ \Delta q \end{bmatrix}
+///    = \begin{bmatrix} A \\ B \end{bmatrix} $$
+///
+/// where $$ (p, s) = (r_i - r_j,\; q_i - q_j) $$ is the difference between
+/// two factor estimates, and $$ (A, B) $$ is the remainder from polynomial division.
 ///
 /// Arguments:
 ///
 /// * `vA`: A vector representing the coefficients of a polynomial equation.
 /// * `vr`: The parameter `vr` represents the vector `[-2.0, 0.0]`.
 /// * `vp`: The parameter `vp` represents the vector vr - vrj
-///
-/// Returns:
-///
-/// The function `delta` returns a `Vec2` object.
-///
-/// r * p - m   -p
-/// q * p       -m
 ///
 /// # Examples:
 ///
@@ -248,7 +242,14 @@ pub fn suppress(vA: &Vec2, vA1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
     (va, va1)
 }
 
-/// The `horner` function implements Horner's evaluation for Bairstow's method in Rust.
+/// The `horner` function implements synthetic division by a quadratic factor $$ x^2 - r x - q $$.
+///
+/// Given polynomial $$ P(x) = \sum_{k=0}^{n} a_k x^{n-k} $$, the recurrence for the quotient
+/// coefficients $$ b_k $$ is:
+///
+/// $$ b_0 = a_0,\quad b_1 = a_1 + r b_0,\quad b_k = a_k + r b_{k-1} + q b_{k-2} $$
+///
+/// with remainder $$ A = b_{n-1},\; B = b_n + q b_{n-1} $$.
 ///
 /// Arguments:
 ///
@@ -262,7 +263,7 @@ pub fn suppress(vA: &Vec2, vA1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
 /// Returns:
 ///
 /// The function `horner` returns a `Vec2` struct, which contains two `f64` values representing the
-/// results of the Horner evaluation.
+/// remainder $$ (A, B) $$ of the synthetic division.
 ///
 /// # Examples:
 ///
@@ -287,8 +288,13 @@ pub fn horner(coeffs: &mut [f64], degree: usize, vr: &Vec2) -> Vec2 {
     Vector2::<f64>::new(coeffs[degree - 1], coeffs[degree])
 }
 
-/// The `initial_guess` function in Rust calculates the initial guesses for the roots of a polynomial
-/// using Bairstow's method.
+/// The `initial_guess` function generates initial quadratic factor estimates for Bairstow's method.
+///
+/// Estimates are placed around a circle centered at $$ c $$ with radius $$ R $$:
+///
+/// $$ c = -\frac{a_1}{n a_0}, \qquad R = \sqrt\[n\]{|P(c)|} $$
+///
+/// where the angular positions come from a van der Corput low-discrepancy sequence.
 ///
 /// Arguments:
 ///
@@ -477,6 +483,9 @@ fn pbairstow_even_job(
 /// The `initial_autocorr` function calculates the initial guesses for Bairstow's method for finding
 /// roots of a polynomial, specifically for the auto-correlation function.
 ///
+/// $$ R = \sqrt\[n\]{|a_n|},\qquad R \leftarrow \max(R, 1/R),\qquad m = n/2 $$
+/// $$ \theta_k = \frac{k\pi}{m},\qquad (r_k, q_k) = (2R\cos\theta_k,\; -R^2) $$
+///
 /// Arguments:
 ///
 /// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
@@ -661,11 +670,16 @@ fn pbairstow_autocorr_mt_job(
     Some(tol_i)
 }
 
-/// The `extract_autocorr` function extracts the quadratic function where its roots are within a unit
-/// circle.
+/// The `extract_autocorr` function extracts quadratic factors from a polynomial with auto-correlation
+/// property.
 ///
-/// x^2 - r*x - t or x^2 + (r/t) * x + (-1/t)
-/// (x - a1)(x - a2) = x^2 - (a1 + a2) x + a1 * a2
+/// Given a quadratic $$ x^2 - r x - q $$, computes its roots and replaces
+/// any root $$ |z| > 1 $$ with its reciprocal $$ 1/z $$. The normalized
+/// factor is recovered from the adjusted roots via Vieta:
+///
+/// $$ r' = z_1' + z_2', \qquad q' = -z_1' z_2' $$
+///
+/// where $$ z_k' = z_k $$ if $$ |z_k| \le 1 $$, else $$ z_k' = 1/z_k $$.
 ///
 /// Arguments:
 ///
@@ -717,7 +731,9 @@ pub fn extract_autocorr(vr: Vec2) -> Vec2 {
     vr
 }
 
-/// Extract the two roots from a quadratic factor x^2 - r*x - q
+/// Extract the two roots from a quadratic factor $$ x^2 - r x - q $$
+///
+/// $$ x = \frac{r \pm \sqrt{r^2 + 4q}}{2} $$
 ///
 /// Given a quadratic factor represented as Vec2 where x() = r and y() = -q
 /// (i.e., x^2 - r*x - q), return the two roots as complex numbers.
@@ -741,6 +757,8 @@ fn roots_from_quadratic(vr: &Vec2) -> (Complex<f64>, Complex<f64>) {
 }
 
 /// Reconstruct a monic polynomial from its quadratic factors
+///
+/// $$ P(x) = \prod_{i=1}^{m} (x^2 - r_i x - q_i) $$
 ///
 /// Given the quadratic factors found by Bairstow's method (each representing
 /// x^2 - r*x - q), multiply them together to recover the monic polynomial

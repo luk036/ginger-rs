@@ -24,6 +24,13 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 
 /// Initial guess for Aberth's method
 ///
+/// The center $$ c $$ and radius $$ R $$ are derived from the coefficients:
+///
+/// $$ c = -\frac{a_1}{n a_0}, \qquad R = \sqrt\[n\]{-P(c)}, \qquad z_i = c + R \cdot e^{i\theta_i} $$
+///
+/// where $$ \theta_i = 2\pi v_i $$ with $$ v_i $$ from a van der Corput sequence
+/// for low-discrepancy angular spacing.
+///
 /// The `initial_aberth` function calculates the initial guesses for Aberth's method given a
 /// polynomial's coefficients.
 ///
@@ -51,6 +58,9 @@ pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
 /// assert_approx_eq!(z0s[0].re, 0.6116610247366323);
 /// assert_approx_eq!(z0s[0].im, 0.6926747514925476);
 /// ```
+/// Original initial guess for Aberth's method (equi-angular spacing)
+///
+/// $$ z_i = c + R \cdot \left(\cos\frac{2\pi k}{n} + i\sin\frac{2\pi k}{n}\right) $$
 pub fn initial_aberth_orig(coeffs: &[f64]) -> Vec<Complex<f64>> {
     let degree = coeffs.len() - 1;
     let center = -coeffs[1] / (coeffs[0] * degree as f64);
@@ -86,24 +96,15 @@ fn aberth_job(
 ///
 /// The `aberth` function implements Aberth's method for finding roots of a polynomial.
 ///
-/// <pre>
-///                 P ⎛z ⎞
-///      new          ⎝ i⎠
-///     z    = z  - ───────
-///      i      i   P' ⎛z ⎞
-///                    ⎝ i⎠
-/// where
-///                           degree
-///                         _____
-///                         ╲
-///                          ╲    P ⎛z ⎞
-///                           ╲     ⎝ i⎠
-///     P' ⎛z ⎞ = P  ⎛z ⎞ -   ╱   ───────
-///        ⎝ i⎠    1 ⎝ i⎠    ╱    z  - z
-///                         ╱      i    j
-///                         ‾‾‾‾‾
-///                         j ≠ i
-/// </pre>
+/// Each estimate $$ z_i $$ is updated by the correction:
+///
+/// $$ z_i' = z_i - \frac{P(z_i)}{P'(z_i)} $$
+///
+/// where the derivative is modified by all other root estimates:
+///
+/// $$ P'(z_i) = P_1(z_i) - \sum_{\substack{j=1\\j\neq i}}^n \frac{P(z_i)}{z_i - z_j} $$
+///
+/// Here $$ P_1(z) $$ is the ordinary derivative of $$ P(z) $$. Convergence is cubic.
 ///
 /// Arguments:
 ///
@@ -225,6 +226,8 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
 
 /// Initial guess for Aberth's method using auto-correlation
 ///
+/// $$ R = \sqrt\[n\]{|a_n|},\qquad R \leftarrow \max(R, 1/R),\qquad z_i = c + R \cdot e^{i\theta_i} $$
+///
 /// The `initial_aberth_autocorr` function calculates initial guesses for Aberth's method
 /// specifically tailored for auto-correlation polynomials.
 ///
@@ -291,6 +294,12 @@ fn aberth_autocorr_job(
 
 /// Aberth's method for auto-correlation polynomials
 ///
+/// Each estimate $$ z_i $$ is updated by the correction, considering both $$ z $$
+/// and $$ 1/\bar{z} $$ in the derivative:
+///
+/// $$ P'(z_i) = P_1(z_i) - \sum_{\substack{j=1\\j\neq i}}^n
+///    \left(\frac{P(z_i)}{z_i - z_j} + \frac{P(z_i)}{z_i - 1/z_j}\right) $$
+///
 /// The `aberth_autocorr` function implements Aberth's method specifically for
 /// auto-correlation polynomials, where roots come in reciprocal pairs.
 ///
@@ -335,6 +344,13 @@ pub fn aberth_autocorr(
 }
 
 /// Reconstruct a monic polynomial from its roots using Leja ordering
+///
+/// $$ P(x) = \prod_{i=1}^n (x - r_i) = x^n + a_{n-1} x^{n-1} + \cdots + a_0 $$
+///
+/// The coefficients are computed by repeated convolution. Starting from $$ \[1\] $$,
+/// for each root $$ r $$:
+///
+/// $$ c_{k+1} \leftarrow c_{k+1} - r \cdot c_k $$
 ///
 /// Given a set of complex roots, reconstruct the monic polynomial coefficients
 /// (highest degree first) by multiplying (x - root) factors. Leja ordering is
