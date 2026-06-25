@@ -1,7 +1,3 @@
-#![allow(non_snake_case)]
-// pub mod spectral_fact;
-// pub mod robin;
-
 //! # Ginger-rs
 //!
 //! This crate provides implementations of polynomial root finding algorithms.
