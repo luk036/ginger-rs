@@ -138,6 +138,8 @@ impl<T: Clone + Num> Vector2<T> {
     /// The `scale` function multiplies the x and y components of a `Vector2` object by a given scalar
     /// value.
     ///
+    /// $$\vec{v}' = \vec{v} \times \alpha = (v_x \cdot \alpha,\; v_y \cdot \alpha)$$
+    ///
     /// Arguments:
     ///
     /// * `alpha`: The parameter `alpha` represents the scaling factor that will be applied to the vector.
@@ -161,6 +163,8 @@ impl<T: Clone + Num> Vector2<T> {
     }
 
     /// The `unscale` function divides the x and y components of a `Vector2` by a given value.
+    ///
+    /// $$\vec{v}' = \vec{v} / \alpha = (v_x / \alpha,\; v_y / \alpha)$$
     ///
     /// Arguments:
     ///
@@ -214,6 +218,8 @@ impl<T: Clone + Signed> Vector2<T> {
 impl<T: Clone + PartialOrd> Vector2<T> {
     /// The `norm_inf` function returns the maximum absolute value of the two elements in a `Vector2`
     /// object.
+    ///
+    /// $$\|\vec{v}\|_\infty = \max(|v_x|, |v_y|)$$
     ///
     /// Returns:
     ///

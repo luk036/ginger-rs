@@ -35,6 +35,8 @@ impl<'a> Vector2Ref<'a> {
 
     /// Computes the dot product of this vector with another vector.
     ///
+    /// $$\vec{a} \cdot \vec{b} = a_x b_x + a_y b_y$$
+    ///
     /// # Arguments
     ///
     /// * `other` - Another Vector2Ref to compute the dot product with
@@ -61,6 +63,8 @@ impl<'a> Vector2Ref<'a> {
 
     /// Computes the cross product of this vector with another vector.
     ///
+    /// $$\vec{a} \times \vec{b} = a_x b_y - a_y b_x$$
+    ///
     /// # Arguments
     ///
     /// * `other` - Another Vector2Ref to compute the cross product with
@@ -86,6 +90,8 @@ impl<'a> Vector2Ref<'a> {
     }
 
     /// Adds another vector to this vector in-place.
+    ///
+    /// $$\vec{a} \mathrel{+}= \vec{b} \implies (a_x + b_x,\; a_y + b_y)$$
     ///
     /// # Arguments
     ///
@@ -115,6 +121,8 @@ impl<'a> Vector2Ref<'a> {
 
     /// Subtracts another vector from this vector in-place.
     ///
+    /// $$\vec{a} \mathrel{-}= \vec{b} \implies (a_x - b_x,\; a_y - b_y)$$
+    ///
     /// # Arguments
     ///
     /// * `other` - Another Vector2Ref to subtract from this vector
@@ -143,6 +151,8 @@ impl<'a> Vector2Ref<'a> {
 
     /// Scales this vector by a scalar value in-place.
     ///
+    /// $$\vec{v} \mathrel{*}= \alpha \implies (v_x \cdot \alpha,\; v_y \cdot \alpha)$$
+    ///
     /// # Arguments
     ///
     /// * `alpha` - The scalar value to multiply the vector by
@@ -167,6 +177,8 @@ impl<'a> Vector2Ref<'a> {
     }
 
     /// Divides this vector by a scalar value in-place.
+    ///
+    /// $$\vec{v} \mathrel{/}= \alpha \implies (v_x / \alpha,\; v_y / \alpha)$$
     ///
     /// # Arguments
     ///
