@@ -115,6 +115,8 @@ impl<T: Clone + Num> Matrix2<T> {
 
     /// The `scale` function multiplies a matrix by a scalar.
     ///
+    /// $$\mathbf{M}' = \mathbf{M} \times \alpha = \begin{bmatrix} \alpha \mathbf{x} \\ \alpha \mathbf{y} \end{bmatrix}$$
+    ///
     /// Arguments:
     ///
     /// * `alpha`: The parameter `alpha` represents the scalar value by which the matrix is multiplied.
@@ -140,6 +142,8 @@ impl<T: Clone + Num> Matrix2<T> {
     }
 
     /// The `unscale` function divides each element of a matrix by a scalar value.
+    ///
+    /// $$\mathbf{M}' = \mathbf{M} / \alpha = \begin{bmatrix} \mathbf{x} / \alpha \\ \mathbf{y} / \alpha \end{bmatrix}$$
     ///
     /// Arguments:
     ///

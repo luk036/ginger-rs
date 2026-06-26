@@ -133,6 +133,10 @@ pub fn delta(vA: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
 
 /// delta 1 for ri - rj
 ///
+/// Computes the Newton correction using the adjoint of $(vr, vp)$:
+///
+/// $$ \mathbf{M}_{\text{adj}} = \begin{bmatrix} -s & -p \\ pq & pr - s \end{bmatrix}, \qquad \Delta = \frac{\mathbf{M}_{\text{adj}} \cdot vA}{\det(\mathbf{M})} $$
+///
 /// # Examples:
 ///
 /// ```
@@ -154,6 +158,10 @@ pub fn delta1(vA: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
 }
 
 /// The `suppress_old` function performs zero suppression on a set of vectors.
+///
+/// Applies the 2x2 linear system solution using Cramer's rule:
+///
+/// $$ \begin{bmatrix} rp + s & p \\ qp & s \end{bmatrix} \begin{bmatrix} a \\ b \end{bmatrix} = \begin{bmatrix} A \\ B \end{bmatrix} $$
 ///
 /// Arguments:
 ///
@@ -202,6 +210,11 @@ pub fn suppress_old(vA: &mut Vec2, vA1: &mut Vec2, vri: &Vec2, vrj: &Vec2) {
 }
 
 /// The `suppress` function in Rust performs zero suppression on a set of vectors.
+///
+/// Uses the inverse matrix to remove the contribution of root $j$ from the
+/// remainder of root $i$:
+///
+/// $$ \mathbf{M}^{-1} = \frac{\text{adj}(\mathbf{vr}, \mathbf{vp})}{\det(\mathbf{M})}, \qquad \mathbf{a} = \mathbf{M}^{-1} \mathbf{vA} $$
 ///
 /// Arguments:
 ///
@@ -789,9 +802,11 @@ pub fn poly_from_quadratic_factors(vrs: &[Vec2]) -> Vec<f64> {
 /// Reconstruct a monic polynomial from its autocorrelation quadratic factors
 ///
 /// Auto-correlation (palindromic) polynomials have roots in reciprocal pairs.
-/// Each quadratic factor x^2 - r*x - q found by pbairstow_autocorr carries 2 roots.
+/// Each quadratic factor $x^2 - r x - q$ found by `pbairstow_autocorr` carries 2 roots.
 /// This function adds the reciprocal of each root, then reconstructs the full
 /// monic polynomial with Leja ordering for numerical accuracy.
+///
+/// $$ P(x) = \prod_{i=1}^{m} (x^2 - r_i x - q_i)(x^{-2} - r_i x^{-1} - q_i) $$
 ///
 /// Arguments:
 ///

@@ -384,9 +384,11 @@ pub fn poly_from_roots(zs: &[Complex<f64>]) -> Vec<f64> {
 /// Reconstruct a monic polynomial from its autocorrelation roots
 ///
 /// Auto-correlation (palindromic) polynomials have roots in reciprocal pairs.
-/// The aberth_autocorr functions find the degree/2 "independent" roots.
-/// This function adds the reciprocal of each root (1/z) to get the full set
+/// The `aberth_autocorr` functions find the degree/2 "independent" roots.
+/// This function adds the reciprocal of each root $1/z$ to get the full set
 /// of degree roots, then reconstructs with Leja ordering.
+///
+/// $$ P(x) = \prod_{i=1}^{n/2} (x - z_i)(x - 1/z_i) $$
 ///
 /// Arguments:
 ///
