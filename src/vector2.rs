@@ -18,6 +18,17 @@ use num_traits::{Num, Signed, Zero};
 ///
 /// assert_eq!(Vector2::new(3, 4), Vector2 { x_: 3, y_: 4});
 /// ```
+#[cfg_attr(feature = "doc-images", doc = svgbobdoc::transform!(
+/// ```svgbob
+///        y
+///        ^
+///        |
+///   (x,y)*-----> x
+///        |
+///        |
+///        O-----> x
+/// ```
+))]
 #[derive(PartialEq, Eq, Copy, Clone, Hash, Debug, Default)]
 pub struct Vector2<T> {
     /// The first element of the vector2 object
@@ -293,7 +304,9 @@ macro_rules! forward_all_binop {
 // arithmetic
 forward_all_binop!(impl Add, add);
 
-// (a, b) + (c, d) == (a + c), (b + d)
+/// Vector addition.
+///
+/// $$ \vec{a} + \vec{b} = (a_x + b_x,\; a_y + b_y) $$
 impl<T: Clone + Num> Add<Vector2<T>> for Vector2<T> {
     type Output = Self;
 
@@ -305,7 +318,9 @@ impl<T: Clone + Num> Add<Vector2<T>> for Vector2<T> {
 
 forward_all_binop!(impl Sub, sub);
 
-// (a, b) - (c, d) == (a - c), (b - d)
+/// Vector subtraction.
+///
+/// $$ \vec{a} - \vec{b} = (a_x - b_x,\; a_y - b_y) $$
 impl<T: Clone + Num> Sub<Vector2<T>> for Vector2<T> {
     type Output = Self;
 
@@ -380,6 +395,9 @@ mod opassign {
     forward_op_assign2!(impl DivAssign, div_assign);
 }
 
+/// Vector negation.
+///
+/// $$ -\vec{v} = (-v_x,\; -v_y) $$
 impl<T: Clone + Num + Neg<Output = T>> Neg for Vector2<T> {
     type Output = Self;
 
@@ -389,6 +407,9 @@ impl<T: Clone + Num + Neg<Output = T>> Neg for Vector2<T> {
     }
 }
 
+/// Vector negation (by reference).
+///
+/// $$ -\vec{v} = (-v_x,\; -v_y) $$
 impl<T: Clone + Num + Neg<Output = T>> Neg for &Vector2<T> {
     type Output = Vector2<T>;
 
@@ -470,6 +491,9 @@ macro_rules! scalar_arithmetic {
     );
 }
 
+/// Scalar multiplication.
+///
+/// $$ \vec{v} \cdot s = (v_x \cdot s,\; v_y \cdot s) $$
 impl<T: Clone + Num> Mul<T> for Vector2<T> {
     type Output = Vector2<T>;
 
@@ -479,6 +503,9 @@ impl<T: Clone + Num> Mul<T> for Vector2<T> {
     }
 }
 
+/// Scalar division.
+///
+/// $$ \vec{v} / s = (v_x / s,\; v_y / s) $$
 impl<T: Clone + Num> Div<T> for Vector2<T> {
     type Output = Self;
 
@@ -488,6 +515,9 @@ impl<T: Clone + Num> Div<T> for Vector2<T> {
     }
 }
 
+/// Scalar remainder.
+///
+/// $$ \vec{v} \bmod s = (v_x \bmod s,\; v_y \bmod s) $$
 impl<T: Clone + Num> Rem<T> for Vector2<T> {
     type Output = Vector2<T>;
 
@@ -501,11 +531,17 @@ scalar_arithmetic!(usize, u8, u16, u32, u64, u128, isize, i8, i16, i32, i64, i12
 
 // constants
 impl<T: Clone + Num> Zero for Vector2<T> {
+    /// The zero vector.
+    ///
+    /// $$ \vec{0} = (0, 0) $$
     #[inline]
     fn zero() -> Self {
         Self::new(Zero::zero(), Zero::zero())
     }
 
+    /// Returns `true` if this vector is the zero vector.
+    ///
+    /// $$ \vec{v} = \vec{0} \iff x = 0 \land y = 0 $$
     #[inline]
     fn is_zero(&self) -> bool {
         self.x_.is_zero() && self.y_.is_zero()

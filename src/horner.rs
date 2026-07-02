@@ -30,6 +30,21 @@ use num_complex::Complex;
 /// let result = horner_eval_f(&coeffs, 2.0); // evaluates at x = 2
 /// assert_eq!(result, 11.0); // 3 + 2*2 + 1*4 = 3 + 4 + 4 = 11
 /// ```
+#[cfg_attr(feature = "doc-images", doc = svgbobdoc::transform!(
+/// ```svgbob
+///  .───────────────.
+///  │ a_n, ..., a_0 │
+///  │ x             │
+///  '───────┬───────'
+///          │
+///          ▼
+///  .───────────────.
+///  │ P(x) = a_n x^n│
+///  │      + ... + a│
+///  │      _0       │
+///  '───────────────'
+/// ```
+))]
 pub fn horner_eval_f(coeffs: &[f64], zval: f64) -> f64 {
     coeffs.iter().fold(0.0, |acc, coeff| acc * zval + coeff)
 }

@@ -7,6 +7,13 @@ use num_complex::Complex;
 
 const TWO_PI: f64 = std::f64::consts::TAU;
 
+/// Initial guess for Aberth's method using low-discrepancy sequence
+///
+/// The center $$ c $$ and radius $$ R $$ are derived from the coefficients:
+///
+/// $$ c = -\frac{a_1}{n a_0}, \qquad R = \sqrt\[n\]{-P(c)}, \qquad z_i = c + R \cdot (\cos\theta_i + i\sin\theta_i) $$
+///
+/// where $$ \theta_i = 2\pi v_i $$ with $$ v_i $$ from a van der Corput low-discrepancy sequence.
 pub fn initial_aberth(coeffs: &[f64]) -> Vec<Complex<f64>> {
     let degree = coeffs.len() - 1;
     let center = -coeffs[1] / (coeffs[0] * degree as f64);
@@ -127,6 +134,24 @@ fn aberth_job(
 ///
 /// assert_eq!(niter, 5);
 /// ```
+#[cfg_attr(feature = "doc-images", doc = svgbobdoc::transform!(
+/// ```svgbob
+///  .───────────.    .───────────.    .──────────────.
+///  │ Polynomial│───►│  Initial  │───►│  Aberth      │
+///  │ coeffs    │    │  Guess    │    │  Iteration   │
+///  '───────────'    '───────────'    '──────┬───────'
+///                                           │
+///                                      .────▼───────.
+///                                      │ Converged?  │
+///                                      '────┬───────'
+///                                     No   │   Yes
+///                                .─────────┘    │
+///                                ▼              ▼
+///                           .───────────.  .───────────.
+///                           │ Iterate   │  │  Roots    │
+///                           '───────────'  '───────────'
+/// ```
+))]
 pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (usize, bool) {
     let m_zs = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
@@ -155,6 +180,14 @@ pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (us
 }
 
 /// Multi-threading Aberth's method
+///
+/// Each estimate $$ z_i $$ is updated by the correction:
+///
+/// $$ z_i' = z_i - \frac{P(z_i)}{P'(z_i)} $$
+///
+/// where the derivative is modified by all other root estimates:
+///
+/// $$ P'(z_i) = P_1(z_i) - \sum_{\substack{j=1\\j\neq i}}^n \frac{P(z_i)}{z_i - z_j} $$
 ///
 /// The `aberth_mt` function in Rust implements the multi-threaded Aberth's method for root finding.
 ///

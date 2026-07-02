@@ -15,6 +15,15 @@ use super::Vector2;
 ///   are stored in a `Vector2` object.
 /// * `y_`: The `y_` property is a public field of type `Vector2<T>`. It represents the second row of
 ///   the `Matrix2` object.
+#[cfg_attr(feature = "doc-images", doc = svgbobdoc::transform!(
+/// ```svgbob
+///  .──────┬──────.
+///  │ a_11 │ a_12 │
+///  ├──────┼──────┤
+///  │ a_21 │ a_22 │
+///  '──────┴──────'
+/// ```
+))]
 #[derive(PartialEq, Eq, Copy, Clone, Hash, Debug, Default)]
 // #[repr(C)]
 pub struct Matrix2<T> {
@@ -222,7 +231,9 @@ macro_rules! forward_all_binop {
 // arithmetic
 forward_all_binop!(impl Add, add);
 
-// (a, b) + (c, d) == (a + c), (b + d)
+/// Matrix addition.
+///
+/// $$ \mathbf{A} + \mathbf{B} = (\mathbf{a}_x + \mathbf{b}_x,\; \mathbf{a}_y + \mathbf{b}_y) $$
 impl<T: Clone + Num> Add<Matrix2<T>> for Matrix2<T> {
     type Output = Self;
 
@@ -234,7 +245,9 @@ impl<T: Clone + Num> Add<Matrix2<T>> for Matrix2<T> {
 
 forward_all_binop!(impl Sub, sub);
 
-// (a, b) - (c, d) == (a - c), (b - d)
+/// Matrix subtraction.
+///
+/// $$ \mathbf{A} - \mathbf{B} = (\mathbf{a}_x - \mathbf{b}_x,\; \mathbf{a}_y - \mathbf{b}_y) $$
 impl<T: Clone + Num> Sub<Matrix2<T>> for Matrix2<T> {
     type Output = Self;
 
@@ -309,6 +322,9 @@ mod opassign {
     forward_op_assign2!(impl DivAssign, div_assign);
 }
 
+/// Matrix negation.
+///
+/// $$ -\mathbf{M} = (-\mathbf{x},\; -\mathbf{y}) $$
 impl<T: Clone + Num + Neg<Output = T>> Neg for Matrix2<T> {
     type Output = Self;
 
@@ -318,6 +334,9 @@ impl<T: Clone + Num + Neg<Output = T>> Neg for Matrix2<T> {
     }
 }
 
+/// Matrix negation (by reference).
+///
+/// $$ -\mathbf{M} = (-\mathbf{x},\; -\mathbf{y}) $$
 impl<T: Clone + Num + Neg<Output = T>> Neg for &Matrix2<T> {
     type Output = Matrix2<T>;
 
@@ -399,6 +418,9 @@ macro_rules! scalar_arithmetic {
     );
 }
 
+/// Scalar multiplication for matrices.
+///
+/// $$ \mathbf{M} \cdot s = (\mathbf{x} \cdot s,\; \mathbf{y} \cdot s) $$
 impl<T: Clone + Num> Mul<T> for Matrix2<T> {
     type Output = Matrix2<T>;
 
@@ -408,6 +430,9 @@ impl<T: Clone + Num> Mul<T> for Matrix2<T> {
     }
 }
 
+/// Scalar division for matrices.
+///
+/// $$ \mathbf{M} / s = (\mathbf{x} / s,\; \mathbf{y} / s) $$
 impl<T: Clone + Num> Div<T> for Matrix2<T> {
     type Output = Self;
 
@@ -417,6 +442,9 @@ impl<T: Clone + Num> Div<T> for Matrix2<T> {
     }
 }
 
+/// Scalar remainder for matrices.
+///
+/// $$ \mathbf{M} \bmod s = (\mathbf{x} \bmod s,\; \mathbf{y} \bmod s) $$
 impl<T: Clone + Num> Rem<T> for Matrix2<T> {
     type Output = Matrix2<T>;
 
@@ -430,11 +458,17 @@ scalar_arithmetic!(usize, u8, u16, u32, u64, u128, isize, i8, i16, i32, i64, i12
 
 // constants
 impl<T: Clone + Num> Zero for Matrix2<T> {
+    /// The zero matrix.
+    ///
+    /// $$ \mathbf{0} = \begin{bmatrix} 0 & 0 \\ 0 & 0 \end{bmatrix} $$
     #[inline]
     fn zero() -> Self {
         Self::new(Zero::zero(), Zero::zero())
     }
 
+    /// Returns `true` if this matrix is the zero matrix.
+    ///
+    /// $$ \mathbf{M} = \mathbf{0} \iff \mathbf{x} = \mathbf{0} \land \mathbf{y} = \mathbf{0} $$
     #[inline]
     fn is_zero(&self) -> bool {
         self.x_.is_zero() && self.y_.is_zero()
