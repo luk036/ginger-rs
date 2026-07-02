@@ -126,9 +126,9 @@ pub fn make_inverse(vr: &Vec2, vp: &Vec2) -> Mat2 {
 /// assert_eq!(vd, Vector2::new(0.2, 0.4));
 /// ```
 #[inline]
-pub fn delta(vA: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
+pub fn delta(v_big_a: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
     let mp = make_adjoint(vr, vp); // 2 mul's
-    mp.mdot(vA) / mp.det() // 6 mul's + 2 div's
+    mp.mdot(v_big_a) / mp.det() // 6 mul's + 2 div's
 }
 
 /// delta 1 for ri - rj
@@ -150,11 +150,11 @@ pub fn delta(vA: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
 /// assert_eq!(vd, Vector2::new(0.2, 0.4));
 /// ```
 #[inline]
-pub fn delta1(vA: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
+pub fn delta1(v_big_a: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
     let (r, q) = (vr.x_, vr.y_);
     let (p, s) = (vp.x_, vp.y_);
     let mp = Matrix2::new(Vec2::new(-s, -p), Vec2::new(p * q, p * r - s));
-    mp.mdot(vA) / mp.det() // 6 mul's + 2 div's
+    mp.mdot(v_big_a) / mp.det() // 6 mul's + 2 div's
 }
 
 /// The `suppress_old` function performs zero suppression on a set of vectors.
@@ -190,23 +190,23 @@ pub fn delta1(vA: &Vec2, vr: &Vec2, vp: &Vec2) -> Vec2 {
 /// assert_approx_eq!(dr.x_, -16.780821917808325);
 /// assert_approx_eq!(dr.y_, 1.4383561643835612);
 #[inline]
-pub fn suppress_old(vA: &mut Vec2, vA1: &mut Vec2, vri: &Vec2, vrj: &Vec2) {
-    let (A, B) = (vA.x_, vA.y_);
-    let (A1, B1) = (vA1.x_, vA1.y_);
+pub fn suppress_old(v_big_a: &mut Vec2, v_big_a1: &mut Vec2, vri: &Vec2, vrj: &Vec2) {
+    let (big_a, big_b) = (v_big_a.x_, v_big_a.y_);
+    let (big_a1, big_b1) = (v_big_a1.x_, v_big_a1.y_);
     let vp = vri - vrj;
     let (r, q) = (vri.x_, vri.y_);
     let (p, s) = (vp.x_, vp.y_);
     let f = (r * p) + s;
     let qp = q * p;
     let e = (f * s) - (qp * p);
-    let a = ((A * s) - (B * p)) / e;
-    let b = ((B * f) - (A * qp)) / e;
-    let c = A1 - a;
-    let d = (B1 - b) - (a * p);
-    vA.x_ = a;
-    vA.y_ = b;
-    vA1.x_ = ((c * s) - (d * p)) / e;
-    vA1.y_ = ((d * f) - (c * qp)) / e;
+    let new_a = ((big_a * s) - (big_b * p)) / e;
+    let new_b = ((big_b * f) - (big_a * qp)) / e;
+    let c = big_a1 - new_a;
+    let d = (big_b1 - new_b) - (new_a * p);
+    v_big_a.x_ = new_a;
+    v_big_a.y_ = new_b;
+    v_big_a1.x_ = ((c * s) - (d * p)) / e;
+    v_big_a1.y_ = ((d * f) - (c * qp)) / e;
 }
 
 /// The `suppress` function in Rust performs zero suppression on a set of vectors.
@@ -245,11 +245,11 @@ pub fn suppress_old(vA: &mut Vec2, vA1: &mut Vec2, vri: &Vec2, vrj: &Vec2) {
 /// assert_approx_eq!(dr.x_, -16.780821917808325);
 /// assert_approx_eq!(dr.y_, 1.4383561643835612);
 #[inline]
-pub fn suppress(vA: &Vec2, vA1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
+pub fn suppress(v_big_a: &Vec2, v_big_a1: &Vec2, vri: &Vec2, vrj: &Vec2) -> (Vec2, Vec2) {
     let vp = vri - vrj;
     let m_inverse = make_inverse(vri, &vp);
-    let va = m_inverse.mdot(vA);
-    let mut vc = vA1 - va;
+    let va = m_inverse.mdot(v_big_a);
+    let mut vc = v_big_a1 - va;
     vc.y_ -= va.x_ * vp.x_;
     let va1 = m_inverse.mdot(&vc);
     (va, va1)
@@ -478,17 +478,17 @@ fn pbairstow_even_job(
 ) -> Option<f64> {
     let mut coeffs1 = coeffs.to_owned();
     let degree = coeffs1.len() - 1; // degree, assume even
-    let mut vA = horner(&mut coeffs1, degree, vri);
-    let tol_i = vA.norm_inf();
+    let mut v_big_a = horner(&mut coeffs1, degree, vri);
+    let tol_i = v_big_a.norm_inf();
     if tol_i < 1e-15 {
         *converged = true;
         return None;
     }
-    let mut vA1 = horner(&mut coeffs1, degree - 2, vri);
+    let mut v_big_a1 = horner(&mut coeffs1, degree - 2, vri);
     for (_, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
-        suppress_old(&mut vA, &mut vA1, vri, vrj);
+        suppress_old(&mut v_big_a, &mut v_big_a1, vri, vrj);
     }
-    let dt = delta(&vA, vri, &vA1); // Gauss-Seidel fashion
+    let dt = delta(&v_big_a, vri, &v_big_a1); // Gauss-Seidel fashion
     *vri -= dt;
     Some(tol_i)
 }
@@ -664,21 +664,21 @@ fn pbairstow_autocorr_mt_job(
 ) -> Option<f64> {
     let mut coeffs1 = coeffs.to_owned();
     let degree = coeffs1.len() - 1; // assumed divided by 4
-    let mut vA = horner(&mut coeffs1, degree, vri);
-    let tol_i = vA.norm_inf();
+    let mut v_big_a = horner(&mut coeffs1, degree, vri);
+    let tol_i = v_big_a.norm_inf();
     if tol_i < 1e-15 {
         *converged = true;
         return None;
     }
-    let mut vA1 = horner(&mut coeffs1, degree - 2, vri);
+    let mut v_big_a1 = horner(&mut coeffs1, degree - 2, vri);
     for (_j, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
-        suppress_old(&mut vA, &mut vA1, vri, vrj);
+        suppress_old(&mut v_big_a, &mut v_big_a1, vri, vrj);
         let vrjn = Vector2::<f64>::new(-vrj.x_, 1.0) / vrj.y_;
-        suppress_old(&mut vA, &mut vA1, vri, &vrjn);
+        suppress_old(&mut v_big_a, &mut v_big_a1, vri, &vrjn);
     }
     let vrin = Vector2::<f64>::new(-vri.x_, 1.0) / vri.y_;
-    suppress_old(&mut vA, &mut vA1, vri, &vrin);
-    let dt = delta(&vA, vri, &vA1); // Gauss-Seidel fashion
+    suppress_old(&mut v_big_a, &mut v_big_a1, vri, &vrin);
+    let dt = delta(&v_big_a, vri, &v_big_a1); // Gauss-Seidel fashion
     *vri -= dt;
     Some(tol_i)
 }
@@ -875,10 +875,10 @@ mod tests {
 
     #[test]
     fn test_delta() {
-        let vA = Vector2::new(1.0, 2.0);
+        let v_big_a = Vector2::new(1.0, 2.0);
         let vr = Vector2::new(-2.0, 0.0);
         let vp = Vector2::new(4.0, 5.0);
-        let delta = delta(&vA, &vr, &vp);
+        let delta = delta(&v_big_a, &vr, &vp);
 
         assert_approx_eq!(delta.x_, 0.2);
         assert_approx_eq!(delta.y_, 0.4);
@@ -886,25 +886,25 @@ mod tests {
 
     #[test]
     fn test_suppress_old() {
-        let mut vA = Vector2::new(3.0, 3.0);
-        let mut vA1 = Vector2::new(1.0, 2.0);
+        let mut v_big_a = Vector2::new(3.0, 3.0);
+        let mut v_big_a1 = Vector2::new(1.0, 2.0);
         let vri = Vector2::new(-2.0, 0.0);
         let vrj = Vector2::new(4.0, 5.0);
 
-        suppress_old(&mut vA, &mut vA1, &vri, &vrj);
-        let dr = delta(&vA, &vri, &vA1);
+        suppress_old(&mut v_big_a, &mut v_big_a1, &vri, &vrj);
+        let dr = delta(&v_big_a, &vri, &v_big_a1);
         assert_approx_eq!(dr.x_, -16.780821917808325);
         assert_approx_eq!(dr.y_, 1.4383561643835612);
     }
 
     #[test]
     fn test_suppress() {
-        let vA = Vector2::new(3.0, 3.0);
-        let vA1 = Vector2::new(1.0, 2.0);
+        let v_big_a = Vector2::new(3.0, 3.0);
+        let v_big_a1 = Vector2::new(1.0, 2.0);
         let vri = Vector2::new(-2.0, 0.0);
         let vrj = Vector2::new(4.0, 5.0);
 
-        let (va, va1) = suppress(&vA, &vA1, &vri, &vrj);
+        let (va, va1) = suppress(&v_big_a, &v_big_a1, &vri, &vrj);
         let dr = delta(&va, &vri, &va1);
         assert_approx_eq!(dr.x_, -16.780821917808325);
         assert_approx_eq!(dr.y_, 1.4383561643835612);
@@ -1006,10 +1006,10 @@ mod tests {
 
     #[test]
     fn test_delta1() {
-        let vA = Vector2::new(1.0, 2.0);
+        let v_big_a = Vector2::new(1.0, 2.0);
         let vr = Vector2::new(-2.0, -0.0);
         let vp = Vector2::new(4.0, -5.0);
-        let delta = delta1(&vA, &vr, &vp);
+        let delta = delta1(&v_big_a, &vr, &vp);
 
         assert_approx_eq!(delta.x_, 0.2);
         assert_approx_eq!(delta.y_, 0.4);
