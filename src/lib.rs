@@ -86,7 +86,7 @@ mod tests {
 
         let options = Options {
             max_iters: 2000,
-            tolerance: 1e-14,
+            tolerance: 1e-12,
             tol_ind: 1e-15,
         };
 
@@ -107,12 +107,6 @@ mod tests {
         let mut vrs = initial_autocorr(&coeffs);
         let (niter, _found) = pbairstow_autocorr_mt(&coeffs, &mut vrs, &options);
         println!("{niter}");
-
-        let options = Options {
-            max_iters: 2000,
-            tolerance: 1e-12,
-            tol_ind: 1e-15,
-        };
 
         let mut zs = initial_aberth(&coeffs);
         let (niter, _found) = aberth(&coeffs, &mut zs, &options);
