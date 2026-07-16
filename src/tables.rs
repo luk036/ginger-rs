@@ -15,7 +15,7 @@ static TABLES: OnceLock<LdsTables> = OnceLock::new();
 fn get_tables() -> &'static LdsTables {
     TABLES.get_or_init(|| {
         // Generate VdCorput base-2 sequence
-        let mut vgen = lds_rs::lds::VdCorput::new(2);
+        let mut vgen = lds_rs::VdCorput::new(2);
         let vdc2: Vec<f64> = (0..VDC_TABLE_SIZE).map(|_| vgen.pop()).collect();
 
         let two_pi = std::f64::consts::TAU;

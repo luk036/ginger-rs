@@ -391,7 +391,7 @@ version = "0.1.5"
 dependencies = [
  "approx_eq",
  "criterion",
- "lds-rs",
+ "lds-gen",
  "num-complex",
  "num-traits",
  "proptest",
@@ -509,10 +509,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
-name = "lds-rs"
-version = "0.1.6"
+name = "lds-gen"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf321488da834044f981811c261a0207d0b085d5441187b4c8e56ec8fc272785"
+checksum = "62d869ab0fc64f2a6d7f474c1d633702bd2f36eb8e956b7d59da2ec8bf1a01a1"
 
 [[package]]
 name = "leb128fmt"

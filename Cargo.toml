@@ -21,7 +21,7 @@ path = "src/lib.rs"
 
 [dependencies]
 svgbobdoc = { version = "0.3", optional = true, features = ["enable"] }
-lds-rs = "0.1.6"
+lds-rs = { version = "0.1.9", package = "lds-gen" }
 num-complex = "0.4"
 num-traits = "0.2.19"
 rayon = "1.12.0"
