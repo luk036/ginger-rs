@@ -387,7 +387,7 @@ dependencies = [
 
 [[package]]
 name = "ginger-rs"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "approx_eq",
  "criterion",
@@ -510,7 +510,9 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "lds-rs"
-version = "0.1.9"
+version = "0.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b07ba151c127415830e3a448214d7df793879e9ea877b28e190583b926bb7973"
 
 [[package]]
 name = "leb128fmt"
