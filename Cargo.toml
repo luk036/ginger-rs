@@ -2,6 +2,7 @@
 name = "ginger-rs"
 version = "0.1.5"
 edition = "2021"
+rust-version = "1.70"
 description = "Parallel Bairstow Root-finding Method in Rust"
 repository = "https://github.com/luk036/ginger-rs"
 license = "MIT OR Apache-2.0"
