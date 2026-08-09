@@ -11,9 +11,12 @@ Polynomial root-finding algorithm (parallelizable)
 
 ### 📦 Cargo
 
-- Install the rust toolchain in order to have cargo installed by following
-  [this](https://www.rust-lang.org/tools/install) guide.
-- run `cargo install ginger-rs`
+Add this to your `Cargo.toml`:
+
+```toml
+[dependencies]
+ginger-rs = "0.1"
+```
 
 ## 👀 See also
 
