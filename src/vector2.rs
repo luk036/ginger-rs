@@ -226,15 +226,11 @@ impl<T: Clone + Signed> Vector2<T> {
     }
 }
 
-impl<T: Clone + PartialOrd> Vector2<T> {
+impl<T: Clone + Signed + PartialOrd> Vector2<T> {
     /// The `norm_inf` function returns the maximum absolute value of the two elements in a `Vector2`
     /// object.
     ///
     /// $$\|\vec{v}\|_\infty = \max(|v_x|, |v_y|)$$
-    ///
-    /// Returns:
-    ///
-    /// The `norm_inf` function returns the maximum value between `self.x_` and `self.y_`.
     ///
     /// # Examples
     ///
@@ -242,14 +238,16 @@ impl<T: Clone + PartialOrd> Vector2<T> {
     /// use ginger::vector2::Vector2;
     ///
     /// let vector2 = &Vector2::new(3, -4);
-    /// assert_eq!(vector2.norm_inf(), 3);
+    /// assert_eq!(vector2.norm_inf(), 4);
     /// ```
     #[inline]
     pub fn norm_inf(&self) -> T {
-        if self.x_ > self.y_ {
-            self.x_.clone()
+        let ax = self.x_.abs();
+        let ay = self.y_.abs();
+        if ax > ay {
+            ax
         } else {
-            self.y_.clone()
+            ay
         }
     }
 }
@@ -665,10 +663,13 @@ mod test {
     #[test]
     fn test_norm_inf() {
         let v1 = Vector2::new(3, -4);
-        assert_eq!(v1.norm_inf(), 3);
+        assert_eq!(v1.norm_inf(), 4);
 
         let v2 = Vector2::new(5, 2);
         assert_eq!(v2.norm_inf(), 5);
+
+        let v3 = Vector2::new(-7, -2);
+        assert_eq!(v3.norm_inf(), 7);
     }
 
     #[test]
