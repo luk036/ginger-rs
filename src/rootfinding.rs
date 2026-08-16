@@ -1057,4 +1057,184 @@ mod tests {
         assert_eq!(coeffs.len(), 5);
         assert!((coeffs[0] - 1.0).abs() < 1e-12);
     }
+
+    // ------------------------------------------------------------------
+    // Order-independence verification
+    // ------------------------------------------------------------------
+
+    /// Collect all roots of the converged factors, sorted for set comparison.
+    fn sorted_roots(vrs: &[Vec2]) -> Vec<(f64, f64)> {
+        let mut roots = Vec::new();
+        for vr in vrs {
+            let (a, b) = roots_from_quadratic(vr);
+            roots.push((a.re, a.im));
+            roots.push((b.re, b.im));
+        }
+        roots.sort_by(|x, y| x.partial_cmp(y).unwrap());
+        roots
+    }
+
+    /// Maximum coordinate-wise difference between two sorted root sets.
+    fn max_root_set_diff(a: &[(f64, f64)], b: &[(f64, f64)]) -> f64 {
+        a.iter()
+            .zip(b.iter())
+            .map(|(x, y)| (x.0 - y.0).abs().max((x.1 - y.1).abs()))
+            .fold(0.0_f64, f64::max)
+    }
+
+    /// The Jacobi (multi-threaded) variant must be order-independent:
+    /// permuting the initial guesses must give the same iteration count
+    /// and the same converged root SET.
+    #[test]
+    fn test_jacobi_mt_order_independent() {
+        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let opts = Options::default();
+        let base = initial_guess(&coeffs);
+        let perms = vec![
+            base.clone(),
+            base.iter().rev().cloned().collect(),
+            vec![base[1], base[3], base[0], base[2]],
+            vec![base[2], base[0], base[3], base[1]],
+        ];
+
+        let mut niters = Vec::new();
+        let mut rootsets = Vec::new();
+        for perm in &perms {
+            let mut vrs = perm.clone();
+            let (niter, found) = pbairstow_even_mt(&coeffs, &mut vrs, &opts);
+            assert!(found, "Jacobi mt failed to converge");
+            niters.push(niter);
+            rootsets.push(sorted_roots(&vrs));
+        }
+
+        // Same iteration count for every permutation.
+        assert!(
+            niters.iter().all(|x| *x == niters[0]),
+            "Jacobi mt iteration count is order-dependent: {niters:?}"
+        );
+        // Same converged root set (up to floating-point noise).
+        for (k, rs) in rootsets.iter().enumerate() {
+            let diff = max_root_set_diff(&rootsets[0], rs);
+            assert!(
+                diff < 1e-9,
+                "Jacobi mt root set differs across perms: perm {k} diff {diff:.3e}"
+            );
+        }
+    }
+
+    /// The Jacobi sweep must produce a BIT-IDENTICAL next state regardless
+    /// of the order in which factor jobs are processed (frozen snapshot).
+    #[test]
+    fn test_jacobi_processing_order_bit_identical() {
+        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let vrs0 = initial_guess(&coeffs);
+        let orders = [
+            vec![0usize, 1, 2, 3],
+            vec![3usize, 2, 1, 0],
+            vec![1usize, 3, 0, 2],
+            vec![2usize, 0, 3, 1],
+        ];
+
+        let mut next_states = Vec::new();
+        for order in &orders {
+            let vrsc = vrs0.clone(); // frozen snapshot, as in pbairstow_even_mt
+            let mut next = vrs0.clone();
+            let mut converged = vec![false; vrs0.len()];
+            for &i in order {
+                if converged[i] {
+                    continue;
+                }
+                let mut vri = next[i];
+                if pbairstow_even_job(&coeffs, i, &mut vri, &mut converged[i], &vrsc).is_some() {
+                    next[i] = vri;
+                }
+            }
+            next_states.push(next);
+        }
+
+        for (k, state) in next_states.iter().enumerate().skip(1) {
+            assert_eq!(
+                next_states[0], *state,
+                "Jacobi next state differs for processing order {:?}",
+                orders[k]
+            );
+        }
+    }
+
+    /// The suppression order WITHIN a single job must only cause
+    /// machine-epsilon-level drift (exactly commutative in exact arithmetic).
+    #[test]
+    fn test_suppression_order_machine_epsilon() {
+        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let vrs = initial_guess(&coeffs);
+        let orders = [
+            vec![0usize, 1, 2, 3],
+            vec![3usize, 2, 1, 0],
+            vec![1usize, 3, 0, 2],
+            vec![2usize, 0, 3, 1],
+        ];
+
+        let mut worst = 0.0_f64;
+        for i in 0..vrs.len() {
+            let mut ref_vri = None;
+            for order in &orders {
+                let vri = vrs[i];
+                let mut coeffs1 = coeffs.clone();
+                let degree = coeffs1.len() - 1;
+                let mut v_big_a = horner(&mut coeffs1, degree, &vri);
+                if v_big_a.norm_inf() < 1e-15 {
+                    continue;
+                }
+                let mut v_big_a1 = horner(&mut coeffs1, degree - 2, &vri);
+                for &j in order {
+                    if j == i {
+                        continue;
+                    }
+                    suppress_old(&mut v_big_a, &mut v_big_a1, &vri, &vrs[j]);
+                }
+                let dt = delta(&v_big_a, &vri, &v_big_a1);
+                let new_vri = vri - dt;
+                match ref_vri {
+                    None => ref_vri = Some(new_vri),
+                    Some(r) => {
+                        let d = (new_vri - r).norm_inf();
+                        worst = worst.max(d);
+                    }
+                }
+            }
+        }
+        assert!(
+            worst < 1e-12,
+            "suppression-order drift too large: {worst:.3e}"
+        );
+    }
+
+    /// Contrast: the single-threaded Gauss-Seidel variant IS order-dependent
+    /// in its iteration count when initial guesses are permuted.
+    #[test]
+    fn test_gs_order_dependent_iterations() {
+        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let opts = Options::default();
+        let base = initial_guess(&coeffs);
+        let perms = vec![
+            base.clone(),
+            base.iter().rev().cloned().collect(),
+            vec![base[1], base[3], base[0], base[2]],
+            vec![base[2], base[0], base[3], base[1]],
+        ];
+
+        let mut niters = Vec::new();
+        for perm in &perms {
+            let mut vrs = perm.clone();
+            let (niter, found) = pbairstow_even(&coeffs, &mut vrs, &opts);
+            assert!(found, "Gauss-Seidel failed to converge");
+            niters.push(niter);
+        }
+
+        // Gauss-Seidel is NOT order-independent: iteration counts differ.
+        assert!(
+            !niters.iter().all(|x| *x == niters[0]),
+            "expected Gauss-Seidel iteration count to be order-dependent, got {niters:?}"
+        );
+    }
 }
