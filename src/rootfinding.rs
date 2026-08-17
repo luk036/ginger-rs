@@ -1,5 +1,6 @@
 use super::horner::horner_eval_f;
 use super::{Matrix2, Vector2};
+use crate::seqlock::AtomicVec2;
 use num_complex::Complex;
 
 type Vec2 = Vector2<f64>;
@@ -453,6 +454,132 @@ pub fn pbairstow_even_mt(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options)
     (options.max_iters, false)
 }
 
+/// Atomic multi-threading Bairstow's method (even degree only, decoupled)
+///
+/// The `pbairstow_even_atomic` function implements the multi-threading parallel Bairstow's
+/// method for finding roots of even-degree polynomials using a single atomic working buffer.
+///
+/// Unlike `pbairstow_even_mt` (Jacobi snapshot + per-iteration barrier), the atomic buffer is
+/// built once: each thread owns a chunk of factor slots (single-writer, multi-reader via a
+/// seqlock) and runs its own iteration loop independently. There is no per-iteration
+/// synchronization — a thread exits as soon as its own chunk converges or the maximum number
+/// of iterations is exceeded. The iteration count is therefore NON-DETERMINISTIC (the returned
+/// count is the maximum across threads), and `found` is true only if every chunk converged.
+///
+/// Arguments:
+///
+/// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a polynomial.
+///   It is assumed that the polynomial has an even degree.
+/// * `vrs`: A vector of initial guesses for the roots of the polynomial. Each element of the vector is
+///   a complex number representing a root guess.
+/// * `options`: The `options` parameter is an instance of the `Options` struct, which contains the
+///   following fields:
+///
+/// # Examples:
+///
+/// ```
+/// use ginger::rootfinding::{initial_guess, pbairstow_even_atomic, Options};
+///
+/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let mut vrs = initial_guess(&coeffs);
+/// let (niter, found) = pbairstow_even_atomic(&coeffs, &mut vrs, &Options::default());
+///
+/// assert!(niter > 0);
+/// assert!(found);
+/// ```
+pub fn pbairstow_even_atomic(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (usize, bool) {
+    use std::sync::Mutex;
+
+    let num_roots = vrs.len();
+    // Atomic working buffer built ONCE; each thread writes only its own slots.
+    let buffer: Vec<AtomicVec2> = vrs.iter().copied().map(AtomicVec2::new).collect();
+    let buffer_ref = &buffer;
+
+    // For small problems, parallel overhead dominates; run single-threaded.
+    let use_mt = num_roots > 4;
+    let num_threads = if use_mt {
+        rayon::current_num_threads().min(num_roots)
+    } else {
+        1
+    };
+    let chunk_size = (num_roots + num_threads - 1) / num_threads;
+
+    // Each task runs its own iteration loop INDEPENDENTLY on the persistent
+    // rayon pool (no per-iteration barrier) and exits when its chunk converges.
+    let results: Mutex<Vec<(usize, bool)>> = Mutex::new(Vec::new());
+    let results_ref = &results;
+    rayon::scope(|s| {
+        for t in 0..num_threads {
+            let start = t * chunk_size;
+            let end = (start + chunk_size).min(num_roots);
+            if start >= end {
+                break;
+            }
+            s.spawn(move |_| {
+                let mut niter = 0;
+                loop {
+                    if niter == options.max_iters {
+                        results_ref.lock().unwrap().push((options.max_iters, false));
+                        return;
+                    }
+                    let mut max_tol: f64 = 0.0;
+                    for idx in start..end {
+                        if let Some(tol_i) = pbairstow_even_atomic_job(coeffs, idx, buffer_ref) {
+                            max_tol = max_tol.max(tol_i);
+                        }
+                    }
+                    if max_tol < options.tolerance {
+                        results_ref.lock().unwrap().push((niter, true));
+                        return;
+                    }
+                    niter += 1;
+                }
+            });
+        }
+    });
+
+    let mut niter_max = 0;
+    let mut all_converged = true;
+    for (niter, converged) in results.into_inner().unwrap() {
+        niter_max = niter_max.max(niter);
+        all_converged &= converged;
+    }
+
+    // Publish the final atomic buffer back to the caller.
+    for (i, vr) in vrs.iter_mut().enumerate() {
+        *vr = buffer[i].load();
+    }
+    (niter_max, all_converged)
+}
+
+/// Single Bairstow update on the atomic buffer for factor `i`.
+///
+/// Loads the current value of every slot, suppresses the other factors, and
+/// stores the new value into slot `i` only (single-writer). Returns the
+/// per-factor tolerance, or `None` if factor `i` is already converged.
+fn pbairstow_even_atomic_job(coeffs: &[f64], i: usize, buffer: &[AtomicVec2]) -> Option<f64> {
+    let mut vri = buffer[i].load();
+    let mut coeffs1 = coeffs.to_owned();
+    let degree = coeffs1.len() - 1; // degree, assume even
+    let mut v_big_a = horner(&mut coeffs1, degree, &vri);
+    let tol_i = v_big_a.norm_inf();
+    if tol_i < 1e-15 {
+        return None;
+    }
+    let mut v_big_a1 = horner(&mut coeffs1, degree - 2, &vri);
+    // Round-robin suppression order: each thread reads the other slots in a
+    // different rotation, reducing concurrent access to the same slot.
+    let num = buffer.len();
+    for k in 1..num {
+        let j = (i + k) % num;
+        suppress_old(&mut v_big_a, &mut v_big_a1, &vri, &buffer[j].load());
+    }
+    let dt = delta(&v_big_a, &vri, &v_big_a1); // Gauss-Seidel fashion
+    vri -= dt;
+    buffer[i].store(vri);
+    Some(tol_i)
+}
+
 /// Internal job function for parallel Bairstow's method (even degree)
 ///
 /// Performs a single iteration of Bairstow's method for one root approximation,
@@ -680,6 +807,144 @@ fn pbairstow_autocorr_mt_job(
     suppress_old(&mut v_big_a, &mut v_big_a1, vri, &vrin);
     let dt = delta(&v_big_a, vri, &v_big_a1); // Gauss-Seidel fashion
     *vri -= dt;
+    Some(tol_i)
+}
+
+/// Atomic multi-threading Bairstow's method (auto-correlation, decoupled)
+///
+/// The `pbairstow_autocorr_atomic` function is a multi-threaded implementation of Bairstow's
+/// method for finding roots of a polynomial with auto-correlation (palindromic) symmetry using a
+/// single atomic working buffer.
+///
+/// Unlike `pbairstow_autocorr_mt` (Jacobi snapshot + per-iteration barrier), the atomic buffer is
+/// built once: each thread owns a chunk of factor slots (single-writer, multi-reader via a
+/// seqlock) and runs its own iteration loop independently. There is no per-iteration
+/// synchronization — a thread exits as soon as its own chunk converges or the maximum number of
+/// iterations is exceeded. The iteration count is therefore NON-DETERMINISTIC (the returned count
+/// is the maximum across threads), and `found` is true only if every chunk converged.
+///
+/// Arguments:
+///
+/// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
+///   polynomial. These coefficients are used as input for the Bairstow's method algorithm.
+/// * `vrs`: `vrs` is a vector of complex numbers representing the initial guesses for the roots of
+///   the polynomial. Each element of `vrs` is a `Vec2` struct, which contains the real and
+///   imaginary parts of the complex number.
+/// * `options`: The `options` parameter is an instance of the `Options` struct, which contains the
+///   following fields:
+///
+/// # Examples:
+///
+/// ```
+/// use ginger::rootfinding::{initial_autocorr, pbairstow_autocorr_atomic, Options};
+///
+/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let mut vrs = initial_autocorr(&coeffs);
+/// let (niter, found) = pbairstow_autocorr_atomic(&coeffs, &mut vrs, &Options::default());
+///
+/// assert!(niter > 0);
+/// assert!(found);
+/// ```
+pub fn pbairstow_autocorr_atomic(
+    coeffs: &[f64],
+    vrs: &mut [Vec2],
+    options: &Options,
+) -> (usize, bool) {
+    use std::sync::Mutex;
+
+    let num_roots = vrs.len();
+    // Atomic working buffer built ONCE; each thread writes only its own slots.
+    let buffer: Vec<AtomicVec2> = vrs.iter().copied().map(AtomicVec2::new).collect();
+    let buffer_ref = &buffer;
+
+    // For small problems, parallel overhead dominates; run single-threaded.
+    let use_mt = num_roots > 4;
+    let num_threads = if use_mt {
+        rayon::current_num_threads().min(num_roots)
+    } else {
+        1
+    };
+    let chunk_size = (num_roots + num_threads - 1) / num_threads;
+
+    // Each task runs its own iteration loop INDEPENDENTLY on the persistent
+    // rayon pool (no per-iteration barrier) and exits when its chunk converges.
+    let results: Mutex<Vec<(usize, bool)>> = Mutex::new(Vec::new());
+    let results_ref = &results;
+    rayon::scope(|s| {
+        for t in 0..num_threads {
+            let start = t * chunk_size;
+            let end = (start + chunk_size).min(num_roots);
+            if start >= end {
+                break;
+            }
+            s.spawn(move |_| {
+                let mut niter = 0;
+                loop {
+                    if niter == options.max_iters {
+                        results_ref.lock().unwrap().push((options.max_iters, false));
+                        return;
+                    }
+                    let mut max_tol: f64 = 0.0;
+                    for idx in start..end {
+                        if let Some(tol_i) = pbairstow_autocorr_atomic_job(coeffs, idx, buffer_ref)
+                        {
+                            max_tol = max_tol.max(tol_i);
+                        }
+                    }
+                    if max_tol < options.tolerance {
+                        results_ref.lock().unwrap().push((niter, true));
+                        return;
+                    }
+                    niter += 1;
+                }
+            });
+        }
+    });
+
+    let mut niter_max = 0;
+    let mut all_converged = true;
+    for (niter, converged) in results.into_inner().unwrap() {
+        niter_max = niter_max.max(niter);
+        all_converged &= converged;
+    }
+
+    // Publish the final atomic buffer back to the caller.
+    for (i, vr) in vrs.iter_mut().enumerate() {
+        *vr = buffer[i].load();
+    }
+    (niter_max, all_converged)
+}
+
+/// Single Bairstow update on the atomic buffer for auto-correlation factor `i`.
+///
+/// Loads the current value of every slot, suppresses the other factors (and their
+/// reciprocals), and stores the new value into slot `i` only (single-writer).
+/// Returns the per-factor tolerance, or `None` if factor `i` is already converged.
+fn pbairstow_autocorr_atomic_job(coeffs: &[f64], i: usize, buffer: &[AtomicVec2]) -> Option<f64> {
+    let mut vri = buffer[i].load();
+    let mut coeffs1 = coeffs.to_owned();
+    let degree = coeffs1.len() - 1; // degree, assume even
+    let mut v_big_a = horner(&mut coeffs1, degree, &vri);
+    let tol_i = v_big_a.norm_inf();
+    if tol_i < 1e-15 {
+        return None;
+    }
+    let mut v_big_a1 = horner(&mut coeffs1, degree - 2, &vri);
+    // Round-robin suppression order: each thread reads the other slots in a
+    // different rotation, reducing concurrent access to the same slot.
+    let num = buffer.len();
+    for k in 1..num {
+        let j = (i + k) % num;
+        let vrj = buffer[j].load();
+        suppress_old(&mut v_big_a, &mut v_big_a1, &vri, &vrj);
+        let vrjn = Vector2::<f64>::new(-vrj.x_, 1.0) / vrj.y_;
+        suppress_old(&mut v_big_a, &mut v_big_a1, &vri, &vrjn);
+    }
+    let vrin = Vector2::<f64>::new(-vri.x_, 1.0) / vri.y_;
+    suppress_old(&mut v_big_a, &mut v_big_a1, &vri, &vrin);
+    let dt = delta(&v_big_a, &vri, &v_big_a1); // Gauss-Seidel fashion
+    vri -= dt;
+    buffer[i].store(vri);
     Some(tol_i)
 }
 
@@ -971,6 +1236,140 @@ mod tests {
         // Verify the first guess is reasonable
         assert!(guesses[0].x_.abs() > 0.0);
         assert!(guesses[0].y_.abs() > 0.0);
+    }
+
+    #[test]
+    fn test_pbairstow_even_atomic() {
+        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let mut vrs = initial_guess(&coeffs);
+        let (niter, found) = pbairstow_even_atomic(&coeffs, &mut vrs, &Options::default());
+        assert!(niter > 0);
+        assert!(found);
+    }
+
+    const FIR_COEFFS: [f64; 49] = [
+        -0.00196191,
+        -0.00094597,
+        -0.00023823,
+        0.00134667,
+        0.00380494,
+        0.00681596,
+        0.0097864,
+        0.01186197,
+        0.0121238,
+        0.00985211,
+        0.00474894,
+        -0.00281751,
+        -0.01173923,
+        -0.0201885,
+        -0.02590168,
+        -0.02658216,
+        -0.02035729,
+        -0.00628271,
+        0.01534627,
+        0.04279982,
+        0.0732094,
+        0.10275561,
+        0.12753013,
+        0.14399228,
+        0.15265722,
+        0.14399228,
+        0.12753013,
+        0.10275561,
+        0.0732094,
+        0.04279982,
+        0.01534627,
+        -0.00628271,
+        -0.02035729,
+        -0.02658216,
+        -0.02590168,
+        -0.0201885,
+        -0.01173923,
+        -0.00281751,
+        0.00474894,
+        0.00985211,
+        0.0121238,
+        0.01186197,
+        0.0097864,
+        0.00681596,
+        0.00380494,
+        0.00134667,
+        -0.00023823,
+        -0.00094597,
+        -0.00196191,
+    ];
+
+    #[test]
+    fn test_pbairstow_even_atomic_fir() {
+        // Decoupled threads under load (libtest runs tests in parallel) can need
+        // many iterations to converge; give a generous iteration budget.
+        let options = Options {
+            max_iters: 20000,
+            tolerance: 1e-2,
+            ..Options::default()
+        };
+        let mut vrs = initial_guess(&FIR_COEFFS);
+        let (_, found) = pbairstow_even_atomic(&FIR_COEFFS, &mut vrs, &options);
+        assert!(found);
+    }
+
+    #[test]
+    fn test_pbairstow_even_atomic_reconstruction() {
+        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let mut vrs = initial_guess(&coeffs);
+        let (_, found) = pbairstow_even_atomic(&coeffs, &mut vrs, &Options::default());
+        assert!(found);
+        let monic = poly_from_quadratic_factors(&vrs);
+        let scale = coeffs[0];
+        for (i, c) in coeffs.iter().enumerate() {
+            assert!(
+                (monic[i] * scale - c).abs() < 1e-8,
+                "coefficient {i} mismatch: {} vs {}",
+                monic[i] * scale,
+                c
+            );
+        }
+    }
+
+    #[test]
+    fn test_pbairstow_autocorr_atomic() {
+        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let mut vrs = initial_autocorr(&coeffs);
+        let (niter, found) = pbairstow_autocorr_atomic(&coeffs, &mut vrs, &Options::default());
+        assert!(niter > 0);
+        assert!(found);
+    }
+
+    #[test]
+    fn test_pbairstow_autocorr_atomic_fir() {
+        // Decoupled threads under load (libtest runs tests in parallel) can need
+        // many iterations to converge; give a generous iteration budget.
+        let options = Options {
+            max_iters: 20000,
+            tolerance: 1e-2,
+            ..Options::default()
+        };
+        let mut vrs = initial_autocorr(&FIR_COEFFS);
+        let (_, found) = pbairstow_autocorr_atomic(&FIR_COEFFS, &mut vrs, &options);
+        assert!(found);
+    }
+
+    #[test]
+    fn test_pbairstow_autocorr_atomic_reconstruction() {
+        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let mut vrs = initial_autocorr(&coeffs);
+        let (_, found) = pbairstow_autocorr_atomic(&coeffs, &mut vrs, &Options::default());
+        assert!(found);
+        let monic = poly_from_autocorr_factors(&vrs);
+        let scale = coeffs[0];
+        for (i, c) in coeffs.iter().enumerate() {
+            assert!(
+                (monic[i] * scale - c).abs() < 1e-8,
+                "coefficient {i} mismatch: {} vs {}",
+                monic[i] * scale,
+                c
+            );
+        }
     }
 
     #[test]

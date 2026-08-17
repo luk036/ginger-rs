@@ -3,6 +3,7 @@
 use super::horner::{horner_eval_c, horner_eval_f};
 use super::Options;
 use crate::leja_order::leja_order;
+use crate::seqlock::AtomicComplex;
 use num_complex::Complex;
 
 const TWO_PI: f64 = std::f64::consts::TAU;
@@ -257,6 +258,137 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
     (options.max_iters, false)
 }
 
+/// Atomic multi-threading Aberth's method (decoupled)
+///
+/// Each estimate $$ z_i $$ is updated by the correction:
+///
+/// $$ z_i' = z_i - \frac{P(z_i)}{P'(z_i)} $$
+///
+/// where the derivative is modified by all other root estimates:
+///
+/// $$ P'(z_i) = P_1(z_i) - \sum_{\substack{j=1\\j\neq i}}^n \frac{P(z_i)}{z_i - z_j} $$
+///
+/// Unlike `aberth_mt` (Jacobi snapshot + per-iteration barrier), this variant
+/// builds a single atomic working buffer once: each thread owns a chunk of root
+/// slots (single-writer, multi-reader via a seqlock) and runs its own iteration
+/// loop independently. There is no per-iteration synchronization — a thread
+/// exits as soon as its own chunk converges or the maximum number of
+/// iterations is exceeded. The returned iteration count is the maximum across
+/// threads, and `found` is true only if every chunk converged.
+///
+/// Arguments:
+///
+/// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
+///   polynomial. The polynomial is defined by the equation:
+/// * `zs`: A mutable reference to a vector of Complex numbers. These numbers represent the initial
+///   guesses for the roots of the polynomial equation.
+/// * `options`: The `options` parameter is an instance of the `Options` struct, which contains the
+///   following fields:
+///
+/// # Examples:
+///
+/// ```
+/// use ginger::rootfinding::Options;
+/// use ginger::aberth::{initial_aberth, aberth_atomic};
+///
+/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+/// let mut zrs = initial_aberth(&coeffs);
+/// let (niter, _found) = aberth_atomic(&coeffs, &mut zrs, &Options::default());
+///
+/// assert!(niter > 0);
+/// ```
+pub fn aberth_atomic(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (usize, bool) {
+    use std::sync::Mutex;
+
+    let num_roots = zs.len();
+    let degree = coeffs.len() - 1; // degree, assume even
+    let coeffs1: Vec<_> = (0..degree)
+        .map(|i| coeffs[i] * (degree - i) as f64)
+        .collect();
+
+    // Atomic working buffer built ONCE; each thread writes only its own slots.
+    let buffer: Vec<AtomicComplex> = zs.iter().copied().map(AtomicComplex::new).collect();
+    let buffer_ref = &buffer;
+    let coeffs1_ref = &coeffs1;
+
+    // For small problems, parallel overhead dominates; run single-threaded.
+    let use_mt = num_roots > 4;
+    let num_threads = if use_mt {
+        rayon::current_num_threads().min(num_roots)
+    } else {
+        1
+    };
+    let chunk_size = (num_roots + num_threads - 1) / num_threads;
+
+    // Each task runs its own iteration loop INDEPENDENTLY on the persistent
+    // rayon pool (no per-iteration barrier) and exits when its chunk converges.
+    let results: Mutex<Vec<(usize, bool)>> = Mutex::new(Vec::new());
+    let results_ref = &results;
+    rayon::scope(|s| {
+        for t in 0..num_threads {
+            let start = t * chunk_size;
+            let end = (start + chunk_size).min(num_roots);
+            if start >= end {
+                break;
+            }
+            s.spawn(move |_| {
+                let mut niter = 0;
+                loop {
+                    if niter == options.max_iters {
+                        results_ref.lock().unwrap().push((options.max_iters, false));
+                        return;
+                    }
+                    let mut max_tol: f64 = 0.0;
+                    for idx in start..end {
+                        let tol_i = aberth_atomic_job(coeffs, idx, buffer_ref, coeffs1_ref);
+                        max_tol = max_tol.max(tol_i);
+                    }
+                    if max_tol < options.tolerance {
+                        results_ref.lock().unwrap().push((niter, true));
+                        return;
+                    }
+                    niter += 1;
+                }
+            });
+        }
+    });
+
+    let mut niter_max = 0;
+    let mut all_converged = true;
+    for (niter, converged) in results.into_inner().unwrap() {
+        niter_max = niter_max.max(niter);
+        all_converged &= converged;
+    }
+
+    // Publish the final atomic buffer back to the caller.
+    for (i, z) in zs.iter_mut().enumerate() {
+        *z = buffer[i].load();
+    }
+    (niter_max, all_converged)
+}
+
+/// Single Aberth update on the atomic buffer for root `i`.
+///
+/// Loads the current value of every slot, computes the correction, and stores
+/// the new value into slot `i` only (single-writer). Returns the per-root
+/// tolerance $$ |P(z_i)| $$.
+fn aberth_atomic_job(coeffs: &[f64], i: usize, buffer: &[AtomicComplex], coeffs1: &[f64]) -> f64 {
+    let mut zi = buffer[i].load();
+    let p_eval = horner_eval_c(coeffs, &zi);
+    let tol_i = p_eval.l1_norm(); // ???
+    let mut p1_eval = horner_eval_c(coeffs1, &zi);
+    // Round-robin suppression order: each thread reads the other slots in a
+    // different rotation, reducing concurrent access to the same slot.
+    let num = buffer.len();
+    for k in 1..num {
+        let j = (i + k) % num;
+        p1_eval -= p_eval / (zi - buffer[j].load());
+    }
+    zi -= p_eval / p1_eval; // Gauss-Seidel fashion
+    buffer[i].store(zi);
+    tol_i
+}
+
 /// Initial guess for Aberth's method using auto-correlation
 ///
 /// $$ R = \sqrt\[n\]{|a_n|},\qquad R \leftarrow \max(R, 1/R),\qquad z_i = c + R \cdot e^{i\theta_i} $$
@@ -476,6 +608,97 @@ mod tests {
         let (niter, found) = aberth_mt(&coeffs, &mut zrs, &Options::default());
         assert_eq!(niter, 6);
         assert!(found);
+    }
+
+    #[test]
+    fn test_aberth_atomic() {
+        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let mut zrs = initial_aberth(&coeffs);
+        let (niter, found) = aberth_atomic(&coeffs, &mut zrs, &Options::default());
+        assert!(found);
+        assert!(niter <= 14);
+    }
+
+    const FIR_COEFFS: [f64; 49] = [
+        -0.00196191,
+        -0.00094597,
+        -0.00023823,
+        0.00134667,
+        0.00380494,
+        0.00681596,
+        0.0097864,
+        0.01186197,
+        0.0121238,
+        0.00985211,
+        0.00474894,
+        -0.00281751,
+        -0.01173923,
+        -0.0201885,
+        -0.02590168,
+        -0.02658216,
+        -0.02035729,
+        -0.00628271,
+        0.01534627,
+        0.04279982,
+        0.0732094,
+        0.10275561,
+        0.12753013,
+        0.14399228,
+        0.15265722,
+        0.14399228,
+        0.12753013,
+        0.10275561,
+        0.0732094,
+        0.04279982,
+        0.01534627,
+        -0.00628271,
+        -0.02035729,
+        -0.02658216,
+        -0.02590168,
+        -0.0201885,
+        -0.01173923,
+        -0.00281751,
+        0.00474894,
+        0.00985211,
+        0.0121238,
+        0.01186197,
+        0.0097864,
+        0.00681596,
+        0.00380494,
+        0.00134667,
+        -0.00023823,
+        -0.00094597,
+        -0.00196191,
+    ];
+
+    #[test]
+    fn test_aberth_atomic_fir() {
+        let options = Options {
+            tolerance: 1e-8,
+            ..Options::default()
+        };
+        let mut zrs = initial_aberth(&FIR_COEFFS);
+        let (niter, found) = aberth_atomic(&FIR_COEFFS, &mut zrs, &options);
+        assert!(found);
+        assert!(niter <= 100, "niter={niter}");
+    }
+
+    #[test]
+    fn test_aberth_atomic_reconstruction() {
+        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let mut zrs = initial_aberth(&coeffs);
+        let (_, found) = aberth_atomic(&coeffs, &mut zrs, &Options::default());
+        assert!(found);
+        let monic = poly_from_roots(&zrs);
+        let scale = coeffs[0];
+        for (i, c) in coeffs.iter().enumerate() {
+            assert!(
+                (monic[i] * scale - c).abs() < 1e-8,
+                "coefficient {i} mismatch: {} vs {}",
+                monic[i] * scale,
+                c
+            );
+        }
     }
 
     #[test]

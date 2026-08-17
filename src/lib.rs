@@ -30,6 +30,9 @@ pub mod rootfinding;
 /// This module implements the Leja ordering.
 pub mod leja_order;
 
+/// This module provides seqlock-based atomic pairs for the atomic multi-threading method.
+pub mod seqlock;
+
 /// This module implements a simple 2D vector.
 pub mod vector2;
 
@@ -37,16 +40,17 @@ pub mod vector2;
 pub mod vector2_ref;
 
 pub use crate::aberth::{
-    aberth, aberth_autocorr, aberth_mt, initial_aberth, initial_aberth_autocorr,
+    aberth, aberth_atomic, aberth_autocorr, aberth_mt, initial_aberth, initial_aberth_autocorr,
     poly_from_autocorr_roots, poly_from_roots,
 };
 pub use crate::horner::{horner_eval_c, horner_eval_f};
 pub use crate::matrix2::Matrix2;
 pub use crate::rootfinding::{
-    extract_autocorr, initial_autocorr, initial_guess, pbairstow_autocorr, pbairstow_autocorr_mt,
-    pbairstow_even, pbairstow_even_mt, poly_from_autocorr_factors, poly_from_quadratic_factors,
-    Options,
+    extract_autocorr, initial_autocorr, initial_guess, pbairstow_autocorr,
+    pbairstow_autocorr_atomic, pbairstow_autocorr_mt, pbairstow_even, pbairstow_even_atomic,
+    pbairstow_even_mt, poly_from_autocorr_factors, poly_from_quadratic_factors, Options,
 };
+pub use crate::seqlock::{AtomicComplex, AtomicVec2};
 pub use crate::vector2::Vector2;
 
 #[cfg(test)]
