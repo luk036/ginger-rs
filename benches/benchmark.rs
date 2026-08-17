@@ -1,7 +1,8 @@
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use ginger::{
-    aberth, aberth_mt, initial_aberth, initial_autocorr, initial_guess, pbairstow_autocorr,
-    pbairstow_autocorr_mt, pbairstow_even, pbairstow_even_mt, Options,
+    aberth, aberth_atomic, aberth_mt, initial_aberth, initial_autocorr, initial_guess,
+    pbairstow_autocorr, pbairstow_autocorr_atomic, pbairstow_autocorr_mt, pbairstow_even,
+    pbairstow_even_atomic, pbairstow_even_mt, Options,
 };
 use std::hint::black_box;
 
@@ -83,6 +84,14 @@ fn bench_deg8(c: &mut Criterion) {
             BatchSize::SmallInput,
         )
     });
+    group.bench_function("pbairstow_even_atomic", |b| {
+        let vrs = initial_guess(&coeffs);
+        b.iter_batched_ref(
+            || vrs.clone(),
+            |vrs| pbairstow_even_atomic(&coeffs, vrs, &options),
+            BatchSize::SmallInput,
+        )
+    });
     group.bench_function("pbairstow_autocorr", |b| {
         let vrs = initial_autocorr(&coeffs);
         b.iter_batched_ref(
@@ -99,6 +108,14 @@ fn bench_deg8(c: &mut Criterion) {
             BatchSize::SmallInput,
         )
     });
+    group.bench_function("pbairstow_autocorr_atomic", |b| {
+        let vrs = initial_autocorr(&coeffs);
+        b.iter_batched_ref(
+            || vrs.clone(),
+            |vrs| pbairstow_autocorr_atomic(&coeffs, vrs, &options),
+            BatchSize::SmallInput,
+        )
+    });
     group.bench_function("aberth", |b| {
         let zs = initial_aberth(&coeffs);
         b.iter_batched_ref(
@@ -112,6 +129,14 @@ fn bench_deg8(c: &mut Criterion) {
         b.iter_batched_ref(
             || zs.clone(),
             |zs| aberth_mt(&coeffs, zs, &options),
+            BatchSize::SmallInput,
+        )
+    });
+    group.bench_function("aberth_atomic", |b| {
+        let zs = initial_aberth(&coeffs);
+        b.iter_batched_ref(
+            || zs.clone(),
+            |zs| aberth_atomic(&coeffs, zs, &options),
             BatchSize::SmallInput,
         )
     });
@@ -145,6 +170,14 @@ fn bench_fir(c: &mut Criterion) {
             BatchSize::SmallInput,
         )
     });
+    group.bench_function("pbairstow_even_atomic", |b| {
+        let vrs = initial_guess(&coeffs);
+        b.iter_batched_ref(
+            || vrs.clone(),
+            |vrs| pbairstow_even_atomic(&coeffs, vrs, &fir_options),
+            BatchSize::SmallInput,
+        )
+    });
     group.bench_function("pbairstow_autocorr", |b| {
         let vrs = initial_autocorr(&coeffs);
         b.iter_batched_ref(
@@ -158,6 +191,14 @@ fn bench_fir(c: &mut Criterion) {
         b.iter_batched_ref(
             || vrs.clone(),
             |vrs| pbairstow_autocorr_mt(&coeffs, vrs, &fir_options),
+            BatchSize::SmallInput,
+        )
+    });
+    group.bench_function("pbairstow_autocorr_atomic", |b| {
+        let vrs = initial_autocorr(&coeffs);
+        b.iter_batched_ref(
+            || vrs.clone(),
+            |vrs| pbairstow_autocorr_atomic(&coeffs, vrs, &fir_options),
             BatchSize::SmallInput,
         )
     });
@@ -184,6 +225,14 @@ fn bench_fir(c: &mut Criterion) {
         b.iter_batched_ref(
             || zs.clone(),
             |zs| aberth_mt(&coeffs, zs, &aberth_options),
+            BatchSize::SmallInput,
+        )
+    });
+    group.bench_function("aberth_atomic", |b| {
+        let zs = initial_aberth(&coeffs);
+        b.iter_batched_ref(
+            || zs.clone(),
+            |zs| aberth_atomic(&coeffs, zs, &aberth_options),
             BatchSize::SmallInput,
         )
     });
