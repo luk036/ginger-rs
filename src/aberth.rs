@@ -2,6 +2,7 @@
 
 use super::horner::{horner_eval_c, horner_eval_f};
 use super::Options;
+use crate::execution_policy::{atomic_decoupled_run, jacobi_mt_run, sequential_run};
 use crate::leja_order::leja_order;
 use crate::seqlock::AtomicComplex;
 use num_complex::Complex;
@@ -154,7 +155,6 @@ fn aberth_job(
 /// ```
 ))]
 pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (usize, bool) {
-    let m_zs = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
     let coeffs1: Vec<_> = coeffs[0..degree]
         .iter()
@@ -162,22 +162,9 @@ pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (us
         .map(|(i, ci)| ci * (degree - i) as f64)
         .collect();
 
-    for niter in 0..options.max_iters {
-        let mut tolerance = 0.0;
-
-        for i in 0..m_zs {
-            let mut zi = zs[i];
-            let tol_i = aberth_job(coeffs, i, &mut zi, zs, &coeffs1);
-            if tolerance < tol_i {
-                tolerance = tol_i;
-            }
-            zs[i] = zi;
-        }
-        if tolerance < options.tolerance {
-            return (niter, true);
-        }
-    }
-    (options.max_iters, false)
+    sequential_run(zs, options, 0, |i, zi, _converged, zsc| {
+        Some(aberth_job(coeffs, i, zi, zsc, &coeffs1))
+    })
 }
 
 /// Multi-threading Aberth's method
@@ -214,48 +201,14 @@ pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (us
 /// assert_eq!(niter, 6);
 /// ```
 pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
-    fn aberth_job2(
-        coeffs: &[f64],
-        i: usize,
-        zi: &mut Complex<f64>,
-        zsc: &[Complex<f64>],
-        coeffs1: &[f64],
-    ) -> f64 {
-        let p_eval = horner_eval_c(coeffs, zi);
-        let tol_i = p_eval.l1_norm(); // ???
-        let mut p1_eval = horner_eval_c(coeffs1, zi);
-        for (_, zj) in zsc.iter().enumerate().filter(|t| t.0 != i) {
-            p1_eval -= p_eval / (*zi - zj);
-        }
-        *zi -= p_eval / p1_eval; // Gauss-Seidel fashion
-        tol_i
-    }
-
-    use rayon::prelude::*;
-    let m_zs = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
     let coeffs1: Vec<_> = (0..degree)
         .map(|i| coeffs[i] * (degree - i) as f64)
         .collect();
-    let mut zsc = vec![Complex::default(); m_zs];
 
-    for niter in 0..options.max_iters {
-        let mut tolerance = 0.0;
-        zsc.copy_from_slice(zs);
-
-        let tol_i = zs
-            .par_iter_mut()
-            .enumerate()
-            .map(|(i, zi)| aberth_job2(coeffs, i, zi, &zsc, &coeffs1))
-            .reduce(|| tolerance, |x, y| x.max(y));
-        if tolerance < tol_i {
-            tolerance = tol_i;
-        }
-        if tolerance < options.tolerance {
-            return (niter, true);
-        }
-    }
-    (options.max_iters, false)
+    jacobi_mt_run(zs, options, 0, |i, zi, _converged, zsc| {
+        Some(aberth_job(coeffs, i, zi, zsc, &coeffs1))
+    })
 }
 
 /// Atomic multi-threading Aberth's method (decoupled)
@@ -298,73 +251,14 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) 
 /// assert!(niter > 0);
 /// ```
 pub fn aberth_atomic(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (usize, bool) {
-    use std::sync::Mutex;
-
-    let num_roots = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
     let coeffs1: Vec<_> = (0..degree)
         .map(|i| coeffs[i] * (degree - i) as f64)
         .collect();
 
-    // Atomic working buffer built ONCE; each thread writes only its own slots.
-    let buffer: Vec<AtomicComplex> = zs.iter().copied().map(AtomicComplex::new).collect();
-    let buffer_ref = &buffer;
-    let coeffs1_ref = &coeffs1;
-
-    // For small problems, parallel overhead dominates; run single-threaded.
-    let use_mt = num_roots > 4;
-    let num_threads = if use_mt {
-        rayon::current_num_threads().min(num_roots)
-    } else {
-        1
-    };
-    let chunk_size = (num_roots + num_threads - 1) / num_threads;
-
-    // Each task runs its own iteration loop INDEPENDENTLY on the persistent
-    // rayon pool (no per-iteration barrier) and exits when its chunk converges.
-    let results: Mutex<Vec<(usize, bool)>> = Mutex::new(Vec::new());
-    let results_ref = &results;
-    rayon::scope(|s| {
-        for t in 0..num_threads {
-            let start = t * chunk_size;
-            let end = (start + chunk_size).min(num_roots);
-            if start >= end {
-                break;
-            }
-            s.spawn(move |_| {
-                let mut niter = 0;
-                loop {
-                    if niter == options.max_iters {
-                        results_ref.lock().unwrap().push((options.max_iters, false));
-                        return;
-                    }
-                    let mut max_tol: f64 = 0.0;
-                    for idx in start..end {
-                        let tol_i = aberth_atomic_job(coeffs, idx, buffer_ref, coeffs1_ref);
-                        max_tol = max_tol.max(tol_i);
-                    }
-                    if max_tol < options.tolerance {
-                        results_ref.lock().unwrap().push((niter, true));
-                        return;
-                    }
-                    niter += 1;
-                }
-            });
-        }
-    });
-
-    let mut niter_max = 0;
-    let mut all_converged = true;
-    for (niter, converged) in results.into_inner().unwrap() {
-        niter_max = niter_max.max(niter);
-        all_converged &= converged;
-    }
-
-    // Publish the final atomic buffer back to the caller.
-    for (i, z) in zs.iter_mut().enumerate() {
-        *z = buffer[i].load();
-    }
-    (niter_max, all_converged)
+    atomic_decoupled_run(zs, options, |i, buffer| {
+        Some(aberth_atomic_job(coeffs, i, buffer, &coeffs1))
+    })
 }
 
 /// Single Aberth update on the atomic buffer for root `i`.
@@ -482,7 +376,6 @@ pub fn aberth_autocorr(
     zs: &mut [Complex<f64>],
     options: &Options,
 ) -> (usize, bool) {
-    let m_zs = zs.len();
     let degree = coeffs.len() - 1; // degree, assume even
     let coeffs1: Vec<_> = coeffs[0..degree]
         .iter()
@@ -490,22 +383,9 @@ pub fn aberth_autocorr(
         .map(|(i, ci)| ci * (degree - i) as f64)
         .collect();
 
-    for niter in 0..options.max_iters {
-        let mut tolerance = 0.0;
-
-        for i in 0..m_zs {
-            let mut zi = zs[i];
-            let tol_i = aberth_autocorr_job(coeffs, i, &mut zi, zs, &coeffs1);
-            if tolerance < tol_i {
-                tolerance = tol_i;
-            }
-            zs[i] = zi;
-        }
-        if tolerance < options.tolerance {
-            return (niter, true);
-        }
-    }
-    (options.max_iters, false)
+    sequential_run(zs, options, 0, |i, zi, _converged, zsc| {
+        Some(aberth_autocorr_job(coeffs, i, zi, zsc, &coeffs1))
+    })
 }
 
 /// Reconstruct a monic polynomial from its roots using Leja ordering
