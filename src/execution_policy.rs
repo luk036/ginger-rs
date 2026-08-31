@@ -2,11 +2,13 @@
 //!
 //! Strategy + Template-Method decomposition:
 //!
-//! - Each algorithm supplies a per-root *job* closure that computes one Newton
-//!   correction and returns the residual tolerance (or `None` when the root is
-//!   already converged).
-//! - Each execution policy owns the iteration loop, the scheduling of the jobs,
-//!   and the convergence aggregation.
+//! - Each algorithm supplies a per-root *step* (the `Step` trait) that computes one
+//!   Newton correction for a root/factor. The step reads the current values of
+//!   the other roots through a `get` closure provided by the policy, and
+//!   returns the corrected value; the policy owns all writes to its data
+//!   layout (live state, frozen snapshot, or seqlock buffer).
+//! - Each execution policy owns the iteration loop, the scheduling of the
+//!   steps, and the convergence aggregation.
 //!
 //! This mirrors `execution_policy.hpp` in ginger-cpp and `_policy.py` in
 //! ginger (Python): the algorithm (Aberth/Bairstow variant) is decoupled from
@@ -73,39 +75,51 @@ impl AtomicCell<Vector2F64> for AtomicVec2 {
 
 type Vector2F64 = crate::vector2::Vector2<f64>;
 
+/// A per-root Newton correction step shared by every execution policy.
+///
+/// `run(idx, get, neighbors)` computes one correction for root/factor `idx`:
+///
+/// - `get(j)` reads the current value of root/factor `j` from the policy's
+///   data layout (live state, frozen snapshot, or seqlock buffer).
+/// - `neighbors` enumerates the indices of the other roots/factors to
+///   suppress (ascending order, or round-robin for the atomic variant).
+///
+/// Returns `(tol, Some(new_value))` when the root was updated, or
+/// `(0.0, None)` when it is already converged (below `options.tol_ind`).
+///
+/// This mirrors the per-algorithm step functors (`even_bairstow_step`,
+/// `autocorr_bairstow_step`, `aberth_step`, ...) in ginger-cpp's
+/// `execution_policy.hpp`.
+pub trait Step<T>: Sync {
+    /// Atomic cell type used by the decoupled atomic policy for this step.
+    type Cell: AtomicCell<T>;
+
+    /// Compute one Newton correction for root/factor `idx`.
+    fn run<G, N>(&self, idx: usize, get: G, neighbors: N) -> (f64, Option<T>)
+    where
+        G: Fn(usize) -> T,
+        N: Iterator<Item = usize>;
+}
+
 /// Sequential Gauss-Seidel execution: roots are updated in-place in ascending
 /// index order within each iteration (later roots see earlier updates).
 ///
-/// `job(i, zi, converged, state)` computes the correction for root `i`, reading
-/// the live `state` for neighbours. Returns `Some(tol)` when an update was made
-/// (contributing to the tolerance), or `None` when the root is already
-/// converged (setting `converged`).
-///
-/// `from` is the iteration count of the first sweep (0- or 1-based, matching
-/// the caller's convention).
-pub fn sequential_run<T, F>(
-    state: &mut [T],
-    options: &Options,
-    from: usize,
-    job: F,
-) -> (usize, bool)
+/// Converged roots contribute a zero tolerance and are not written; their
+/// values stay frozen as neighbors for the remaining sweeps.
+pub fn sequential_run<T, S>(state: &mut [T], options: &Options, step: &S) -> (usize, bool)
 where
     T: Copy,
-    F: Fn(usize, &mut T, &mut bool, &[T]) -> Option<f64> + Sync,
+    S: Step<T>,
 {
     let m = state.len();
-    let mut converged = vec![false; m];
-    for niter in from..options.max_iters {
+    for niter in 0..options.max_iters {
         let mut tolerance: f64 = 0.0;
-        for i in 0..m {
-            if converged[i] {
-                continue;
+        for idx in 0..m {
+            let (tol_i, new_value) = step.run(idx, |j| state[j], (0..m).filter(move |&j| j != idx));
+            tolerance = tolerance.max(tol_i);
+            if let Some(value) = new_value {
+                state[idx] = value;
             }
-            let mut zi = state[i];
-            if let Some(tol_i) = job(i, &mut zi, &mut converged[i], state) {
-                tolerance = tolerance.max(tol_i);
-            }
-            state[i] = zi;
         }
         if tolerance < options.tolerance {
             return (niter, true);
@@ -115,29 +129,34 @@ where
 }
 
 /// Jacobi multi-threaded execution: each iteration reads a frozen snapshot of
-/// the roots and updates them in parallel; converged roots are skipped.
-///
-/// `from` is the iteration count of the first sweep (0- or 1-based).
-pub fn jacobi_mt_run<T, F>(state: &mut [T], options: &Options, from: usize, job: F) -> (usize, bool)
+/// the roots and updates them in parallel, so the iteration is
+/// order-independent. Small problems (<= 4 roots) fall back to the sequential
+/// policy.
+pub fn jacobi_mt_run<T, S>(state: &mut [T], options: &Options, step: &S) -> (usize, bool)
 where
     T: Copy + Default + Send + Sync,
-    F: Fn(usize, &mut T, &mut bool, &[T]) -> Option<f64> + Sync,
+    S: Step<T> + Sync,
 {
+    if !should_parallelize(state.len()) {
+        return sequential_run(state, options, step);
+    }
     let m = state.len();
     let mut snapshot = vec![T::default(); m];
-    let mut converged = vec![false; m];
-    for niter in from..options.max_iters {
-        let mut tolerance: f64 = 0.0;
+    for niter in 0..options.max_iters {
         snapshot.copy_from_slice(state);
 
-        let tol_i = state
-            .par_iter_mut()
-            .zip(converged.par_iter_mut())
-            .enumerate()
-            .filter(|(_, (_, converged))| !**converged)
-            .filter_map(|(i, (zi, converged))| job(i, zi, converged, &snapshot))
-            .reduce(|| tolerance, |x, y| x.max(y));
-        tolerance = tolerance.max(tol_i);
+        let updates: Vec<(f64, Option<T>)> = (0..m)
+            .into_par_iter()
+            .map(|idx| step.run(idx, |j| snapshot[j], (0..m).filter(move |&j| j != idx)))
+            .collect();
+
+        let mut tolerance: f64 = 0.0;
+        for (idx, (tol_i, new_value)) in updates.into_iter().enumerate() {
+            tolerance = tolerance.max(tol_i);
+            if let Some(value) = new_value {
+                state[idx] = value;
+            }
+        }
         if tolerance < options.tolerance {
             return (niter, true);
         }
@@ -147,18 +166,17 @@ where
 
 /// Atomic decoupled execution: a single seqlock buffer is built once; each
 /// thread owns a chunk of slots (single-writer, multi-reader) and runs its own
-/// iteration loop independently with no per-iteration barrier. The returned
+/// iteration loop independently with no per-iteration barrier, reading the
+/// other slots in round-robin order to reduce contention. The returned
 /// iteration count is the maximum across threads and is non-deterministic.
-pub fn atomic_decoupled_run<T, C, F>(state: &mut [T], options: &Options, job: F) -> (usize, bool)
+pub fn atomic_decoupled_run<T, S>(state: &mut [T], options: &Options, step: &S) -> (usize, bool)
 where
     T: Copy + Send + Sync,
-    C: AtomicCell<T> + Sync,
-    F: Fn(usize, &[C]) -> Option<f64> + Sync,
+    S: Step<T>,
 {
     let num_roots = state.len();
-    let buffer: Vec<C> = state.iter().copied().map(C::new).collect();
+    let buffer: Vec<S::Cell> = state.iter().copied().map(S::Cell::new).collect();
     let buffer_ref = &buffer;
-    let job_ref = &job;
 
     let use_mt = should_parallelize(num_roots);
     let num_threads = if use_mt {
@@ -186,8 +204,14 @@ where
                     }
                     let mut max_tol: f64 = 0.0;
                     for idx in start..end {
-                        if let Some(tol_i) = job_ref(idx, buffer_ref) {
-                            max_tol = max_tol.max(tol_i);
+                        // Round-robin suppression order: each thread reads the
+                        // other slots in a different rotation, reducing
+                        // concurrent access to the same slot.
+                        let neighbors = (0..num_roots - 1).map(move |k| (idx + k + 1) % num_roots);
+                        let (tol_i, new_value) = step.run(idx, |j| buffer_ref[j].load(), neighbors);
+                        max_tol = max_tol.max(tol_i);
+                        if let Some(value) = new_value {
+                            buffer_ref[idx].store(value);
                         }
                     }
                     if max_tol < options.tolerance {

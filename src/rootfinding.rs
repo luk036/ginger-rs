@@ -1,6 +1,6 @@
 use super::horner::horner_eval_f;
 use super::{Matrix2, Vector2};
-use crate::execution_policy::{atomic_decoupled_run, jacobi_mt_run, sequential_run};
+use crate::execution_policy::{atomic_decoupled_run, jacobi_mt_run, sequential_run, Step};
 use crate::seqlock::AtomicVec2;
 use num_complex::Complex;
 
@@ -348,6 +348,47 @@ pub fn initial_guess(coeffs: &[f64]) -> Vec<Vec2> {
         .collect()
 }
 
+/// One Bairstow Newton correction for a quadratic factor (even degree).
+///
+/// Reads the current factor via `get(idx)`, suppresses all other factors via
+/// the neighbor iterable, and returns the corrected factor for the policy to
+/// write. Shared by the sequential, Jacobi-MT and atomic execution policies.
+///
+/// This mirrors `ginger::detail::even_bairstow_step` in ginger-cpp.
+pub struct EvenBairstowStep<'a> {
+    /// Polynomial coefficients (highest degree first).
+    pub coeffs: &'a [f64],
+    /// Degree of the polynomial.
+    pub degree: usize,
+    /// Convergence options.
+    pub options: &'a Options,
+}
+
+impl Step<Vec2> for EvenBairstowStep<'_> {
+    type Cell = AtomicVec2;
+
+    fn run<G, N>(&self, idx: usize, get: G, neighbors: N) -> (f64, Option<Vec2>)
+    where
+        G: Fn(usize) -> Vec2,
+        N: Iterator<Item = usize>,
+    {
+        let vri = get(idx);
+        let mut coeffs1 = self.coeffs.to_owned(); // horner corrupts the array
+        let mut v_big_a = horner(&mut coeffs1, self.degree, &vri);
+        let tol_i = v_big_a.norm_inf();
+        if tol_i < self.options.tol_ind {
+            return (0.0, None);
+        }
+        let mut v_big_a1 = horner(&mut coeffs1, self.degree - 2, &vri);
+        for j in neighbors {
+            let vrj = get(j);
+            suppress_old(&mut v_big_a, &mut v_big_a1, &vri, &vrj);
+        }
+        let dt = delta(&v_big_a, &vri, &v_big_a1); // Gauss-Seidel fashion
+        (tol_i, Some(vri - dt))
+    }
+}
+
 /// Parallel Bairstow's method (even degree only)
 ///
 /// The `pbairstow_even` function implements the parallel Bairstow's method for finding roots of
@@ -375,9 +416,12 @@ pub fn initial_guess(coeffs: &[f64]) -> Vec<Vec2> {
 /// assert!(found);
 /// ```
 pub fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (usize, bool) {
-    sequential_run(vrs, options, 1, |i, vri, converged, vrsc| {
-        pbairstow_even_job(coeffs, i, vri, converged, vrsc)
-    })
+    let step = EvenBairstowStep {
+        coeffs,
+        degree: coeffs.len() - 1,
+        options,
+    };
+    sequential_run(vrs, options, &step)
 }
 
 /// Multi-threading Bairstow's method (even degree only)
@@ -407,9 +451,12 @@ pub fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (u
 /// assert!(found);
 /// ```
 pub fn pbairstow_even_mt(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (usize, bool) {
-    jacobi_mt_run(vrs, options, 1, |i, vri, converged, vrsc| {
-        pbairstow_even_job(coeffs, i, vri, converged, vrsc)
-    })
+    let step = EvenBairstowStep {
+        coeffs,
+        degree: coeffs.len() - 1,
+        options,
+    };
+    jacobi_mt_run(vrs, options, &step)
 }
 
 /// Atomic multi-threading Bairstow's method (even degree only, decoupled)
@@ -446,360 +493,12 @@ pub fn pbairstow_even_mt(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) ->
 /// assert!(found);
 /// ```
 pub fn pbairstow_even_atomic(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (usize, bool) {
-    atomic_decoupled_run(vrs, options, |i, buffer| {
-        pbairstow_even_atomic_job(coeffs, i, buffer)
-    })
-}
-
-/// Single Bairstow update on the atomic buffer for factor `i` (even degree).
-///
-/// Loads the current value of every slot, suppresses the other factors, and
-/// stores the new value into slot `i` only (single-writer). Returns the
-/// per-factor tolerance, or `None` if factor `i` is already converged.
-fn pbairstow_even_atomic_job(coeffs: &[f64], i: usize, buffer: &[AtomicVec2]) -> Option<f64> {
-    let mut vri = buffer[i].load();
-    let mut coeffs1 = coeffs.to_owned();
-    let degree = coeffs1.len() - 1; // degree, assume even
-    let mut v_big_a = horner(&mut coeffs1, degree, &vri);
-    let tol_i = v_big_a.norm_inf();
-    if tol_i < 1e-15 {
-        return None;
-    }
-    let mut v_big_a1 = horner(&mut coeffs1, degree - 2, &vri);
-    // Round-robin suppression order: each thread reads the other slots in a
-    // different rotation, reducing concurrent access to the same slot.
-    let num = buffer.len();
-    for k in 1..num {
-        let j = (i + k) % num;
-        let vrj = buffer[j].load();
-        suppress_old(&mut v_big_a, &mut v_big_a1, &vri, &vrj);
-    }
-    let dt = delta(&v_big_a, &vri, &v_big_a1); // Gauss-Seidel fashion
-    vri -= dt;
-    buffer[i].store(vri);
-    Some(tol_i)
-}
-
-/// Single Bairstow update on the atomic buffer for auto-correlation factor `i`.
-///
-/// Loads the current value of every slot, suppresses the other factors and
-/// their reciprocal images (palindromic symmetry), and stores the new value
-/// into slot `i` only (single-writer). Returns the per-factor tolerance, or
-/// `None` if factor `i` is already converged.
-fn pbairstow_autocorr_atomic_job(coeffs: &[f64], i: usize, buffer: &[AtomicVec2]) -> Option<f64> {
-    let mut vri = buffer[i].load();
-    let mut coeffs1 = coeffs.to_owned();
-    let degree = coeffs1.len() - 1; // degree, assume even
-    let mut v_big_a = horner(&mut coeffs1, degree, &vri);
-    let tol_i = v_big_a.norm_inf();
-    if tol_i < 1e-15 {
-        return None;
-    }
-    let mut v_big_a1 = horner(&mut coeffs1, degree - 2, &vri);
-    // Round-robin suppression order: each thread reads the other slots in a
-    // different rotation, reducing concurrent access to the same slot.
-    let num = buffer.len();
-    for k in 1..num {
-        let j = (i + k) % num;
-        let vrj = buffer[j].load();
-        suppress_old(&mut v_big_a, &mut v_big_a1, &vri, &vrj);
-        let vrjn = Vector2::<f64>::new(-vrj.x_, 1.0) / vrj.y_;
-        suppress_old(&mut v_big_a, &mut v_big_a1, &vri, &vrjn);
-    }
-    let vrin = Vector2::<f64>::new(-vri.x_, 1.0) / vri.y_;
-    suppress_old(&mut v_big_a, &mut v_big_a1, &vri, &vrin);
-    let dt = delta(&v_big_a, &vri, &v_big_a1); // Gauss-Seidel fashion
-    vri -= dt;
-    buffer[i].store(vri);
-    Some(tol_i)
-}
-
-/// Internal job function for parallel Bairstow's method (even degree)
-///
-/// Performs a single iteration of Bairstow's method for one root approximation,
-/// suppressing the effect of other roots (Gauss-Seidel style).
-///
-/// Arguments:
-///
-/// * `coeffs`: Polynomial coefficients
-/// * `i`: Current root index
-/// * `vri`: Current root approximation (mutable)
-/// * `converged`: Convergence flag for this root
-/// * `vrsc`: Current approximations of all roots
-///
-/// Returns:
-///
-/// Option containing tolerance value if not yet converged
-fn pbairstow_even_job(
-    coeffs: &[f64],
-    i: usize,
-    vri: &mut Vec2,
-    converged: &mut bool,
-    vrsc: &[Vec2],
-) -> Option<f64> {
-    let mut coeffs1 = coeffs.to_owned();
-    let degree = coeffs1.len() - 1; // degree, assume even
-    let mut v_big_a = horner(&mut coeffs1, degree, vri);
-    let tol_i = v_big_a.norm_inf();
-    if tol_i < 1e-15 {
-        *converged = true;
-        return None;
-    }
-    let mut v_big_a1 = horner(&mut coeffs1, degree - 2, vri);
-    for (_, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
-        suppress_old(&mut v_big_a, &mut v_big_a1, vri, vrj);
-    }
-    let dt = delta(&v_big_a, vri, &v_big_a1); // Gauss-Seidel fashion
-    *vri -= dt;
-    Some(tol_i)
-}
-
-/// Internal job function for parallel Bairstow's method (auto-correlation)
-///
-/// Performs a single iteration of Bairstow's method for auto-correlation
-/// polynomials, suppressing both each neighbor factor and its reciprocal image
-/// (palindromic symmetry).
-///
-/// Arguments:
-///
-/// * `coeffs`: Polynomial coefficients
-/// * `i`: Current root index
-/// * `vri`: Current root approximation (mutable)
-/// * `converged`: Convergence flag for this root
-/// * `vrsc`: Current approximations of all roots
-///
-/// Returns:
-///
-/// Option containing tolerance value if not yet converged
-fn pbairstow_autocorr_job(
-    coeffs: &[f64],
-    i: usize,
-    vri: &mut Vec2,
-    converged: &mut bool,
-    vrsc: &[Vec2],
-) -> Option<f64> {
-    let mut coeffs1 = coeffs.to_owned();
-    let degree = coeffs1.len() - 1; // assumed divided by 4
-    let mut v_big_a = horner(&mut coeffs1, degree, vri);
-    let tol_i = v_big_a.norm_inf();
-    if tol_i < 1e-15 {
-        *converged = true;
-        return None;
-    }
-    let mut v_big_a1 = horner(&mut coeffs1, degree - 2, vri);
-    for (_, vrj) in vrsc.iter().enumerate().filter(|t| t.0 != i) {
-        suppress_old(&mut v_big_a, &mut v_big_a1, vri, vrj);
-        let vrjn = Vector2::<f64>::new(-vrj.x_, 1.0) / vrj.y_;
-        suppress_old(&mut v_big_a, &mut v_big_a1, vri, &vrjn);
-    }
-    let vrin = Vector2::<f64>::new(-vri.x_, 1.0) / vri.y_;
-    suppress_old(&mut v_big_a, &mut v_big_a1, vri, &vrin);
-    let dt = delta(&v_big_a, vri, &v_big_a1); // Gauss-Seidel fashion
-    *vri -= dt;
-    Some(tol_i)
-}
-
-/// The `initial_autocorr` function calculates the initial guesses for Bairstow's method for finding
-/// roots of a polynomial, specifically for the auto-correlation function.
-///
-/// $$ R = \sqrt\[n\]{|a_n|},\qquad R \leftarrow \max(R, 1/R),\qquad m = n/2 $$
-/// $$ \theta_k = \frac{k\pi}{m},\qquad (r_k, q_k) = (2R\cos\theta_k,\; -R^2) $$
-///
-/// Arguments:
-///
-/// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
-///   polynomial. The coefficients are ordered from highest degree to lowest degree.
-///
-/// Returns:
-///
-/// The function `initial_autocorr` returns a vector of `Vec2` structs.
-///
-/// # Examples:
-///
-/// ```
-/// use ginger::rootfinding::initial_autocorr;
-/// use ginger::vector2::Vector2;
-///
-/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let vr0s = initial_autocorr(&coeffs);
-/// ```
-pub fn initial_autocorr(coeffs: &[f64]) -> Vec<Vec2> {
-    let degree = coeffs.len() - 1;
-    let radius = coeffs[degree].abs().powf(1.0 / (degree as f64));
-    let degree = degree / 2;
-    let m = radius * radius;
-    let num_points = degree / 2;
-    (0..num_points)
-        .map(|i| Vector2::<f64>::new(2.0 * radius * crate::tables::cos_pi_vdc2(i), -m))
-        .collect()
-}
-
-/// The `pbairstow_autocorr` function implements the simultaneous Bairstow's method for finding roots of
-/// a polynomial, specifically for the auto-correlation function.
-///
-/// Arguments:
-///
-/// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
-///   polynomial. These coefficients are used to calculate the auto-correlation function.
-/// * `vrs`: `vrs` is a vector of complex numbers representing the initial guesses for the roots of the
-///   polynomial. Each element of `vrs` is a `Vec2` struct, which contains two fields: `x_` and `y_`.
-///   These fields represent the real and imaginary parts of the
-/// * `options`: The `Options` struct is used to specify the parameters for the Bairstow's method
-///   algorithm. It has the following fields:
-///
-/// # Examples:
-///
-/// ```
-/// use ginger::rootfinding::{initial_autocorr, pbairstow_autocorr, Options};
-///
-/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let mut vrs = initial_autocorr(&coeffs);
-/// let (niter, found) = pbairstow_autocorr(&coeffs, &mut vrs, &Options::default());
-///
-/// assert!(niter > 0);
-/// assert!(found);
-/// ```
-pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (usize, bool) {
-    sequential_run(vrs, options, 0, |i, vri, converged, vrsc| {
-        pbairstow_autocorr_job(coeffs, i, vri, converged, vrsc)
-    })
-}
-
-/// The `pbairstow_autocorr_mt` function is a multi-threaded implementation of Bairstow's method for
-/// finding roots of a polynomial, specifically for auto-correlation functions.
-///
-/// Arguments:
-///
-/// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
-///   polynomial. These coefficients are used as input for the Bairstow's method algorithm.
-/// * `vrs`: `vrs` is a vector of complex numbers representing the initial guesses for the roots of the
-///   polynomial. Each element of `vrs` is a `Vec2` struct, which contains the real and imaginary parts of
-///   the complex number.
-/// * `options`: The `options` parameter is an instance of the `Options` struct, which contains the
-///   following fields:
-///
-/// # Examples:
-///
-/// ```
-/// use ginger::rootfinding::{initial_autocorr, pbairstow_autocorr_mt, Options};
-///
-/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let mut vrs = initial_autocorr(&coeffs);
-/// let (niter, found) = pbairstow_autocorr_mt(&coeffs, &mut vrs, &Options::default());
-///
-/// assert!(niter > 0);
-/// assert!(found);
-/// ```
-pub fn pbairstow_autocorr_mt(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (usize, bool) {
-    jacobi_mt_run(vrs, options, 1, |i, vri, converged, vrsc| {
-        pbairstow_autocorr_job(coeffs, i, vri, converged, vrsc)
-    })
-}
-
-/// Atomic multi-threading Bairstow's method (auto-correlation, decoupled)
-///
-/// The `pbairstow_autocorr_atomic` function is a multi-threaded implementation of Bairstow's
-/// method for finding roots of a polynomial with auto-correlation (palindromic) symmetry using a
-/// single atomic working buffer.
-///
-/// Unlike `pbairstow_autocorr_mt` (Jacobi snapshot + per-iteration barrier), the atomic buffer is
-/// built once: each thread owns a chunk of factor slots (single-writer, multi-reader via a
-/// seqlock) and runs its own iteration loop independently. There is no per-iteration
-/// synchronization — a thread exits as soon as its own chunk converges or the maximum number of
-/// iterations is exceeded. The iteration count is therefore NON-DETERMINISTIC (the returned count
-/// is the maximum across threads), and `found` is true only if every chunk converged.
-///
-/// Arguments:
-///
-/// * `coeffs`: The `coeffs` parameter is a slice of `f64` values representing the coefficients of a
-///   polynomial. These coefficients are used as input for the Bairstow's method algorithm.
-/// * `vrs`: `vrs` is a vector of complex numbers representing the initial guesses for the roots of
-///   the polynomial. Each element of `vrs` is a `Vec2` struct, which contains the real and
-///   imaginary parts of the complex number.
-/// * `options`: The `options` parameter is an instance of the `Options` struct, which contains the
-///   following fields:
-///
-/// # Examples:
-///
-/// ```
-/// use ginger::rootfinding::{initial_autocorr, pbairstow_autocorr_atomic, Options};
-///
-/// let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-/// let mut vrs = initial_autocorr(&coeffs);
-/// let (niter, found) = pbairstow_autocorr_atomic(&coeffs, &mut vrs, &Options::default());
-///
-/// assert!(niter > 0);
-/// assert!(found);
-/// ```
-pub fn pbairstow_autocorr_atomic(
-    coeffs: &[f64],
-    vrs: &mut [Vec2],
-    options: &Options,
-) -> (usize, bool) {
-    atomic_decoupled_run(vrs, options, |i, buffer| {
-        pbairstow_autocorr_atomic_job(coeffs, i, buffer)
-    })
-}
-
-/// The `extract_autocorr` function extracts quadratic factors from a polynomial with auto-correlation
-/// property.
-///
-/// Given a quadratic $$ x^2 - r x - q $$, computes its roots and replaces
-/// any root $$ |z| > 1 $$ with its reciprocal $$ 1/z $$. The normalized
-/// factor is recovered from the adjusted roots via Vieta:
-///
-/// $$ r' = z_1' + z_2', \qquad q' = -z_1' z_2' $$
-///
-/// where $$ z_k' = z_k $$ if $$ |z_k| \le 1 $$, else $$ z_k' = 1/z_k $$.
-///
-/// Arguments:
-///
-/// * `vr`: A vector containing two values, representing the coefficients of a quadratic function. The
-///   first value represents the coefficient of x^2, and the second value represents the coefficient of x.
-///
-/// Returns:
-///
-/// The function `extract_autocorr` returns a `Vec2` struct, which contains two elements `x_` and `y_`.
-///
-/// # Examples:
-///
-/// ```
-/// use ginger::rootfinding::extract_autocorr;
-/// use ginger::vector2::Vector2;
-/// use approx_eq::assert_approx_eq;
-///
-/// let vr = extract_autocorr(Vector2::new(1.0, -4.0));
-///
-/// assert_approx_eq!(vr.x_, 0.25);
-/// assert_approx_eq!(vr.y_, -0.25);
-/// ```
-pub fn extract_autocorr(vr: Vec2) -> Vec2 {
-    let Vec2 { x_: r, y_: q } = vr;
-    let hr = r / 2.0;
-    let d = hr * hr + q;
-    if d < 0.0 {
-        // complex conjugate root
-        if q < -1.0 {
-            return Vector2::<f64>::new(-r, 1.0) / q;
-        }
-    }
-    // two real roots
-    let mut a1 = hr + (if hr >= 0.0 { d.sqrt() } else { -d.sqrt() });
-    let mut a2 = -q / a1;
-
-    if a1.abs() > 1.0 {
-        if a2.abs() > 1.0 {
-            a2 = 1.0 / a2;
-        }
-        a1 = 1.0 / a1;
-        return Vector2::<f64>::new(a1 + a2, -a1 * a2);
-    }
-    if a2.abs() > 1.0 {
-        a2 = 1.0 / a2;
-        return Vector2::<f64>::new(a1 + a2, -a1 * a2);
-    }
-    // else no need to change
-    vr
+    let step = EvenBairstowStep {
+        coeffs,
+        degree: coeffs.len() - 1,
+        options,
+    };
+    atomic_decoupled_run(vrs, options, &step)
 }
 
 /// Extract the two roots from a quadratic factor $$ x^2 - r x - q $$
@@ -808,7 +507,7 @@ pub fn extract_autocorr(vr: Vec2) -> Vec2 {
 ///
 /// Given a quadratic factor represented as Vec2 where x() = r and y() = -q
 /// (i.e., x^2 - r*x - q), return the two roots as complex numbers.
-fn roots_from_quadratic(vr: &Vec2) -> (Complex<f64>, Complex<f64>) {
+pub(crate) fn roots_from_quadratic(vr: &Vec2) -> (Complex<f64>, Complex<f64>) {
     let r = vr.x_;
     let q = vr.y_;
     let disc = r * r + 4.0 * q;
@@ -853,40 +552,6 @@ pub fn poly_from_quadratic_factors(vrs: &[Vec2]) -> Vec<f64> {
         let (r1, r2) = roots_from_quadratic(vr);
         all_roots.push(r1);
         all_roots.push(r2);
-    }
-    crate::aberth::poly_from_roots(&all_roots)
-}
-
-/// Reconstruct a monic polynomial from its autocorrelation quadratic factors
-///
-/// Auto-correlation (palindromic) polynomials have roots in reciprocal pairs.
-/// Each quadratic factor $x^2 - r x - q$ found by `pbairstow_autocorr` carries 2 roots.
-/// This function adds the reciprocal of each root, then reconstructs the full
-/// monic polynomial with Leja ordering for numerical accuracy.
-///
-/// $$ P(x) = \prod_{i=1}^{m} (x^2 - r_i x - q_i)(x^{-2} - r_i x^{-1} - q_i) $$
-///
-/// Arguments:
-///
-/// * `vrs` - Quadratic factors from pbairstow_autocorr
-///
-/// Returns:
-///
-/// Monic polynomial coefficients (highest degree first)
-pub fn poly_from_autocorr_factors(vrs: &[Vec2]) -> Vec<f64> {
-    if vrs.is_empty() {
-        return vec![1.0];
-    }
-    // Each factor x^2 - r*x - q contributes 2 roots. For palindromic/autocorrelation
-    // polynomials, the reciprocal of each root is also a root. Collect all roots
-    // and their reciprocals, then reconstruct with Leja ordering.
-    let mut all_roots: Vec<Complex<f64>> = Vec::with_capacity(4 * vrs.len());
-    for vr in vrs {
-        let (r1, r2) = roots_from_quadratic(vr);
-        all_roots.push(r1);
-        all_roots.push(r2);
-        all_roots.push(1.0 / r1);
-        all_roots.push(1.0 / r2);
     }
     crate::aberth::poly_from_roots(&all_roots)
 }
@@ -1021,17 +686,6 @@ mod tests {
     }
 
     #[test]
-    fn test_initial_autocorr() {
-        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-        let guesses = initial_autocorr(&coeffs);
-
-        assert_eq!(guesses.len(), 2);
-        // Verify the first guess is reasonable
-        assert!(guesses[0].x_.abs() > 0.0);
-        assert!(guesses[0].y_.abs() > 0.0);
-    }
-
-    #[test]
     fn test_pbairstow_even_atomic() {
         let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
         let mut vrs = initial_guess(&coeffs);
@@ -1125,78 +779,6 @@ mod tests {
     }
 
     #[test]
-    fn test_pbairstow_autocorr_atomic() {
-        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-        let mut vrs = initial_autocorr(&coeffs);
-        let (niter, found) = pbairstow_autocorr_atomic(&coeffs, &mut vrs, &Options::default());
-        assert!(niter > 0);
-        assert!(found);
-    }
-
-    #[test]
-    fn test_pbairstow_autocorr_atomic_fir() {
-        // Decoupled threads under load (libtest runs tests in parallel) can need
-        // many iterations to converge; give a generous iteration budget.
-        let options = Options {
-            max_iters: 20000,
-            tolerance: 1e-2,
-            ..Options::default()
-        };
-        let mut vrs = initial_autocorr(&FIR_COEFFS);
-        let (_, found) = pbairstow_autocorr_atomic(&FIR_COEFFS, &mut vrs, &options);
-        assert!(found);
-    }
-
-    #[test]
-    fn test_pbairstow_autocorr_atomic_reconstruction() {
-        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-        let mut vrs = initial_autocorr(&coeffs);
-        let (_, found) = pbairstow_autocorr_atomic(&coeffs, &mut vrs, &Options::default());
-        assert!(found);
-        let monic = poly_from_autocorr_factors(&vrs);
-        let scale = coeffs[0];
-        for (i, c) in coeffs.iter().enumerate() {
-            assert!(
-                (monic[i] * scale - c).abs() < 1e-8,
-                "coefficient {i} mismatch: {} vs {}",
-                monic[i] * scale,
-                c
-            );
-        }
-    }
-
-    #[test]
-    fn test_extract_autocorr() {
-        let vr = Vector2::new(1.0, -4.0);
-        let result = extract_autocorr(vr);
-
-        assert_approx_eq!(result.x_, 0.25);
-        assert_approx_eq!(result.y_, -0.25);
-    }
-
-    #[test]
-    fn test_pbairstow_autocorr() {
-        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
-        let mut vrs = initial_autocorr(&coeffs);
-        let options = Options::default();
-
-        let (niter, found) = pbairstow_autocorr(&coeffs, &mut vrs, &options);
-
-        assert!(niter > 0);
-        assert!(found);
-        // Verify at least one root is close to actual root
-        let mut has_root = false;
-        for vr in vrs {
-            let val = horner(&mut coeffs.clone(), coeffs.len() - 1, &vr);
-            if val.norm_inf() < options.tolerance {
-                has_root = true;
-                break;
-            }
-        }
-        assert!(has_root);
-    }
-
-    #[test]
     fn test_delta1() {
         let v_big_a = Vector2::new(1.0, 2.0);
         let vr = Vector2::new(-2.0, -0.0);
@@ -1240,16 +822,6 @@ mod tests {
         assert!((coeffs[2] - 2.0).abs() < 1e-12);
     }
 
-    #[test]
-    fn test_poly_from_autocorr_factors() {
-        let vrs = vec![Vec2::new(3.0, -2.0)];
-        let coeffs = poly_from_autocorr_factors(&vrs);
-        // With reciprocals: roots are 2, 1, 0.5, 1.0
-        // polynomial = (x-2)(x-1)(x-0.5)(x-1) = ...
-        assert_eq!(coeffs.len(), 5);
-        assert!((coeffs[0] - 1.0).abs() < 1e-12);
-    }
-
     // ------------------------------------------------------------------
     // Order-independence verification
     // ------------------------------------------------------------------
@@ -1277,16 +849,25 @@ mod tests {
     /// The Jacobi (multi-threaded) variant must be order-independent:
     /// permuting the initial guesses must give the same iteration count
     /// and the same converged root SET.
+    ///
+    /// NOTE: `pbairstow_even_mt` falls back to Gauss-Seidel when `vrs.len() <= 4`,
+    /// so this test uses the degree-12 palindromic polynomial (6 factors) which
+    /// exercises the true multi-threaded Jacobi snapshot path. Mirrors
+    /// `test_order_mt.cpp` in ginger-cpp.
     #[test]
     fn test_jacobi_mt_order_independent() {
-        let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        // Palindromic degree-12: 6 factors, exercises the true Jacobi path.
+        let coeffs = vec![
+            1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 4.0, 0.0, 3.0, 0.0, 2.0, 0.0, 1.0,
+        ];
         let opts = Options::default();
         let base = initial_guess(&coeffs);
+        assert_eq!(base.len(), 6);
         let perms = vec![
             base.clone(),
             base.iter().rev().cloned().collect(),
-            vec![base[1], base[3], base[0], base[2]],
-            vec![base[2], base[0], base[3], base[1]],
+            vec![base[1], base[4], base[0], base[5], base[2], base[3]],
+            vec![base[3], base[1], base[5], base[0], base[4], base[2]],
         ];
 
         let mut niters = Vec::new();
@@ -1315,11 +896,17 @@ mod tests {
     }
 
     /// The Jacobi sweep must produce a BIT-IDENTICAL next state regardless
-    /// of the order in which factor jobs are processed (frozen snapshot).
+    /// of the order in which factor steps are processed (frozen snapshot).
     #[test]
     fn test_jacobi_processing_order_bit_identical() {
         let coeffs = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
         let vrs0 = initial_guess(&coeffs);
+        let options = Options::default();
+        let step = EvenBairstowStep {
+            coeffs: &coeffs,
+            degree: coeffs.len() - 1,
+            options: &options,
+        };
         let orders = [
             vec![0usize, 1, 2, 3],
             vec![3usize, 2, 1, 0],
@@ -1331,14 +918,11 @@ mod tests {
         for order in &orders {
             let vrsc = vrs0.clone(); // frozen snapshot, as in pbairstow_even_mt
             let mut next = vrs0.clone();
-            let mut converged = vec![false; vrs0.len()];
             for &i in order {
-                if converged[i] {
-                    continue;
-                }
-                let mut vri = next[i];
-                if pbairstow_even_job(&coeffs, i, &mut vri, &mut converged[i], &vrsc).is_some() {
-                    next[i] = vri;
+                let (_, new_value) =
+                    step.run(i, |j| vrsc[j], (0..vrs0.len()).filter(move |&j| j != i));
+                if let Some(value) = new_value {
+                    next[i] = value;
                 }
             }
             next_states.push(next);

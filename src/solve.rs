@@ -6,11 +6,9 @@
 //! ([`should_parallelize`]) or an explicit [`SolveMode`].
 
 use crate::aberth::{aberth, aberth_atomic, aberth_autocorr, aberth_mt};
+use crate::autocorr::{pbairstow_autocorr, pbairstow_autocorr_atomic, pbairstow_autocorr_mt};
 use crate::execution_policy::should_parallelize;
-use crate::rootfinding::{
-    pbairstow_autocorr, pbairstow_autocorr_atomic, pbairstow_autocorr_mt, pbairstow_even,
-    pbairstow_even_atomic, pbairstow_even_mt, Options,
-};
+use crate::rootfinding::{pbairstow_even, pbairstow_even_atomic, pbairstow_even_mt, Options};
 use num_complex::Complex;
 
 /// Execution policy selector for the solver facades.

@@ -27,6 +27,9 @@ pub mod matrix2;
 /// This module implements the Bairstow's method for finding the roots of a polynomial.
 pub mod rootfinding;
 
+/// This module implements Bairstow's method for auto-correlation (palindromic) polynomials.
+pub mod autocorr;
+
 /// This module provides the execution policies (sequential / Jacobi-MT / atomic).
 pub mod execution_policy;
 
@@ -49,13 +52,16 @@ pub use crate::aberth::{
     aberth, aberth_atomic, aberth_autocorr, aberth_mt, initial_aberth, initial_aberth_autocorr,
     poly_from_autocorr_roots, poly_from_roots,
 };
+pub use crate::autocorr::{
+    extract_autocorr, initial_autocorr, pbairstow_autocorr, pbairstow_autocorr_atomic,
+    pbairstow_autocorr_mt, poly_from_autocorr_factors,
+};
 pub use crate::execution_policy::{should_parallelize, AtomicCell, PARALLEL_THRESHOLD};
 pub use crate::horner::{horner_eval_c, horner_eval_f};
 pub use crate::matrix2::Matrix2;
 pub use crate::rootfinding::{
-    extract_autocorr, initial_autocorr, initial_guess, pbairstow_autocorr,
-    pbairstow_autocorr_atomic, pbairstow_autocorr_mt, pbairstow_even, pbairstow_even_atomic,
-    pbairstow_even_mt, poly_from_autocorr_factors, poly_from_quadratic_factors, Options, Vec2,
+    initial_guess, pbairstow_even, pbairstow_even_atomic, pbairstow_even_mt,
+    poly_from_quadratic_factors, Options, Vec2,
 };
 pub use crate::seqlock::{AtomicComplex, AtomicVec2};
 pub use crate::solve::{

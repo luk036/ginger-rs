@@ -2,7 +2,7 @@
 
 use super::horner::{horner_eval_c, horner_eval_f};
 use super::Options;
-use crate::execution_policy::{atomic_decoupled_run, jacobi_mt_run, sequential_run};
+use crate::execution_policy::{atomic_decoupled_run, jacobi_mt_run, sequential_run, Step};
 use crate::leja_order::leja_order;
 use crate::seqlock::AtomicComplex;
 use num_complex::Complex;
@@ -84,21 +84,34 @@ pub fn initial_aberth_orig(coeffs: &[f64]) -> Vec<Complex<f64>> {
         .collect()
 }
 
-fn aberth_job(
-    coeffs: &[f64],
-    i: usize,
-    zi: &mut Complex<f64>,
-    zsc: &[Complex<f64>],
-    coeffs1: &[f64],
-) -> f64 {
-    let p_eval = horner_eval_c(coeffs, zi);
-    let tol_i = p_eval.l1_norm(); // ???
-    let mut p1_eval = horner_eval_c(coeffs1, zi);
-    for (_, zj) in zsc.iter().enumerate().filter(|t| t.0 != i) {
-        p1_eval -= p_eval / (*zi - zj);
+/// One Aberth-Ehrlich correction for a single root.
+///
+/// This mirrors `ginger::detail::aberth_step` in ginger-cpp.
+pub struct AberthStep<'a> {
+    /// Polynomial coefficients (highest degree first).
+    pub coeffs: &'a [f64],
+    /// Derivative coefficients of `coeffs`.
+    pub coeffs1: &'a [f64],
+}
+
+impl Step<Complex<f64>> for AberthStep<'_> {
+    type Cell = AtomicComplex;
+
+    fn run<G, N>(&self, idx: usize, get: G, neighbors: N) -> (f64, Option<Complex<f64>>)
+    where
+        G: Fn(usize) -> Complex<f64>,
+        N: Iterator<Item = usize>,
+    {
+        let zi = get(idx);
+        let p_eval = horner_eval_c(self.coeffs, &zi);
+        let tol_i = p_eval.l1_norm(); // ???
+        let mut p1_eval = horner_eval_c(self.coeffs1, &zi);
+        for j in neighbors {
+            let zj = get(j);
+            p1_eval -= p_eval / (zi - zj);
+        }
+        (tol_i, Some(zi - p_eval / p1_eval)) // Gauss-Seidel fashion
     }
-    *zi -= p_eval / p1_eval; // Gauss-Seidel fashion
-    tol_i
 }
 
 /// Aberth's method
@@ -161,10 +174,11 @@ pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (us
         .enumerate()
         .map(|(i, ci)| ci * (degree - i) as f64)
         .collect();
-
-    sequential_run(zs, options, 0, |i, zi, _converged, zsc| {
-        Some(aberth_job(coeffs, i, zi, zsc, &coeffs1))
-    })
+    let step = AberthStep {
+        coeffs,
+        coeffs1: &coeffs1,
+    };
+    sequential_run(zs, options, &step)
 }
 
 /// Multi-threading Aberth's method
@@ -205,10 +219,11 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> 
     let coeffs1: Vec<_> = (0..degree)
         .map(|i| coeffs[i] * (degree - i) as f64)
         .collect();
-
-    jacobi_mt_run(zs, options, 0, |i, zi, _converged, zsc| {
-        Some(aberth_job(coeffs, i, zi, zsc, &coeffs1))
-    })
+    let step = AberthStep {
+        coeffs,
+        coeffs1: &coeffs1,
+    };
+    jacobi_mt_run(zs, options, &step)
 }
 
 /// Atomic multi-threading Aberth's method (decoupled)
@@ -255,32 +270,11 @@ pub fn aberth_atomic(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options)
     let coeffs1: Vec<_> = (0..degree)
         .map(|i| coeffs[i] * (degree - i) as f64)
         .collect();
-
-    atomic_decoupled_run(zs, options, |i, buffer| {
-        Some(aberth_atomic_job(coeffs, i, buffer, &coeffs1))
-    })
-}
-
-/// Single Aberth update on the atomic buffer for root `i`.
-///
-/// Loads the current value of every slot, computes the correction, and stores
-/// the new value into slot `i` only (single-writer). Returns the per-root
-/// tolerance $$ |P(z_i)| $$.
-fn aberth_atomic_job(coeffs: &[f64], i: usize, buffer: &[AtomicComplex], coeffs1: &[f64]) -> f64 {
-    let mut zi = buffer[i].load();
-    let p_eval = horner_eval_c(coeffs, &zi);
-    let tol_i = p_eval.l1_norm(); // ???
-    let mut p1_eval = horner_eval_c(coeffs1, &zi);
-    // Round-robin suppression order: each thread reads the other slots in a
-    // different rotation, reducing concurrent access to the same slot.
-    let num = buffer.len();
-    for k in 1..num {
-        let j = (i + k) % num;
-        p1_eval -= p_eval / (zi - buffer[j].load());
-    }
-    zi -= p_eval / p1_eval; // Gauss-Seidel fashion
-    buffer[i].store(zi);
-    tol_i
+    let step = AberthStep {
+        coeffs,
+        coeffs1: &coeffs1,
+    };
+    atomic_decoupled_run(zs, options, &step)
 }
 
 /// Initial guess for Aberth's method using auto-correlation
@@ -317,38 +311,36 @@ pub fn initial_aberth_autocorr(coeffs: &[f64]) -> Vec<Complex<f64>> {
         .collect()
 }
 
-/// Aberth's method job for auto-correlation polynomials
+/// One Aberth-Ehrlich correction for a palindromic (auto-correlation) root;
+/// each neighbor root contributes both `zj` and its reciprocal `1/zj`.
 ///
-/// This internal function performs a single iteration of Aberth's method for auto-correlation
-/// polynomials, considering both the root and its reciprocal.
-///
-/// Arguments:
-///
-/// * `coeffs`: Polynomial coefficients
-/// * `i`: Current root index
-/// * `zi`: Current root value (mutable)
-/// * `zsc`: Current approximations of all roots
-/// * `coeffs1`: Derivative coefficients
-///
-/// Returns:
-///
-/// The tolerance value for convergence checking.
-fn aberth_autocorr_job(
-    coeffs: &[f64],
-    i: usize,
-    zi: &mut Complex<f64>,
-    zsc: &[Complex<f64>],
-    coeffs1: &[f64],
-) -> f64 {
-    let p_eval = horner_eval_c(coeffs, zi);
-    let tol_i = p_eval.l1_norm(); // ???
-    let mut p1_eval = horner_eval_c(coeffs1, zi);
-    for (_, zj) in zsc.iter().enumerate().filter(|t| t.0 != i) {
-        p1_eval -= p_eval / (*zi - zj);
-        p1_eval -= p_eval / (*zi - 1.0 / zj);
+/// This mirrors `ginger::detail::aberth_autocorr_step` in ginger-cpp.
+pub struct AberthAutocorrStep<'a> {
+    /// Polynomial coefficients (highest degree first).
+    pub coeffs: &'a [f64],
+    /// Derivative coefficients of `coeffs`.
+    pub coeffs1: &'a [f64],
+}
+
+impl Step<Complex<f64>> for AberthAutocorrStep<'_> {
+    type Cell = AtomicComplex;
+
+    fn run<G, N>(&self, idx: usize, get: G, neighbors: N) -> (f64, Option<Complex<f64>>)
+    where
+        G: Fn(usize) -> Complex<f64>,
+        N: Iterator<Item = usize>,
+    {
+        let zi = get(idx);
+        let p_eval = horner_eval_c(self.coeffs, &zi);
+        let tol_i = p_eval.l1_norm(); // ???
+        let mut p1_eval = horner_eval_c(self.coeffs1, &zi);
+        for j in neighbors {
+            let zj = get(j);
+            p1_eval -= p_eval / (zi - zj);
+            p1_eval -= p_eval / (zi - 1.0 / zj);
+        }
+        (tol_i, Some(zi - p_eval / p1_eval)) // Gauss-Seidel fashion
     }
-    *zi -= p_eval / p1_eval; // Gauss-Seidel fashion
-    tol_i
 }
 
 /// Aberth's method for auto-correlation polynomials
@@ -382,10 +374,11 @@ pub fn aberth_autocorr(
         .enumerate()
         .map(|(i, ci)| ci * (degree - i) as f64)
         .collect();
-
-    sequential_run(zs, options, 0, |i, zi, _converged, zsc| {
-        Some(aberth_autocorr_job(coeffs, i, zi, zsc, &coeffs1))
-    })
+    let step = AberthAutocorrStep {
+        coeffs,
+        coeffs1: &coeffs1,
+    };
+    sequential_run(zs, options, &step)
 }
 
 /// Reconstruct a monic polynomial from its roots using Leja ordering
