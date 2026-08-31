@@ -406,7 +406,7 @@ pub fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (u
 /// assert!(niter > 0);
 /// assert!(found);
 /// ```
-pub fn pbairstow_even_mt(coeffs: &[f64], vrs: &mut Vec<Vec2>, options: &Options) -> (usize, bool) {
+pub fn pbairstow_even_mt(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (usize, bool) {
     jacobi_mt_run(vrs, options, 1, |i, vri, converged, vrsc| {
         pbairstow_even_job(coeffs, i, vri, converged, vrsc)
     })
@@ -690,11 +690,7 @@ pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -
 /// assert!(niter > 0);
 /// assert!(found);
 /// ```
-pub fn pbairstow_autocorr_mt(
-    coeffs: &[f64],
-    vrs: &mut Vec<Vec2>,
-    options: &Options,
-) -> (usize, bool) {
+pub fn pbairstow_autocorr_mt(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (usize, bool) {
     jacobi_mt_run(vrs, options, 1, |i, vri, converged, vrsc| {
         pbairstow_autocorr_job(coeffs, i, vri, converged, vrsc)
     })

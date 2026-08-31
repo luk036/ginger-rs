@@ -45,6 +45,7 @@ use num_complex::Complex;
 ///  '───────────────'
 /// ```
 ))]
+#[inline]
 pub fn horner_eval_f(coeffs: &[f64], zval: f64) -> f64 {
     coeffs.iter().fold(0.0, |acc, coeff| acc * zval + coeff)
 }

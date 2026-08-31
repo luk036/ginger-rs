@@ -29,6 +29,7 @@ impl<'a> Vector2Ref<'a> {
     ///
     /// let mut v = Vector2Ref::new(&mut x_val, &mut y_val);
     /// ```
+    #[inline]
     pub fn new(x: &'a mut f64, y: &'a mut f64) -> Self {
         Vector2Ref { x, y }
     }
@@ -57,6 +58,7 @@ impl<'a> Vector2Ref<'a> {
     ///
     /// assert_eq!(result, 11.0); // 1*3 + 2*4 = 11
     /// ```
+    #[inline]
     pub fn dot(&self, other: &Vector2Ref) -> f64 {
         *self.x * *other.x + *self.y * *other.y
     }
@@ -85,6 +87,7 @@ impl<'a> Vector2Ref<'a> {
     ///
     /// assert_eq!(result, -2.0); // 1*4 - 3*2 = -2
     /// ```
+    #[inline]
     pub fn cross(&self, other: &Vector2Ref) -> f64 {
         *self.x * *other.y - *other.x * *self.y
     }

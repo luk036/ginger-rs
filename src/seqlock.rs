@@ -62,6 +62,7 @@ pub struct AtomicComplex(AtomicF64x2);
 
 impl AtomicComplex {
     /// Create an atomic complex value.
+    #[inline]
     pub fn new(z: Complex<f64>) -> Self {
         AtomicComplex(AtomicF64x2::new(z.re, z.im))
     }
@@ -73,6 +74,7 @@ impl AtomicComplex {
     }
 
     /// Store a new complex value; single-writer per slot.
+    #[inline]
     pub fn store(&self, z: Complex<f64>) {
         self.0.store(z.re, z.im);
     }
@@ -83,6 +85,7 @@ pub struct AtomicVec2(AtomicF64x2);
 
 impl AtomicVec2 {
     /// Create an atomic vector value.
+    #[inline]
     pub fn new(v: Vector2<f64>) -> Self {
         AtomicVec2(AtomicF64x2::new(v.x_, v.y_))
     }
@@ -94,6 +97,7 @@ impl AtomicVec2 {
     }
 
     /// Store a new vector value; single-writer per slot.
+    #[inline]
     pub fn store(&self, v: Vector2<f64>) {
         self.0.store(v.x_, v.y_);
     }

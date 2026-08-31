@@ -23,6 +23,7 @@ use std::sync::Mutex;
 pub const PARALLEL_THRESHOLD: usize = 4;
 
 /// Whether `num_roots` should use the multi-threaded execution policy.
+#[inline]
 pub fn should_parallelize(num_roots: usize) -> bool {
     num_roots > PARALLEL_THRESHOLD
 }
@@ -41,24 +42,30 @@ pub trait AtomicCell<T>: Sync {
 }
 
 impl AtomicCell<Complex<f64>> for AtomicComplex {
+    #[inline]
     fn new(value: Complex<f64>) -> Self {
         AtomicComplex::new(value)
     }
+    #[inline]
     fn load(&self) -> Complex<f64> {
         self.load()
     }
+    #[inline]
     fn store(&self, value: Complex<f64>) {
         self.store(value);
     }
 }
 
 impl AtomicCell<Vector2F64> for AtomicVec2 {
+    #[inline]
     fn new(value: Vector2F64) -> Self {
         AtomicVec2::new(value)
     }
+    #[inline]
     fn load(&self) -> Vector2F64 {
         self.load()
     }
+    #[inline]
     fn store(&self, value: Vector2F64) {
         self.store(value);
     }

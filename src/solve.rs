@@ -29,7 +29,7 @@ pub enum SolveMode {
 /// [`should_parallelize`] holds, otherwise to the single-threaded variant.
 pub fn solve_aberth(
     coeffs: &[f64],
-    zs: &mut Vec<Complex<f64>>,
+    zs: &mut [Complex<f64>],
     options: &Options,
     mode: SolveMode,
 ) -> (usize, bool) {
@@ -50,7 +50,7 @@ pub fn solve_aberth(
 /// Bairstow solver (even degree) with automatic policy selection.
 pub fn solve_pbairstow_even(
     coeffs: &[f64],
-    vrs: &mut Vec<crate::rootfinding::Vec2>,
+    vrs: &mut [crate::rootfinding::Vec2],
     options: &Options,
     mode: SolveMode,
 ) -> (usize, bool) {
@@ -71,7 +71,7 @@ pub fn solve_pbairstow_even(
 /// Bairstow solver for autocorrelation polynomials with policy selection.
 pub fn solve_pbairstow_autocorr(
     coeffs: &[f64],
-    vrs: &mut Vec<crate::rootfinding::Vec2>,
+    vrs: &mut [crate::rootfinding::Vec2],
     options: &Options,
     mode: SolveMode,
 ) -> (usize, bool) {
@@ -93,6 +93,7 @@ pub fn solve_pbairstow_autocorr(
 ///
 /// Only the single-threaded variant exists in this crate, so every mode
 /// delegates to [`aberth_autocorr`].
+#[inline]
 pub fn solve_aberth_autocorr(
     coeffs: &[f64],
     zs: &mut [Complex<f64>],

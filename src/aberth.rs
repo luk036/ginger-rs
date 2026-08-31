@@ -200,7 +200,7 @@ pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (us
 ///
 /// assert_eq!(niter, 6);
 /// ```
-pub fn aberth_mt(coeffs: &[f64], zs: &mut Vec<Complex<f64>>, options: &Options) -> (usize, bool) {
+pub fn aberth_mt(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (usize, bool) {
     let degree = coeffs.len() - 1; // degree, assume even
     let coeffs1: Vec<_> = (0..degree)
         .map(|i| coeffs[i] * (degree - i) as f64)
