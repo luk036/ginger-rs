@@ -1,6 +1,7 @@
 use super::horner::horner_eval_f;
 use super::{Matrix2, Vector2};
 use crate::execution_policy::{atomic_decoupled_run, jacobi_mt_run, sequential_run, Step};
+use crate::scaling::scaled_coeffs;
 use crate::seqlock::AtomicVec2;
 use num_complex::Complex;
 
@@ -416,9 +417,10 @@ impl Step<Vec2> for EvenBairstowStep<'_> {
 /// assert!(found);
 /// ```
 pub fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (usize, bool) {
+    let scaled = scaled_coeffs(coeffs);
     let step = EvenBairstowStep {
-        coeffs,
-        degree: coeffs.len() - 1,
+        coeffs: &scaled,
+        degree: scaled.len() - 1,
         options,
     };
     sequential_run(vrs, options, &step)
@@ -451,9 +453,10 @@ pub fn pbairstow_even(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (u
 /// assert!(found);
 /// ```
 pub fn pbairstow_even_mt(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (usize, bool) {
+    let scaled = scaled_coeffs(coeffs);
     let step = EvenBairstowStep {
-        coeffs,
-        degree: coeffs.len() - 1,
+        coeffs: &scaled,
+        degree: scaled.len() - 1,
         options,
     };
     jacobi_mt_run(vrs, options, &step)
@@ -493,9 +496,10 @@ pub fn pbairstow_even_mt(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) ->
 /// assert!(found);
 /// ```
 pub fn pbairstow_even_atomic(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (usize, bool) {
+    let scaled = scaled_coeffs(coeffs);
     let step = EvenBairstowStep {
-        coeffs,
-        degree: coeffs.len() - 1,
+        coeffs: &scaled,
+        degree: scaled.len() - 1,
         options,
     };
     atomic_decoupled_run(vrs, options, &step)
@@ -692,6 +696,19 @@ mod tests {
         let (niter, found) = pbairstow_even_atomic(&coeffs, &mut vrs, &Options::default());
         assert!(niter > 0);
         assert!(found);
+    }
+
+    #[test]
+    fn test_pbairstow_even_scaled_polynomial_converges() {
+        // Same roots as the degree-8 palindromic polynomial, but with
+        // coefficients large enough that an absolute residual test can never
+        // reach the default 1e-12 tolerance.
+        let base = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let scaled: Vec<f64> = base.iter().map(|c| c * 1e6).collect();
+        let mut vrs = initial_guess(&scaled);
+        let (niter, found) = pbairstow_even(&scaled, &mut vrs, &Options::default());
+        assert!(found);
+        assert!(niter <= 12, "niter={niter}");
     }
 
     const FIR_COEFFS: [f64; 49] = [

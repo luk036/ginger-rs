@@ -4,6 +4,7 @@ use super::horner::{horner_eval_c, horner_eval_f};
 use super::Options;
 use crate::execution_policy::{atomic_decoupled_run, jacobi_mt_run, sequential_run, Step};
 use crate::leja_order::leja_order;
+use crate::scaling::{derivative_coeffs, scaled_coeffs};
 use crate::seqlock::AtomicComplex;
 use num_complex::Complex;
 
@@ -168,14 +169,10 @@ impl Step<Complex<f64>> for AberthStep<'_> {
 /// ```
 ))]
 pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (usize, bool) {
-    let degree = coeffs.len() - 1; // degree, assume even
-    let coeffs1: Vec<_> = coeffs[0..degree]
-        .iter()
-        .enumerate()
-        .map(|(i, ci)| ci * (degree - i) as f64)
-        .collect();
+    let scaled = scaled_coeffs(coeffs);
+    let coeffs1 = derivative_coeffs(&scaled);
     let step = AberthStep {
-        coeffs,
+        coeffs: &scaled,
         coeffs1: &coeffs1,
     };
     sequential_run(zs, options, &step)
@@ -215,12 +212,10 @@ pub fn aberth(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (us
 /// assert_eq!(niter, 6);
 /// ```
 pub fn aberth_mt(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (usize, bool) {
-    let degree = coeffs.len() - 1; // degree, assume even
-    let coeffs1: Vec<_> = (0..degree)
-        .map(|i| coeffs[i] * (degree - i) as f64)
-        .collect();
+    let scaled = scaled_coeffs(coeffs);
+    let coeffs1 = derivative_coeffs(&scaled);
     let step = AberthStep {
-        coeffs,
+        coeffs: &scaled,
         coeffs1: &coeffs1,
     };
     jacobi_mt_run(zs, options, &step)
@@ -266,12 +261,10 @@ pub fn aberth_mt(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> 
 /// assert!(niter > 0);
 /// ```
 pub fn aberth_atomic(coeffs: &[f64], zs: &mut [Complex<f64>], options: &Options) -> (usize, bool) {
-    let degree = coeffs.len() - 1; // degree, assume even
-    let coeffs1: Vec<_> = (0..degree)
-        .map(|i| coeffs[i] * (degree - i) as f64)
-        .collect();
+    let scaled = scaled_coeffs(coeffs);
+    let coeffs1 = derivative_coeffs(&scaled);
     let step = AberthStep {
-        coeffs,
+        coeffs: &scaled,
         coeffs1: &coeffs1,
     };
     atomic_decoupled_run(zs, options, &step)
@@ -368,14 +361,10 @@ pub fn aberth_autocorr(
     zs: &mut [Complex<f64>],
     options: &Options,
 ) -> (usize, bool) {
-    let degree = coeffs.len() - 1; // degree, assume even
-    let coeffs1: Vec<_> = coeffs[0..degree]
-        .iter()
-        .enumerate()
-        .map(|(i, ci)| ci * (degree - i) as f64)
-        .collect();
+    let scaled = scaled_coeffs(coeffs);
+    let coeffs1 = derivative_coeffs(&scaled);
     let step = AberthAutocorrStep {
-        coeffs,
+        coeffs: &scaled,
         coeffs1: &coeffs1,
     };
     sequential_run(zs, options, &step)
@@ -581,6 +570,35 @@ mod tests {
         let (niter, found) = aberth_autocorr(&coeffs, &mut zrs, &Options::default());
         assert!(niter <= 7);
         assert!(found);
+    }
+
+    #[test]
+    fn test_aberth_scaled_polynomial_converges() {
+        // Same roots as the degree-8 palindromic polynomial, but with
+        // coefficients large enough that an absolute residual test can never
+        // reach the default 1e-12 tolerance.
+        let base = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let scaled: Vec<f64> = base.iter().map(|c| c * 1e6).collect();
+        let mut zs = initial_aberth(&scaled);
+        let (niter, found) = aberth(&scaled, &mut zs, &Options::default());
+        assert!(found);
+        assert!(niter <= 12, "niter={niter}");
+    }
+
+    #[test]
+    fn test_scaling_does_not_change_roots() {
+        let base = vec![10.0, 34.0, 75.0, 94.0, 150.0, 94.0, 75.0, 34.0, 10.0];
+        let scaled: Vec<f64> = base.iter().map(|c| c * 1e6).collect();
+        let z0 = initial_aberth(&base);
+        let mut za = z0.clone();
+        let mut zb = z0.clone();
+        let (na, oka) = aberth(&base, &mut za, &Options::default());
+        let (nb, okb) = aberth(&scaled, &mut zb, &Options::default());
+        assert!(oka && okb);
+        assert_eq!(na, nb);
+        for (a, b) in za.iter().zip(zb.iter()) {
+            assert!((a - b).norm() < 1e-9, "{a} vs {b}");
+        }
     }
 
     #[test]

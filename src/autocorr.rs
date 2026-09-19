@@ -5,6 +5,7 @@
 
 use crate::execution_policy::{atomic_decoupled_run, jacobi_mt_run, sequential_run, Step};
 use crate::rootfinding::{delta, horner, roots_from_quadratic, suppress_old, Options, Vec2};
+use crate::scaling::scaled_coeffs;
 use crate::seqlock::AtomicVec2;
 use num_complex::Complex;
 
@@ -115,9 +116,10 @@ pub fn initial_autocorr(coeffs: &[f64]) -> Vec<Vec2> {
 /// assert!(found);
 /// ```
 pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (usize, bool) {
+    let scaled = scaled_coeffs(coeffs);
     let step = AutocorrBairstowStep {
-        coeffs,
-        degree: coeffs.len() - 1,
+        coeffs: &scaled,
+        degree: scaled.len() - 1,
         options,
     };
     sequential_run(vrs, options, &step)
@@ -150,9 +152,10 @@ pub fn pbairstow_autocorr(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -
 /// assert!(found);
 /// ```
 pub fn pbairstow_autocorr_mt(coeffs: &[f64], vrs: &mut [Vec2], options: &Options) -> (usize, bool) {
+    let scaled = scaled_coeffs(coeffs);
     let step = AutocorrBairstowStep {
-        coeffs,
-        degree: coeffs.len() - 1,
+        coeffs: &scaled,
+        degree: scaled.len() - 1,
         options,
     };
     jacobi_mt_run(vrs, options, &step)
@@ -199,9 +202,10 @@ pub fn pbairstow_autocorr_atomic(
     vrs: &mut [Vec2],
     options: &Options,
 ) -> (usize, bool) {
+    let scaled = scaled_coeffs(coeffs);
     let step = AutocorrBairstowStep {
-        coeffs,
-        degree: coeffs.len() - 1,
+        coeffs: &scaled,
+        degree: scaled.len() - 1,
         options,
     };
     atomic_decoupled_run(vrs, options, &step)

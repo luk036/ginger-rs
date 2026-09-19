@@ -36,33 +36,35 @@ pub fn leja_order(mut points: Vec<Complex<f64>>) -> Vec<Complex<f64>> {
         return vec![];
     }
 
-    // Greedy Leja ordering (O(n^2)):
-    // 1. Start with the smallest-magnitude point
-    // 2. Each subsequent point maximizes the MIN distance to ALL already-selected points
+    // Greedy Leja ordering. Maintaining the running minimum distance to the
+    // selected set turns the naive O(n^3) rescan into O(n^2).
     points.sort_by(|a, b| a.norm().partial_cmp(&b.norm()).unwrap());
 
     let mut result = Vec::with_capacity(points.len());
     result.push(points[0]);
     points.remove(0);
 
+    let mut dists: Vec<f64> = points.iter().map(|p| (*p - result[0]).norm()).collect();
+
     while !points.is_empty() {
         let mut best_idx = 0;
-        let mut best_dist = -1.0f64;
-        for (i, pi) in points.iter().enumerate() {
-            let mut min_dist = f64::MAX;
-            for p in &result {
-                let d = (*pi - p).norm();
-                if d < min_dist {
-                    min_dist = d;
-                }
-            }
-            if min_dist > best_dist {
-                best_dist = min_dist;
+        let mut best_dist = dists[0];
+        for (i, d) in dists.iter().enumerate().skip(1) {
+            if *d > best_dist {
+                best_dist = *d;
                 best_idx = i;
             }
         }
-        result.push(points[best_idx]);
+        let chosen = points[best_idx];
         points.remove(best_idx);
+        dists.remove(best_idx);
+        result.push(chosen);
+        for (d, p) in dists.iter_mut().zip(points.iter()) {
+            let nd = (*p - chosen).norm();
+            if nd < *d {
+                *d = nd;
+            }
+        }
     }
 
     result
@@ -97,5 +99,66 @@ mod tests {
         let result = leja_order(vec![Complex::new(1.0, 2.0)]);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0], Complex::new(1.0, 2.0));
+    }
+
+    /// Reference O(n^3) greedy Leja ordering used to validate `leja_order`.
+    fn naive_leja(mut points: Vec<Complex<f64>>) -> Vec<Complex<f64>> {
+        if points.is_empty() {
+            return vec![];
+        }
+        points.sort_by(|a, b| a.norm().partial_cmp(&b.norm()).unwrap());
+        let mut result = Vec::with_capacity(points.len());
+        result.push(points[0]);
+        points.remove(0);
+        while !points.is_empty() {
+            let mut best_idx = 0;
+            let mut best_dist = -1.0f64;
+            for (i, pi) in points.iter().enumerate() {
+                let mut min_dist = f64::MAX;
+                for p in &result {
+                    let d = (*pi - p).norm();
+                    if d < min_dist {
+                        min_dist = d;
+                    }
+                }
+                if min_dist > best_dist {
+                    best_dist = min_dist;
+                    best_idx = i;
+                }
+            }
+            result.push(points[best_idx]);
+            points.remove(best_idx);
+        }
+        result
+    }
+
+    fn lcg_points(n: usize, seed: u64) -> Vec<Complex<f64>> {
+        let mut state = seed;
+        let mut next = || {
+            state = state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            ((state >> 11) as f64) / ((1u64 << 53) as f64)
+        };
+        (0..n).map(|_| Complex::new(next(), next())).collect()
+    }
+
+    #[test]
+    fn test_matches_naive_reference_exactly() {
+        for n in [2usize, 3, 10, 37, 100] {
+            let points = lcg_points(n, 7);
+            assert_eq!(leja_order(points.clone()), naive_leja(points), "n={n}");
+        }
+    }
+
+    #[test]
+    fn test_returns_permutation_of_input() {
+        let points = lcg_points(64, 11);
+        let mut ordered = leja_order(points.clone());
+        let mut sorted_input = points;
+        let key = |z: &Complex<f64>| (z.re, z.im);
+        ordered.sort_by(|a, b| key(a).partial_cmp(&key(b)).unwrap());
+        sorted_input.sort_by(|a, b| key(a).partial_cmp(&key(b)).unwrap());
+        assert_eq!(ordered, sorted_input);
     }
 }

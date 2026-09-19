@@ -39,6 +39,9 @@ pub mod solve;
 /// This module implements the Leja ordering.
 pub mod leja_order;
 
+/// This module provides coefficient scaling for scale-invariant convergence.
+pub mod scaling;
+
 /// This module provides seqlock-based atomic pairs for the atomic multi-threading method.
 pub mod seqlock;
 
@@ -63,6 +66,7 @@ pub use crate::rootfinding::{
     initial_guess, pbairstow_even, pbairstow_even_atomic, pbairstow_even_mt,
     poly_from_quadratic_factors, Options, Vec2,
 };
+pub use crate::scaling::{derivative_coeffs, residual_scale, scaled_coeffs};
 pub use crate::seqlock::{AtomicComplex, AtomicVec2};
 pub use crate::solve::{
     solve_aberth, solve_aberth_autocorr, solve_pbairstow_autocorr, solve_pbairstow_even, SolveMode,
